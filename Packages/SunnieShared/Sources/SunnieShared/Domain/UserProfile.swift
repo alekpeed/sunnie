@@ -146,6 +146,57 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         self.dietaryRuleIDs = dietaryRuleIDs
         self.useSolarTimes = useSolarTimes
     }
+
+    /// Decodes field by field, falling back to the default for anything absent.
+    ///
+    /// Preferences are persisted as one encoded blob, so the synthesized
+    /// initializer would throw on the *whole* record the first time a new field
+    /// is added — and the repository's catch would then hand back defaults,
+    /// silently resetting every setting the user had chosen. Decoding leniently
+    /// means a new field takes its default and everything else survives.
+    ///
+    /// This is the migration story for preferences. Removing or repurposing a
+    /// field still needs a real migration and an ADR.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fallback = UserPreferences.default
+
+        // `try?` flattens the optional, so a single `T?` covers both "the key was
+        // absent" and "the value was there but unreadable". Either way the
+        // default stands in.
+        func value<T: Decodable>(_ key: CodingKeys, _ fallbackValue: T) -> T {
+            guard let decoded = try? container.decodeIfPresent(T.self, forKey: key) else {
+                return fallbackValue
+            }
+            return decoded
+        }
+
+        activeThemeID = value(.activeThemeID, fallback.activeThemeID)
+        automaticDayCycle = value(.automaticDayCycle, fallback.automaticDayCycle)
+        dayCycleOverride = try? container.decodeIfPresent(
+            TimePhase.self, forKey: .dayCycleOverride
+        )
+        quietHours = value(.quietHours, fallback.quietHours)
+        audio = value(.audio, fallback.audio)
+        hapticsEnabled = value(.hapticsEnabled, fallback.hapticsEnabled)
+        accessibility = value(.accessibility, fallback.accessibility)
+        nicknameProbability = value(.nicknameProbability, fallback.nicknameProbability)
+        dietaryRuleIDs = value(.dietaryRuleIDs, fallback.dietaryRuleIDs)
+        useSolarTimes = value(.useSolarTimes, fallback.useSolarTimes)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case activeThemeID
+        case automaticDayCycle
+        case dayCycleOverride
+        case quietHours
+        case audio
+        case hapticsEnabled
+        case accessibility
+        case nicknameProbability
+        case dietaryRuleIDs
+        case useSolarTimes
+    }
 }
 
 /// Dietary rules are content IDs rather than booleans so Phase 6 can add rules

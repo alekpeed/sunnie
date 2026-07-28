@@ -44,15 +44,31 @@ public struct TimePhaseEngine: TimePhaseResolving {
             self.lateNightStart = lateNightStart
         }
 
+        /// Resolves an hour to its phase.
+        ///
+        /// Uses ordered comparisons rather than `Range` patterns on purpose:
+        /// these bounds are public and documented as user-adjustable, and
+        /// building a `Range` from an out-of-order pair (`dayStart` earlier than
+        /// `morningStart`) traps at runtime. Comparisons degrade to a wrong-but-
+        /// harmless phase instead of crashing the app.
         public func phase(forHour hour: Int) -> TimePhase {
-            switch hour {
-            case lateNightStart..<morningStart: .lateNight
-            case morningStart..<dayStart: .morning
-            case dayStart..<afternoonStart: .day
-            case afternoonStart..<eveningStart: .afternoon
-            case eveningStart..<nightStart: .evening
-            default: .night
-            }
+            if hour < morningStart { return .lateNight }
+            if hour < dayStart { return .morning }
+            if hour < afternoonStart { return .day }
+            if hour < eveningStart { return .afternoon }
+            if hour < nightStart { return .evening }
+            return .night
+        }
+
+        /// Whether the bounds are strictly increasing across the day.
+        ///
+        /// `lateNightStart` is excluded: late night is the wrap-around segment
+        /// before `morningStart`, so it is always the earliest.
+        public var isOrdered: Bool {
+            morningStart < dayStart
+                && dayStart < afternoonStart
+                && afternoonStart < eveningStart
+                && eveningStart < nightStart
         }
     }
 

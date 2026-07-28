@@ -1,5 +1,15 @@
 import Foundation
 
+/// Dictionary keys used by both sides of the phone/Watch bridge.
+///
+/// Declared once, here, because both sides must agree exactly. Two separate
+/// string constants would let a rename on one side break delivery silently — no
+/// compiler error, no failing test, just actions that never arrive.
+public enum WatchMessageKeys {
+    public static let careAction = "sunnie.watch.careAction"
+    public static let applicationContext = "sunnie.watch.applicationContext"
+}
+
 /// Payload versioning for everything crossing the phone/Watch boundary.
 ///
 /// A queued transfer can be delivered long after it was created, potentially to

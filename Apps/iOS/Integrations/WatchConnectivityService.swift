@@ -16,9 +16,6 @@ import WatchConnectivity
 /// processed.
 final class WatchConnectivityService: NSObject, WatchSyncing, @unchecked Sendable {
 
-    /// The message key under which the Watch sends a care action.
-    static let careActionKey = "sunnie.watch.careAction"
-
     private let log = SunnieLog(category: .watch)
     private let onCareAction: @Sendable (WatchCareActionPayload) async -> Void
 
@@ -68,7 +65,9 @@ final class WatchConnectivityService: NSObject, WatchSyncing, @unchecked Sendabl
             // Application context is latest-value-wins, which is exactly right
             // for "what is due now" — a backlog of stale snapshots would be worse
             // than one current one.
-            try session.updateApplicationContext(["context": data])
+            try session.updateApplicationContext(
+                [WatchMessageKeys.applicationContext: data]
+            )
         } catch {
             log.debug("Could not update the Watch application context.")
         }
@@ -121,7 +120,7 @@ extension WatchConnectivityService: WCSessionDelegate {
     }
 
     private func handle(_ payload: [String: Any]) {
-        guard let data = payload[Self.careActionKey] as? Data else { return }
+        guard let data = payload[WatchMessageKeys.careAction] as? Data else { return }
         guard let action = try? JSONDecoder().decode(
             WatchCareActionPayload.self, from: data
         ) else {

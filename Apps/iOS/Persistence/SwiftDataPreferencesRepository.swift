@@ -88,7 +88,7 @@ actor SwiftDataPendingWatchActionRepository: PendingWatchActionRepository {
     func enqueue(_ action: PendingWatchAction) async throws -> SaveOutcome<PendingWatchAction> {
         let key = action.actionKey.rawValue
         var descriptor = FetchDescriptor<SDPendingWatchAction>(
-            predicate: #Predicate { $0.actionKey == key }
+            predicate: #Predicate<SDPendingWatchAction> { $0.actionKey == key }
         )
         descriptor.fetchLimit = 1
 
@@ -111,11 +111,11 @@ actor SwiftDataPendingWatchActionRepository: PendingWatchActionRepository {
     func unprocessedActions() async throws -> [PendingWatchAction] {
         let pending = PendingWatchActionState.pending.rawValue
         let descriptor = FetchDescriptor<SDPendingWatchAction>(
-            predicate: #Predicate { $0.stateRaw == pending },
+            predicate: #Predicate<SDPendingWatchAction> { $0.stateRaw == pending },
             sortBy: [SortDescriptor(\.createdAt, order: .forward)]
         )
         do {
-            return try modelContext.fetch(descriptor).map(ModelMapping.domain)
+            return try modelContext.fetch(descriptor).map { ModelMapping.domain($0) }
         } catch {
             throw DomainError.persistenceFailed(operation: "unprocessedWatchActions")
         }
@@ -123,7 +123,7 @@ actor SwiftDataPendingWatchActionRepository: PendingWatchActionRepository {
 
     func markProcessed(actionID: UUID, at date: Date) async throws {
         var descriptor = FetchDescriptor<SDPendingWatchAction>(
-            predicate: #Predicate { $0.id == actionID }
+            predicate: #Predicate<SDPendingWatchAction> { $0.id == actionID }
         )
         descriptor.fetchLimit = 1
         do {

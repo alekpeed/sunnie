@@ -18,10 +18,10 @@ actor SwiftDataPlantRepository: PlantRepository {
             sortBy: [SortDescriptor(\.name, order: .forward)]
         )
         if !includingArchived {
-            descriptor.predicate = #Predicate { $0.statusRaw != archived }
+            descriptor.predicate = #Predicate<SDPlant> { $0.statusRaw != archived }
         }
         do {
-            return try modelContext.fetch(descriptor).map(ModelMapping.domain)
+            return try modelContext.fetch(descriptor).map { ModelMapping.domain($0) }
         } catch {
             log.error("Fetching plants failed.")
             throw DomainError.persistenceFailed(operation: "allPlants")
@@ -29,7 +29,7 @@ actor SwiftDataPlantRepository: PlantRepository {
     }
 
     func plant(id: UUID) async throws -> Plant? {
-        try fetchPlant(id: id).map(ModelMapping.domain)
+        try fetchPlant(id: id).map { ModelMapping.domain($0) }
     }
 
     func save(_ plant: Plant) async throws {
@@ -72,23 +72,23 @@ actor SwiftDataPlantRepository: PlantRepository {
     }
 
     func schedules(forPlantID plantID: UUID) async throws -> [PlantCareSchedule] {
-        try fetchSchedules(plantID: plantID).map(ModelMapping.domain)
+        try fetchSchedules(plantID: plantID).map { ModelMapping.domain($0) }
     }
 
     func enabledSchedules() async throws -> [PlantCareSchedule] {
         let descriptor = FetchDescriptor<SDPlantCareSchedule>(
-            predicate: #Predicate { $0.isEnabled },
+            predicate: #Predicate<SDPlantCareSchedule> { $0.isEnabled },
             sortBy: [SortDescriptor(\.nextDueDate, order: .forward)]
         )
         do {
-            return try modelContext.fetch(descriptor).map(ModelMapping.domain)
+            return try modelContext.fetch(descriptor).map { ModelMapping.domain($0) }
         } catch {
             throw DomainError.persistenceFailed(operation: "enabledSchedules")
         }
     }
 
     func schedule(id: UUID) async throws -> PlantCareSchedule? {
-        try fetchSchedule(id: id).map(ModelMapping.domain)
+        try fetchSchedule(id: id).map { ModelMapping.domain($0) }
     }
 
     func save(_ schedule: PlantCareSchedule) async throws {
@@ -112,7 +112,7 @@ actor SwiftDataPlantRepository: PlantRepository {
             sortBy: [SortDescriptor(\.sortOrder, order: .forward)]
         )
         do {
-            return try modelContext.fetch(descriptor).map(ModelMapping.domain)
+            return try modelContext.fetch(descriptor).map { ModelMapping.domain($0) }
         } catch {
             throw DomainError.persistenceFailed(operation: "locations")
         }
@@ -121,7 +121,7 @@ actor SwiftDataPlantRepository: PlantRepository {
     func save(_ location: PlantLocation) async throws {
         let id = location.id
         var descriptor = FetchDescriptor<SDPlantLocation>(
-            predicate: #Predicate { $0.id == id }
+            predicate: #Predicate<SDPlantLocation> { $0.id == id }
         )
         descriptor.fetchLimit = 1
         do {
@@ -142,14 +142,14 @@ actor SwiftDataPlantRepository: PlantRepository {
     // MARK: - Fetch helpers
 
     private func fetchPlant(id: UUID) throws -> SDPlant? {
-        var descriptor = FetchDescriptor<SDPlant>(predicate: #Predicate { $0.id == id })
+        var descriptor = FetchDescriptor<SDPlant>(predicate: #Predicate<SDPlant> { $0.id == id })
         descriptor.fetchLimit = 1
         return try modelContext.fetch(descriptor).first
     }
 
     private func fetchSchedule(id: UUID) throws -> SDPlantCareSchedule? {
         var descriptor = FetchDescriptor<SDPlantCareSchedule>(
-            predicate: #Predicate { $0.id == id }
+            predicate: #Predicate<SDPlantCareSchedule> { $0.id == id }
         )
         descriptor.fetchLimit = 1
         return try modelContext.fetch(descriptor).first
@@ -157,7 +157,7 @@ actor SwiftDataPlantRepository: PlantRepository {
 
     private func fetchSchedules(plantID: UUID) throws -> [SDPlantCareSchedule] {
         let descriptor = FetchDescriptor<SDPlantCareSchedule>(
-            predicate: #Predicate { $0.plantID == plantID }
+            predicate: #Predicate<SDPlantCareSchedule> { $0.plantID == plantID }
         )
         return try modelContext.fetch(descriptor)
     }

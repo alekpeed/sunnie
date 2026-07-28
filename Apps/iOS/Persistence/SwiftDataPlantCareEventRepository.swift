@@ -37,17 +37,17 @@ actor SwiftDataPlantCareEventRepository: PlantCareEventRepository {
     }
 
     func event(actionKey: ActionKey) async throws -> PlantCareEvent? {
-        try fetchEvent(actionKey: actionKey.rawValue).map(ModelMapping.domain)
+        try fetchEvent(actionKey: actionKey.rawValue).map { ModelMapping.domain($0) }
     }
 
     func events(forPlantID plantID: UUID, limit: Int) async throws -> [PlantCareEvent] {
         var descriptor = FetchDescriptor<SDPlantCareEvent>(
-            predicate: #Predicate { $0.plantID == plantID },
+            predicate: #Predicate<SDPlantCareEvent> { $0.plantID == plantID },
             sortBy: [SortDescriptor(\.performedAt, order: .reverse)]
         )
         descriptor.fetchLimit = max(0, limit)
         do {
-            return try modelContext.fetch(descriptor).map(ModelMapping.domain)
+            return try modelContext.fetch(descriptor).map { ModelMapping.domain($0) }
         } catch {
             throw DomainError.persistenceFailed(operation: "careEventsForPlant")
         }
@@ -59,12 +59,12 @@ actor SwiftDataPlantCareEventRepository: PlantCareEventRepository {
     ) async throws -> PlantCareEvent? {
         let key = careType.storageKey
         var descriptor = FetchDescriptor<SDPlantCareEvent>(
-            predicate: #Predicate { $0.plantID == plantID && $0.careTypeKey == key },
+            predicate: #Predicate<SDPlantCareEvent> { $0.plantID == plantID && $0.careTypeKey == key },
             sortBy: [SortDescriptor(\.performedAt, order: .reverse)]
         )
         descriptor.fetchLimit = 1
         do {
-            return try modelContext.fetch(descriptor).first.map(ModelMapping.domain)
+            return try modelContext.fetch(descriptor).first.map { ModelMapping.domain($0) }
         } catch {
             throw DomainError.persistenceFailed(operation: "mostRecentCareEvent")
         }
@@ -72,7 +72,7 @@ actor SwiftDataPlantCareEventRepository: PlantCareEventRepository {
 
     private func fetchEvent(actionKey: String) throws -> SDPlantCareEvent? {
         var descriptor = FetchDescriptor<SDPlantCareEvent>(
-            predicate: #Predicate { $0.actionKey == actionKey }
+            predicate: #Predicate<SDPlantCareEvent> { $0.actionKey == actionKey }
         )
         descriptor.fetchLimit = 1
         return try modelContext.fetch(descriptor).first
@@ -130,13 +130,13 @@ actor SwiftDataProgressionRepository: ProgressionRepository {
     }
 
     func event(deterministicKey: String) async throws -> ProgressionEvent? {
-        try fetchEvent(deterministicKey: deterministicKey).flatMap(ModelMapping.domain)
+        try fetchEvent(deterministicKey: deterministicKey).flatMap { ModelMapping.domain($0) }
     }
 
     func save(_ grant: RewardGrant) async throws -> SaveOutcome<RewardGrant> {
         let key = grant.deterministicKey
         var descriptor = FetchDescriptor<SDRewardGrant>(
-            predicate: #Predicate { $0.deterministicKey == key }
+            predicate: #Predicate<SDRewardGrant> { $0.deterministicKey == key }
         )
         descriptor.fetchLimit = 1
 
@@ -161,7 +161,7 @@ actor SwiftDataProgressionRepository: ProgressionRepository {
         )
         descriptor.fetchLimit = max(0, limit)
         do {
-            return try modelContext.fetch(descriptor).map(ModelMapping.domain)
+            return try modelContext.fetch(descriptor).map { ModelMapping.domain($0) }
         } catch {
             throw DomainError.persistenceFailed(operation: "rewardGrants")
         }
@@ -175,7 +175,7 @@ actor SwiftDataProgressionRepository: ProgressionRepository {
 
     private func fetchEvent(deterministicKey: String) throws -> SDProgressionEvent? {
         var descriptor = FetchDescriptor<SDProgressionEvent>(
-            predicate: #Predicate { $0.deterministicKey == deterministicKey }
+            predicate: #Predicate<SDProgressionEvent> { $0.deterministicKey == deterministicKey }
         )
         descriptor.fetchLimit = 1
         return try modelContext.fetch(descriptor).first

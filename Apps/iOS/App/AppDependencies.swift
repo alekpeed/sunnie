@@ -69,10 +69,7 @@ final class AppDependencies {
         self.contentRegistry = registry
         self.themeEngine = ThemeEngine(registry: registry)
         self.timeEngine = TimePhaseEngine(calendar: clock.calendar)
-        self.messageService = SunnieMessageService(
-            registry: registry,
-            displayName: DefaultProfile.displayName
-        )
+        self.messageService = SunnieMessageService(registry: registry)
 
         let plants = SwiftDataPlantRepository(modelContainer: modelContainer)
         let events = SwiftDataPlantCareEventRepository(modelContainer: modelContainer)

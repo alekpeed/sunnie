@@ -145,8 +145,7 @@ struct SunnieMessageServiceTests {
     private func service(seed: UInt64 = 1) -> SunnieMessageService {
         SunnieMessageService(
             registry: registry,
-            random: SeededRandomSource(seed: seed),
-            displayName: "Vanessa"
+            random: SeededRandomSource(seed: seed)
         )
     }
 
@@ -159,6 +158,7 @@ struct SunnieMessageServiceTests {
         SunnieMessageContext(
             category: category,
             timeContext: TestFixtures.timeContext(phase: phase),
+            displayName: "Vanessa",
             nickname: "Noonies",
             nicknameProbability: probability,
             recentlyShownIDs: recent
@@ -245,6 +245,7 @@ struct SunnieMessageServiceTests {
                 timeZone: TestFixtures.utc,
                 reduceMotion: true
             ),
+            displayName: "Vanessa",
             nickname: "Noonies",
             nicknameProbability: 0
         )

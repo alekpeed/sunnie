@@ -39,7 +39,7 @@ final class WatchConnectivityClient: NSObject, @unchecked Sendable {
     }
 
     private func applyContext(from dictionary: [String: Any]) {
-        guard let data = dictionary["context"] as? Data else { return }
+        guard let data = dictionary[WatchMessageKeys.applicationContext] as? Data else { return }
         guard let context = try? JSONDecoder().decode(
             WatchApplicationContext.self, from: data
         ) else {
@@ -71,9 +71,4 @@ extension WatchConnectivityClient: WCSessionDelegate {
     func sessionReachabilityDidChange(_ session: WCSession) {
         onReachabilityChanged?(session.isReachable)
     }
-}
-
-/// Keys shared by both sides of the bridge.
-enum WatchMessageKeys {
-    static let careAction = "sunnie.watch.careAction"
 }

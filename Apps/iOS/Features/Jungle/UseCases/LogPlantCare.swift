@@ -238,6 +238,7 @@ struct LogPlantCare: Sendable {
         return messageProvider.message(for: SunnieMessageContext(
             category: .careCompleted,
             timeContext: timeContext,
+            displayName: profile.displayName,
             nickname: profile.preferredNickname,
             nicknameProbability: preferences.nicknameProbability
         ))

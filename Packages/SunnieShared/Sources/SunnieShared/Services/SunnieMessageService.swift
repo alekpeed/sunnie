@@ -11,16 +11,13 @@ public struct SunnieMessageService: SunnieMessageProviding {
 
     private let registry: ContentRegistry
     private let random: any RandomSource
-    private let displayName: String
 
     public init(
         registry: ContentRegistry,
-        random: any RandomSource = SystemRandomSource(),
-        displayName: String
+        random: any RandomSource = SystemRandomSource()
     ) {
         self.registry = registry
         self.random = random
-        self.displayName = displayName
     }
 
     public func message(for context: SunnieMessageContext) -> SunnieMessage? {
@@ -38,7 +35,7 @@ public struct SunnieMessageService: SunnieMessageProviding {
 
         let text = NicknameEligibility.resolve(
             template: definition.template,
-            displayName: displayName,
+            displayName: context.displayName,
             nickname: context.nickname,
             useNickname: useNickname
         )

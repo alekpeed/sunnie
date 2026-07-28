@@ -66,6 +66,12 @@ public struct SunnieMessage: Hashable, Sendable, Identifiable {
 public struct SunnieMessageContext: Hashable, Sendable {
     public let category: SunnieMessageCategory
     public let timeContext: TimeContext
+    /// The name to use when the nickname is not chosen.
+    ///
+    /// Carried per call rather than captured once by the service: the profile is
+    /// editable, and a name captured at app launch would keep Sunnie using the
+    /// old one for the rest of the session.
+    public let displayName: String
     public let nickname: String?
     public let nicknameProbability: Double
     /// Message IDs shown recently, so the service can avoid immediate repeats.
@@ -74,12 +80,14 @@ public struct SunnieMessageContext: Hashable, Sendable {
     public init(
         category: SunnieMessageCategory,
         timeContext: TimeContext,
+        displayName: String,
         nickname: String?,
         nicknameProbability: Double,
         recentlyShownIDs: [ContentID] = []
     ) {
         self.category = category
         self.timeContext = timeContext
+        self.displayName = displayName
         self.nickname = nickname
         self.nicknameProbability = nicknameProbability
         self.recentlyShownIDs = recentlyShownIDs

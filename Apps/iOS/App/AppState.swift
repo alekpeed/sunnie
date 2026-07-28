@@ -111,6 +111,7 @@ final class AppState {
         dependencies.messageService.message(for: SunnieMessageContext(
             category: .greeting,
             timeContext: timeContext,
+            displayName: profile?.displayName ?? DefaultProfile.displayName,
             nickname: profile?.preferredNickname,
             nicknameProbability: preferences.nicknameProbability
         ))
