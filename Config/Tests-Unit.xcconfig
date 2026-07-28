@@ -1,0 +1,17 @@
+// Unit test bundle, hosted by the iPhone app so it can reach SwiftData and the
+// app's localized strings.
+
+PRODUCT_NAME = SunnieDaysTests
+PRODUCT_BUNDLE_IDENTIFIER = $(SUNNIE_BUNDLE_ID_PREFIX).app.tests
+PRODUCT_MODULE_NAME = SunnieDaysTests
+
+SDKROOT = iphoneos
+SUPPORTED_PLATFORMS = iphoneos iphonesimulator
+TARGETED_DEVICE_FAMILY = 1
+
+GENERATE_INFOPLIST_FILE = YES
+
+BUNDLE_LOADER = $(TEST_HOST)
+TEST_HOST = $(BUILT_PRODUCTS_DIR)/SunnieDays.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SunnieDays
+
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/Frameworks @loader_path/Frameworks

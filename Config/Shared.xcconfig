@@ -1,0 +1,64 @@
+// Settings shared by every target.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+// PLACEHOLDERS TO REPLACE
+//
+// SUNNIE_BUNDLE_ID_PREFIX   Your reverse-DNS prefix.
+// SUNNIE_DEVELOPMENT_TEAM   Your 10-character Apple Developer Team ID.
+//                           Leave empty to build and run in the Simulator
+//                           without signing.
+//
+// Changing them here updates every target; nothing else hardcodes them.
+// ─────────────────────────────────────────────────────────────────────────────
+
+SUNNIE_BUNDLE_ID_PREFIX = com.sunniedays
+SUNNIE_DEVELOPMENT_TEAM =
+
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1
+
+// Locked deployment targets (README_FIRST.md).
+IPHONEOS_DEPLOYMENT_TARGET = 18.0
+WATCHOS_DEPLOYMENT_TARGET = 11.0
+
+// Swift 5 language mode with complete concurrency checking (ADR-010). Data-race
+// problems surface as warnings during Phases 0–2 rather than blocking the build,
+// and the codebase moves to Swift 6 language mode as a deliberate step.
+SWIFT_VERSION = 5.0
+SWIFT_STRICT_CONCURRENCY = complete
+SWIFT_EMIT_LOC_STRINGS = YES
+
+DEVELOPMENT_TEAM = $(SUNNIE_DEVELOPMENT_TEAM)
+CODE_SIGN_STYLE = Automatic
+
+CLANG_ENABLE_MODULES = YES
+ENABLE_USER_SCRIPT_SANDBOXING = YES
+GCC_C_LANGUAGE_STANDARD = gnu17
+CLANG_CXX_LANGUAGE_STANDARD = gnu++20
+
+ALWAYS_SEARCH_USER_PATHS = NO
+ENABLE_STRICT_OBJC_MSGSEND = YES
+
+// Warnings the project treats as real problems.
+GCC_WARN_UNDECLARED_SELECTOR = YES
+GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE
+GCC_WARN_UNUSED_FUNCTION = YES
+GCC_WARN_UNUSED_VARIABLE = YES
+CLANG_WARN_DOCUMENTATION_COMMENTS = YES
+CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE
+CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES
+CLANG_WARN_BOOL_CONVERSION = YES
+CLANG_WARN_COMMA = YES
+CLANG_WARN_CONSTANT_CONVERSION = YES
+CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES
+CLANG_WARN_EMPTY_BODY = YES
+CLANG_WARN_ENUM_CONVERSION = YES
+CLANG_WARN_INFINITE_RECURSION = YES
+CLANG_WARN_INT_CONVERSION = YES
+CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES
+CLANG_WARN_OBJC_LITERAL_CONVERSION = YES
+CLANG_WARN_RANGE_LOOP_ANALYSIS = YES
+CLANG_WARN_STRICT_PROTOTYPES = YES
+CLANG_WARN_SUSPICIOUS_MOVE = YES
+CLANG_WARN_UNREACHABLE_CODE = YES
+CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES

@@ -1,0 +1,212 @@
+{
+  "manifest": {
+    "packID": "sunnie.pack.themes.core",
+    "version": 1,
+    "schemaVersion": 1,
+    "displayNameKey": "content.pack.themes.core",
+    "minimumAppVersion": "0.1.0"
+  },
+  "themes": [
+    {
+      "id": "sunnie.theme.lushTropicalJungle",
+      "version": 1,
+      "displayNameKey": "theme.lushTropicalJungle",
+      "cardCornerRadius": 24,
+      "isUnlockedByDefault": true,
+      "minimumAppVersion": "0.1.0",
+      "basePalette": {
+        "canvas": "#FFF8ED",
+        "surface": "#FFF1DC",
+        "surfaceRaised": "#FFFDF8",
+        "textPrimary": "#493528",
+        "textSecondary": "#755E4D",
+        "accentWarm": "#F3A58D",
+        "accentSunnie": "#F6D47D",
+        "accentCalm": "#B9A6E1",
+        "accentPlant": "#A9C5A0",
+        "accentTravel": "#A8CBE4",
+        "success": "#91B982",
+        "attention": "#D7A65A",
+        "error": "#C97972"
+      },
+      "highContrastPalette": {
+        "canvas": "#FFFDF8",
+        "surface": "#FFFFFF",
+        "surfaceRaised": "#FFFFFF",
+        "textPrimary": "#2A1C13",
+        "textSecondary": "#4A382B",
+        "accentWarm": "#B4593C",
+        "accentSunnie": "#8A6A15",
+        "accentCalm": "#4B3B77",
+        "accentPlant": "#3F6234",
+        "accentTravel": "#2F5975",
+        "success": "#33612A",
+        "attention": "#7A5410",
+        "error": "#8C332C"
+      },
+      "phaseVariants": [
+        {
+          "phase": "morning",
+          "canvas": "#FFFBF2",
+          "surface": "#FFF4E4"
+        },
+        {
+          "phase": "day",
+          "canvas": "#FFF8ED",
+          "surface": "#FFF1DC"
+        },
+        {
+          "phase": "afternoon",
+          "canvas": "#FDF1DF",
+          "surface": "#FBE7CC"
+        },
+        {
+          "phase": "evening",
+          "canvas": "#2E3A34",
+          "surface": "#3A4A42",
+          "textPrimary": "#F6EEE2",
+          "textSecondary": "#CDBDA9"
+        },
+        {
+          "phase": "night",
+          "canvas": "#1F2A27",
+          "surface": "#2A3733",
+          "textPrimary": "#F1E8DC",
+          "textSecondary": "#BFB0A0"
+        },
+        {
+          "phase": "lateNight",
+          "canvas": "#161E1C",
+          "surface": "#212B28",
+          "textPrimary": "#E9E0D5",
+          "textSecondary": "#AC9E90"
+        }
+      ]
+    },
+    {
+      "id": "sunnie.theme.travelScrapbook",
+      "version": 1,
+      "displayNameKey": "theme.travelScrapbook",
+      "cardCornerRadius": 20,
+      "isUnlockedByDefault": true,
+      "minimumAppVersion": "0.1.0",
+      "basePalette": {
+        "canvas": "#FBF4E6",
+        "surface": "#FFFBF2",
+        "surfaceRaised": "#FFFFFF",
+        "textPrimary": "#3F3327",
+        "textSecondary": "#6E5D4C",
+        "accentWarm": "#E8917A",
+        "accentSunnie": "#F2C86B",
+        "accentCalm": "#A8A0CF",
+        "accentPlant": "#9FBE96",
+        "accentTravel": "#7FA9C9",
+        "success": "#7FA872",
+        "attention": "#C9954E",
+        "error": "#BE6D66"
+      },
+      "highContrastPalette": null,
+      "phaseVariants": [
+        {
+          "phase": "morning",
+          "canvas": "#F7FAFE",
+          "surface": "#FFFFFF"
+        },
+        {
+          "phase": "afternoon",
+          "canvas": "#FBEEDC",
+          "surface": "#FFF7EA"
+        },
+        {
+          "phase": "evening",
+          "canvas": "#22304A",
+          "surface": "#2E3E5C",
+          "textPrimary": "#F2EDE2",
+          "textSecondary": "#C3BCAE"
+        },
+        {
+          "phase": "night",
+          "canvas": "#1A2438",
+          "surface": "#243049",
+          "textPrimary": "#EEE8DD",
+          "textSecondary": "#B5AEA1"
+        },
+        {
+          "phase": "lateNight",
+          "canvas": "#131A29",
+          "surface": "#1D2639",
+          "textPrimary": "#E6E0D6",
+          "textSecondary": "#A49D91"
+        }
+      ]
+    },
+    {
+      "id": "sunnie.theme.dayCycle",
+      "version": 1,
+      "displayNameKey": "theme.dayCycle",
+      "cardCornerRadius": 28,
+      "isUnlockedByDefault": true,
+      "minimumAppVersion": "0.1.0",
+      "basePalette": {
+        "canvas": "#FFF6E6",
+        "surface": "#FFEFD8",
+        "surfaceRaised": "#FFFDF7",
+        "textPrimary": "#4A3626",
+        "textSecondary": "#79624D",
+        "accentWarm": "#F3A58D",
+        "accentSunnie": "#F6D47D",
+        "accentCalm": "#B9A6E1",
+        "accentPlant": "#A9C5A0",
+        "accentTravel": "#A8CBE4",
+        "success": "#91B982",
+        "attention": "#D7A65A",
+        "error": "#C97972"
+      },
+      "highContrastPalette": null,
+      "phaseVariants": [
+        {
+          "phase": "morning",
+          "canvas": "#FFF9EC",
+          "surface": "#FFF2DE",
+          "sunnieOutfitID": "sunnie.outfit.cozyPajamas"
+        },
+        {
+          "phase": "day",
+          "canvas": "#FFF6E6",
+          "surface": "#FFEFD8",
+          "sunnieOutfitID": "sunnie.outfit.cozySweater"
+        },
+        {
+          "phase": "afternoon",
+          "canvas": "#FFEFD5",
+          "surface": "#FCE4C4",
+          "sunnieOutfitID": "sunnie.outfit.cozySweater"
+        },
+        {
+          "phase": "evening",
+          "canvas": "#3A3048",
+          "surface": "#473B58",
+          "textPrimary": "#F6EFE6",
+          "textSecondary": "#CDBFB2",
+          "sunnieOutfitID": "sunnie.outfit.cozyPajamas"
+        },
+        {
+          "phase": "night",
+          "canvas": "#282137",
+          "surface": "#342B45",
+          "textPrimary": "#F1E9E0",
+          "textSecondary": "#BEB2A6",
+          "sunnieOutfitID": "sunnie.outfit.cozyPajamas"
+        },
+        {
+          "phase": "lateNight",
+          "canvas": "#1C1728",
+          "surface": "#261F35",
+          "textPrimary": "#E9E1D8",
+          "textSecondary": "#AAA096",
+          "sunnieOutfitID": "sunnie.outfit.nightcap"
+        }
+      ]
+    }
+  ]
+}

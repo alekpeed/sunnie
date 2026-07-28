@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+		ENTITLEMENT PLACEHOLDERS — NOT ACTIVE.
+
+		This file is deliberately NOT referenced by CODE_SIGN_ENTITLEMENTS in
+		Config/App-iOS.xcconfig. Entitlements require a real Apple Developer
+		team and matching provisioning, so wiring them in by default would make
+		a fresh clone fail to build for anyone who has not configured signing.
+
+		To turn them on:
+		  1. Set SUNNIE_DEVELOPMENT_TEAM in Config/Shared.xcconfig.
+		  2. Replace the container identifier below with your own.
+		  3. Uncomment CODE_SIGN_ENTITLEMENTS in Config/App-iOS.xcconfig.
+		  4. Pass `cloudKit: true` to ModelContainerFactory.make.
+
+		Until then the app runs local-only, which is the documented default
+		behaviour anyway: writes go to local storage first and synchronise
+		later (TECHNICAL_ARCHITECTURE.md §12).
+	-->
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.sunniedays.app</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
+	<string>$(TeamIdentifierPrefix)$(CFBundleIdentifier)</string>
+
+	<!-- Added in Phase 9, when Health reads and writes are implemented. -->
+	<key>com.apple.developer.healthkit</key>
+	<false/>
+</dict>
+</plist>

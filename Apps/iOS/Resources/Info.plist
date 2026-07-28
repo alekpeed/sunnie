@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Sunnie Days</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+
+	<!-- Deep links resolve through DeepLinkParser into typed AppRoutes. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>sunniedays</string>
+			</array>
+		</dict>
+	</array>
+
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>AccentColor</string>
+	</dict>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+	</dict>
+
+	<!--
+		Usage descriptions.
+
+		These are written in Sunnie's voice but never use the nickname — a
+		permission prompt is an ineligible context (TONE_COPY_AND_BEHAVIOR.md).
+		Each says what the app does with the data and implies that declining is
+		fine, because it genuinely is: none of these is required to use the app.
+
+		Only the permissions the current build can actually request are listed.
+		HealthKit, calendar, and location descriptions are added in the phase
+		that introduces them, so the App Store never sees a declared purpose the
+		app does not use.
+	-->
+	<key>NSCameraUsageDescription</key>
+	<string>Sunnie can add photos of your plants to their growth history. Photos stay on your devices.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Sunnie can add photos from your library to a plant, trip, or journal entry. They stay on your devices.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Sunnie can record a short voice note for your journal. Recordings stay on your devices.</string>
+</dict>
+</plist>

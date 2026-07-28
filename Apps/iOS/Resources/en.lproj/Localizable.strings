@@ -1,0 +1,121 @@
+/*
+  Localizable.strings — Sunnie Days (English)
+
+  Every string here is checked against the tone rules in
+  Documentation/01_Product/TONE_COPY_AND_BEHAVIOR.md by
+  `CopyToneTests`, which fails the build on shaming, guilt, or
+  fake-urgency language.
+
+  Two vocabulary rules to keep when editing:
+  - A task past its date is "waiting", never "overdue" or "late".
+  - Care is something a plant "may be ready" for, never something the
+    user "must" do.
+*/
+
+"app.name" = "Sunnie Days";
+
+/* Tabs */
+"tab.today" = "Today";
+"tab.jungle" = "Jungle";
+"tab.travel" = "Travel";
+"tab.wellness" = "Wellness";
+"tab.more" = "More";
+
+/* The only three branded day-cycle names (ADR-008). */
+"dayCycle.sunnieDays" = "Sunnie Days";
+"dayCycle.sunnieAfternoonies" = "Sunnie Afternoonies";
+"dayCycle.sunnieNights" = "Sunnie Nights";
+
+/* Internal time phases, shown only in the preview and settings pickers. */
+"timePhase.morning" = "Morning";
+"timePhase.day" = "Day";
+"timePhase.afternoon" = "Afternoon";
+"timePhase.evening" = "Evening";
+"timePhase.night" = "Night";
+"timePhase.lateNight" = "Late night";
+
+/* Themes */
+"theme.lushTropicalJungle" = "Lush Tropical Jungle";
+"theme.travelScrapbook" = "Travel Scrapbook";
+"theme.dayCycle" = "Day Cycle";
+
+/* Common */
+"common.comingSoon" = "Coming soon";
+"common.tryAgain" = "Try again";
+"common.cancel" = "Cancel";
+
+/* Today */
+"today.presentation.accessibility %@" = "Current presentation: %@";
+"today.plants.allCaredFor" = "Nothing is waiting. Your jungle is looking cared for.";
+"today.plants.openHint" = "Opens this plant";
+"today.plants.completeAction %@ %@" = "%1$@ for %2$@";
+
+"today.card.travel.title" = "Travel";
+"today.card.travel.subtitle" = "Trips, packing, and time zones.";
+"today.card.wellness.title" = "Wellness";
+"today.card.wellness.subtitle" = "Check-ins, breathing, and calm sounds.";
+"today.card.meals.title" = "Meals";
+"today.card.meals.subtitle" = "Planning and prep, always egg-free.";
+"today.card.puzzle.title" = "Daily puzzle";
+"today.card.puzzle.subtitle" = "A small, unhurried game.";
+"today.card.progression.title" = "Collections";
+"today.card.progression.subtitle" = "What you've gathered so far.";
+
+/* Jungle */
+"jungle.title" = "Jungle";
+"jungle.title.due" = "Waiting for you";
+"plant.title" = "Plant";
+"plant.schedules.none" = "No rhythm set yet. You can still log care whenever you like.";
+"plant.history.none" = "Nothing recorded yet.";
+"plant.schedule.everyDays %lld" = "About every %lld days";
+
+/* Quick care */
+"quickCare.title" = "Log care";
+"quickCare.when.footer" = "If you did this earlier, you can change the time.";
+
+/* More */
+"more.meals" = "Meals";
+"more.games" = "Games";
+"more.journal" = "Journal";
+"more.collections" = "Collections";
+"more.sunnieHome" = "Sunnie's Home";
+"more.themes" = "Themes";
+"more.settings" = "Settings";
+
+/* Not-yet-built features. Stated plainly, without hype. */
+"placeholder.travel.title" = "Travel";
+"placeholder.travel.message" = "Trips, packing lists, time zones, and travel memories are on the way.";
+"placeholder.wellness.title" = "Wellness";
+"placeholder.wellness.message" = "Check-ins, gratitude, breathing, and calm sounds are on the way.";
+"placeholder.meals.title" = "Meals";
+"placeholder.meals.message" = "Meal planning, recipes, and prep are on the way. Everything will be egg-free.";
+"placeholder.games.title" = "Games";
+"placeholder.games.message" = "A daily puzzle and a small library of games are on the way.";
+"placeholder.journal.title" = "Journal";
+"placeholder.journal.message" = "Entries, drafts, and your memory archive are on the way.";
+"placeholder.collections.title" = "Collections";
+"placeholder.collections.message" = "Outfits, decor, postcards, and souvenirs are on the way.";
+"placeholder.sunnieHome.title" = "Sunnie's Home";
+"placeholder.sunnieHome.message" = "Sunnie's room, and everything you'll be able to put in it, is on the way.";
+
+/* Themes screen */
+"themes.preview.now" = "Right now";
+"themes.preview.paletteAccessibility" = "Colour preview for the selected time of day";
+
+/* Settings */
+"settings.section.dayCycle" = "Time of day";
+"settings.dayCycle.footer" = "The look of the app follows the time of day. You can hold it at one setting if you'd rather.";
+"settings.section.sound" = "Sound and feel";
+"settings.sound.footer" = "Quiet hours keep sound and reminders to yourself overnight.";
+"settings.section.accessibility" = "Accessibility";
+"settings.accessibility.footer" = "These work alongside your device settings, and either one is enough to take effect.";
+"settings.section.reminders" = "Reminders";
+"settings.reminders.footer" = "Reminders are entirely optional. Everything works without them, and they'll never nag.";
+"settings.notifications.status" = "Permission";
+"settings.notifications.notDetermined" = "Not asked yet";
+"settings.notifications.authorized" = "On";
+"settings.notifications.provisional" = "Quiet delivery";
+"settings.notifications.denied" = "Off";
+"settings.section.privacy" = "Your information";
+"settings.privacy.body" = "Everything you record stays on your devices and in your private iCloud. Nothing is shared with anyone, and there is no advertising or tracking.";
+"settings.storage.ephemeral" = "I can't reach your saved information right now, so nothing you add is being kept. Restarting the app usually sorts it out.";

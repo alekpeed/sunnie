@@ -1,0 +1,76 @@
+# Sunnie Days — Document Index
+
+## Root documents
+
+- `README_FIRST.md` — Package overview and reading order
+- `CLAUDE.md` — Binding operating rules for Claude Code
+- `MASTER_SOURCE_OF_TRUTH.md` — Locked facts and precedence
+- `DOCUMENT_INDEX.md` — This index
+- `START_HERE_PROMPT.md` — Initial prompt to give Claude Code
+- `REQUIREMENTS_TRACEABILITY.md` — Stable requirement IDs
+- `CHANGELOG.md` — Package revision history
+
+## 01_Product
+
+- `PRODUCT_VISION_AND_GOALS.md`
+- `FINAL_FEATURE_CATALOG.md`
+- `RELEASE_SCOPE_AND_NON_GOALS.md`
+- `PERSONA_AND_USE_CONTEXT.md`
+- `TONE_COPY_AND_BEHAVIOR.md`
+- `GLOSSARY.md`
+
+## 02_Character_and_Design
+
+- `SUNNIE_CHARACTER_BIBLE.md`
+- `VISUAL_DESIGN_SYSTEM.md`
+- `THEMES_AND_TIME_OF_DAY.md`
+- `ASSET_MANIFEST_AND_PIPELINE.md`
+- `FUTURE_ANIMATION_VOICE_AND_3D.md`
+
+## 03_UX
+
+- `INFORMATION_ARCHITECTURE.md`
+- `USER_FLOWS.md`
+- `SCREEN_SPECIFICATIONS.md`
+- `ONBOARDING_SETTINGS_AND_PERMISSIONS.md`
+- `NOTIFICATIONS_AND_REMINDERS.md`
+
+## 04_Features
+
+- `HOME_AND_COMPANION.md`
+- `PLANT_CARE.md`
+- `TRAVEL_AND_FLIGHT_ATTENDANT.md`
+- `WELLNESS_JOURNAL_AND_CALM.md`
+- `MEALS_AND_PREP.md`
+- `GAMES_AND_FUTURE_MULTIPLAYER.md`
+- `PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md`
+- `AUDIO_MIDI_AND_SOUNDSCAPES.md`
+- `HEALTH_WATCH_WIDGETS_AND_INTENTS.md`
+
+## 05_Technical
+
+- `TECHNICAL_ARCHITECTURE.md`
+- `PROJECT_STRUCTURE_AND_CODING_STANDARDS.md`
+- `DATA_MODEL.md`
+- `PERSISTENCE_CLOUDKIT_OFFLINE_AND_SYNC.md`
+- `CONTENT_PACK_AND_EXPANSION_ARCHITECTURE.md`
+- `INTEGRATIONS.md`
+- `PRIVACY_SECURITY_AND_DATA_LIFECYCLE.md`
+- `ERROR_HANDLING_LOGGING_AND_PERFORMANCE.md`
+
+## 06_Delivery
+
+- `IMPLEMENTATION_ROADMAP.md`
+- `FIRST_VERTICAL_SLICE.md`
+- `TASK_BACKLOG.md`
+- `TESTING_AND_QUALITY_STRATEGY.md`
+- `ACCEPTANCE_CRITERIA.md`
+- `BUILD_RELEASE_AND_MIGRATION_CHECKLIST.md`
+- `ARCHITECTURE_DECISIONS.md`
+- `OFFICIAL_APPLE_REFERENCES.md`
+
+## Reference_Images
+
+- `Canonical/` — Source-of-truth Sunnie references
+- `Context/` — Environment and costume references only
+- `README.md` — Reference-image rules

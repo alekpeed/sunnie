@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pin the toolchain rather than trusting whatever the runner defaults to
+  # (PROJECT_STRUCTURE_AND_CODING_STANDARDS.md §11).
+  DEVELOPER_DIR: /Applications/Xcode_16.app/Contents/Developer
+
+jobs:
+  shared-package:
+    name: Shared package tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      # The shared package is platform-neutral and has no UI, so it tests fastest
+      # and fails first when a domain rule breaks.
+      - name: Test SunnieShared
+        working-directory: Packages/SunnieShared
+        run: swift test
+
+  content:
+    name: Content validation
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shipped content packs
+        run: ./Scripts/validate-content.sh
+
+  build-and-test:
+    name: Build and test
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      # Destinations are discovered rather than hardcoded, so CI does not break
+      # when the runner image changes its simulator lineup.
+      - name: Discover an iPhone simulator
+        id: destination
+        run: |
+          set -euo pipefail
+          UDID=$(xcrun simctl list devices available --json \
+            | python3 -c "
+          import json,sys
+          data = json.load(sys.stdin)['devices']
+          for runtime, devices in sorted(data.items(), reverse=True):
+              if 'iOS' not in runtime:
+                  continue
+              for device in devices:
+                  if device.get('isAvailable') and 'iPhone' in device['name']:
+                      print(device['udid'])
+                      raise SystemExit
+          raise SystemExit('No available iPhone simulator found')
+          ")
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "Using simulator $UDID"
+
+      - name: Build the Watch app
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project SunnieDays.xcodeproj \
+            -scheme SunnieDaysWatch \
+            -destination 'generic/platform=watchOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify --renderer github-actions
+
+      - name: Build and test the iPhone app
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project SunnieDays.xcodeproj \
+            -scheme SunnieDays \
+            -destination "id=${{ steps.destination.outputs.udid }}" \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify --renderer github-actions
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: TestResults.xcresult
+          if-no-files-found: ignore

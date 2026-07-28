@@ -1,0 +1,281 @@
+{
+  "manifest": {
+    "packID": "sunnie.pack.core",
+    "version": 1,
+    "schemaVersion": 1,
+    "displayNameKey": "content.pack.core",
+    "minimumAppVersion": "0.1.0"
+  },
+  "messages": [
+    {
+      "id": "sunnie.message.greeting.morning.01",
+      "category": "greeting",
+      "template": "Good morning, {name}. Let's keep today simple.",
+      "localizationKey": "sunnie.message.greeting.morning.01",
+      "expression": "gentleWave",
+      "pose": "waving",
+      "phases": ["morning"]
+    },
+    {
+      "id": "sunnie.message.greeting.morning.02",
+      "category": "greeting",
+      "template": "Morning, {name}. I've been waiting to say hello.",
+      "localizationKey": "sunnie.message.greeting.morning.02",
+      "expression": "happyOpenEyed",
+      "pose": "stretching",
+      "phases": ["morning"]
+    },
+    {
+      "id": "sunnie.message.greeting.day.01",
+      "category": "greeting",
+      "template": "Hello, {name}. Here's what's around today.",
+      "localizationKey": "sunnie.message.greeting.day.01",
+      "expression": "happyOpenEyed",
+      "pose": "standingNeutral",
+      "phases": ["day"]
+    },
+    {
+      "id": "sunnie.message.greeting.afternoon.01",
+      "category": "greeting",
+      "template": "Afternoon, {name}. There's still plenty of day left.",
+      "localizationKey": "sunnie.message.greeting.afternoon.01",
+      "expression": "happyClosedEyed",
+      "pose": "holdingMug",
+      "phases": ["afternoon"]
+    },
+    {
+      "id": "sunnie.message.greeting.evening.01",
+      "category": "greeting",
+      "template": "Evening, {name}. We can wind down whenever you'd like.",
+      "localizationKey": "sunnie.message.greeting.evening.01",
+      "expression": "calmBreathing",
+      "pose": "sittingNeutral",
+      "phases": ["evening"]
+    },
+    {
+      "id": "sunnie.message.greeting.night.01",
+      "category": "greeting",
+      "template": "It's getting late, {name}. I'll keep things quiet.",
+      "localizationKey": "sunnie.message.greeting.night.01",
+      "expression": "sleepyHalfLidded",
+      "pose": "huggingPillow",
+      "phases": ["night"]
+    },
+    {
+      "id": "sunnie.message.greeting.lateNight.01",
+      "category": "greeting",
+      "template": "Still up? I'm here, {name}, and everything can wait.",
+      "localizationKey": "sunnie.message.greeting.lateNight.01",
+      "expression": "sleeping",
+      "pose": "sleepingCurled",
+      "phases": ["lateNight"]
+    },
+    {
+      "id": "sunnie.message.careCompleted.01",
+      "category": "careCompleted",
+      "template": "All done. Your jungle is looking cared for.",
+      "localizationKey": "sunnie.message.careCompleted.01",
+      "expression": "caringForPlant",
+      "pose": "holdingWateringCan",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.careCompleted.02",
+      "category": "careCompleted",
+      "template": "That was a good step, {name}.",
+      "localizationKey": "sunnie.message.careCompleted.02",
+      "expression": "celebratingQuietly",
+      "pose": "standingNeutral",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.careCompleted.03",
+      "category": "careCompleted",
+      "template": "Lovely. I've written that down.",
+      "localizationKey": "sunnie.message.careCompleted.03",
+      "expression": "proud",
+      "pose": "holdingWateringCan",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.careCompleted.04",
+      "category": "careCompleted",
+      "template": "One little thing at a time. That one's finished.",
+      "localizationKey": "sunnie.message.careCompleted.04",
+      "expression": "happyClosedEyed",
+      "pose": "sittingNeutral",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.careCompleted.night.01",
+      "category": "careCompleted",
+      "template": "Done, and quietly too. Sleep well when you're ready.",
+      "localizationKey": "sunnie.message.careCompleted.night.01",
+      "expression": "sleepyHalfLidded",
+      "pose": "holdingWateringCan",
+      "phases": ["night", "lateNight"]
+    },
+    {
+      "id": "sunnie.message.celebration.01",
+      "category": "celebration",
+      "template": "Look at that, {name}. Something new to enjoy.",
+      "localizationKey": "sunnie.message.celebration.01",
+      "expression": "excitedDiscovery",
+      "pose": "standingNeutral",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.celebration.02",
+      "category": "celebration",
+      "template": "A small milestone, and it counts.",
+      "localizationKey": "sunnie.message.celebration.02",
+      "expression": "celebratingQuietly",
+      "pose": "waving",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.casualAffirmation.01",
+      "category": "casualAffirmation",
+      "template": "One little thing at a time.",
+      "localizationKey": "sunnie.message.casualAffirmation.01",
+      "expression": "happyClosedEyed",
+      "pose": "sittingNeutral",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.casualAffirmation.02",
+      "category": "casualAffirmation",
+      "template": "We can keep today simple, {name}.",
+      "localizationKey": "sunnie.message.casualAffirmation.02",
+      "expression": "calmBreathing",
+      "pose": "holdingMug",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.casualAffirmation.03",
+      "category": "casualAffirmation",
+      "template": "You're doing more than you think.",
+      "localizationKey": "sunnie.message.casualAffirmation.03",
+      "expression": "comforting",
+      "pose": "sittingNeutral",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.gentleReminder.01",
+      "category": "gentleReminder",
+      "template": "This is still waiting when you have a moment.",
+      "localizationKey": "sunnie.message.gentleReminder.01",
+      "expression": "curious",
+      "pose": "pointingAtTask",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.gentleReminder.02",
+      "category": "gentleReminder",
+      "template": "No pressure. We can move this to another day.",
+      "localizationKey": "sunnie.message.gentleReminder.02",
+      "expression": "comforting",
+      "pose": "standingNeutral",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.gentleReminder.03",
+      "category": "gentleReminder",
+      "template": "This plant may be ready for a little attention.",
+      "localizationKey": "sunnie.message.gentleReminder.03",
+      "expression": "caringForPlant",
+      "pose": "holdingWateringCan",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.postcard.01",
+      "category": "postcard",
+      "template": "A little note from somewhere lovely, {name}.",
+      "localizationKey": "sunnie.message.postcard.01",
+      "expression": "traveling",
+      "pose": "holdingPassport",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.homeScene.01",
+      "category": "homeScene",
+      "template": "It's cozy in here. Stay as long as you like, {name}.",
+      "localizationKey": "sunnie.message.homeScene.01",
+      "expression": "happyClosedEyed",
+      "pose": "holdingMug",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.homeScene.02",
+      "category": "homeScene",
+      "template": "I tidied a little while you were away.",
+      "localizationKey": "sunnie.message.homeScene.02",
+      "expression": "proud",
+      "pose": "decoratingHome",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.permissionRequest.01",
+      "category": "permissionRequest",
+      "template": "This works better with your permission, and it's completely fine to say no.",
+      "localizationKey": "sunnie.message.permissionRequest.01",
+      "expression": "curious",
+      "pose": "standingNeutral",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.permissionRequest.notifications.01",
+      "category": "permissionRequest",
+      "template": "If you'd like gentle reminders, I'll need permission to send them. The app works without it.",
+      "localizationKey": "sunnie.message.permissionRequest.notifications.01",
+      "expression": "curious",
+      "pose": "pointingAtTask",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.error.01",
+      "category": "error",
+      "template": "That didn't finish. Everything you entered is still saved here.",
+      "localizationKey": "sunnie.message.error.01",
+      "expression": "comforting",
+      "pose": "standingNeutral",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.error.sync.01",
+      "category": "error",
+      "template": "That didn't sync yet. Your entry is saved on this phone, and I'll try again when iCloud is available.",
+      "localizationKey": "sunnie.message.error.sync.01",
+      "expression": "comforting",
+      "pose": "sittingNeutral",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.privacyNotice.01",
+      "category": "privacyNotice",
+      "template": "Your information stays on your devices and in your private iCloud. Nothing is shared with anyone.",
+      "localizationKey": "sunnie.message.privacyNotice.01",
+      "expression": "calmBreathing",
+      "pose": "standingNeutral",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.healthExplanation.01",
+      "category": "healthExplanation",
+      "template": "This shows what you recorded. It isn't medical advice.",
+      "localizationKey": "sunnie.message.healthExplanation.01",
+      "expression": "calmBreathing",
+      "pose": "sittingNeutral",
+      "phases": []
+    },
+    {
+      "id": "sunnie.message.travelDocumentAlert.01",
+      "category": "travelDocumentAlert",
+      "template": "One travel document needs a look before you go.",
+      "localizationKey": "sunnie.message.travelDocumentAlert.01",
+      "expression": "traveling",
+      "pose": "pullingSuitcase",
+      "phases": []
+    }
+  ]
+}

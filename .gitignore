@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcresult
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/*/.build/
+
+# Signing material must never enter the repository.
+*.mobileprovision
+*.p12
+*.cer
+*.certSigningRequest
+
+# Creator source material lives outside the runtime bundle (ADR-006).
+# Track the manifests and READMEs, not the large binaries.
+AssetsSource/**/*.psd
+AssetsSource/**/*.ai
+AssetsSource/**/*.sketch
+AssetsSource/**/*.tiff
+CreatorAudioSource/**/*.mid
+CreatorAudioSource/**/*.midi
+CreatorAudioSource/**/*.logicx
+CreatorAudioSource/**/*.wav
+CreatorAudioSource/**/*.aiff
