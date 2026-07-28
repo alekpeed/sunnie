@@ -74,6 +74,16 @@ public struct SunnieMessageContext: Hashable, Sendable {
     public let displayName: String
     public let nickname: String?
     public let nicknameProbability: Double
+    /// The user has just recorded a harder moment.
+    ///
+    /// A third nickname gate, on top of category and chance. "Noonies" in a
+    /// celebration is warm; the same word answering a low-mood check-in reads as
+    /// trivializing, and the category alone cannot tell the two apart
+    /// (WELLNESS_JOURNAL_AND_CALM.md §3).
+    ///
+    /// This is a tone adjustment and nothing more. The app performs no crisis
+    /// detection and draws no conclusions about anyone's state (§12).
+    public let isSensitiveMoment: Bool
     /// Message IDs shown recently, so the service can avoid immediate repeats.
     public let recentlyShownIDs: [ContentID]
 
@@ -83,6 +93,7 @@ public struct SunnieMessageContext: Hashable, Sendable {
         displayName: String,
         nickname: String?,
         nicknameProbability: Double,
+        isSensitiveMoment: Bool = false,
         recentlyShownIDs: [ContentID] = []
     ) {
         self.category = category
@@ -90,6 +101,7 @@ public struct SunnieMessageContext: Hashable, Sendable {
         self.displayName = displayName
         self.nickname = nickname
         self.nicknameProbability = nicknameProbability
+        self.isSensitiveMoment = isSensitiveMoment
         self.recentlyShownIDs = recentlyShownIDs
     }
 }

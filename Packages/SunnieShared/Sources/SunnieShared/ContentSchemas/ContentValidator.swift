@@ -13,6 +13,9 @@ public struct ContentIssue: Hashable, Sendable, CustomStringConvertible {
         case prohibitedPhrase(contentID: String, phrase: String)
         case prohibitedDayCycleName(contentID: String, name: String)
         case nicknamePlaceholderInIneligibleCategory(contentID: String)
+        case medicalOrOutcomeClaim(contentID: String, phrase: String)
+        case malformedBreathingPattern(contentID: String)
+        case emptyCategory(String)
 
         public var summary: String {
             switch self {
@@ -36,6 +39,12 @@ public struct ContentIssue: Hashable, Sendable, CustomStringConvertible {
                 "\(contentID) uses a forbidden day-cycle name: \"\(name)\""
             case .nicknamePlaceholderInIneligibleCategory(let contentID):
                 "\(contentID) is in a category that may never use the nickname, but contains {name}"
+            case .medicalOrOutcomeClaim(let contentID, let phrase):
+                "\(contentID) makes a medical or outcome claim: \"\(phrase)\""
+            case .malformedBreathingPattern(let contentID):
+                "Breathing pattern \(contentID) has a zero or negative phase, so it would never advance"
+            case .emptyCategory(let description):
+                "No content exists for: \(description)"
             }
         }
     }
@@ -80,6 +89,32 @@ public enum ContentValidator {
     /// trip "bad".
     public static let prohibitedLabels: [String] = [
         "lazy", "careless", "irresponsible", "unhealthy", "sloppy", "pathetic"
+    ]
+
+    /// Claims the app must never make.
+    ///
+    /// Two families, both from WELLNESS_JOURNAL_AND_CALM.md: medical or
+    /// diagnostic statements about the user (§10, §12), and promises about what a
+    /// practice will achieve (§4). The phrases are deliberately assertive
+    /// constructions rather than bare words, so ordinary copy that mentions
+    /// health or treatment honestly — "this isn't medical advice", "pest
+    /// treatment" — passes cleanly.
+    public static let prohibitedClaims: [String] = [
+        "proves you",
+        "you are depressed",
+        "you are anxious",
+        "you have anxiety",
+        "you must be feeling",
+        "is a symptom of",
+        "diagnoses your",
+        "medically proven",
+        "clinically proven",
+        "will cure",
+        "cures your",
+        "guaranteed to",
+        "this will fix",
+        "will make you happy",
+        "will make you calm"
     ]
 
     /// Day-cycle names that do not exist and must never be introduced (ADR-008).
@@ -168,6 +203,85 @@ public enum ContentValidator {
         }
 
         return issues
+    }
+
+    /// Validates the wellness content pack.
+    public static func validate(_ pack: WellnessPack) -> [ContentIssue] {
+        var issues: [ContentIssue] = []
+
+        if pack.manifest.schemaVersion != ContentPackManifest.supportedSchemaVersion {
+            issues.append(.init(kind: .unsupportedSchemaVersion(
+                pack: pack.manifest.packID.rawValue,
+                found: pack.manifest.schemaVersion
+            )))
+        }
+
+        var seen = Set<String>()
+        func checkID(_ id: ContentID) {
+            if !id.isWellFormed {
+                issues.append(.init(kind: .malformedID(id.rawValue)))
+            }
+            if !seen.insert(id.rawValue).inserted {
+                issues.append(.init(kind: .duplicateID(id.rawValue)))
+            }
+        }
+
+        for affirmation in pack.affirmations {
+            checkID(affirmation.id)
+            if affirmation.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                issues.append(.init(kind: .emptyTemplate(affirmation.id.rawValue)))
+            }
+            if affirmation.localizationKey.isEmpty {
+                issues.append(.init(kind: .missingLocalizationKey(affirmation.id.rawValue)))
+            }
+            issues.append(contentsOf: toneIssues(
+                in: affirmation.text, contentID: affirmation.id.rawValue
+            ))
+            issues.append(contentsOf: claimIssues(
+                in: affirmation.text, contentID: affirmation.id.rawValue
+            ))
+        }
+
+        for pattern in pack.breathingPatterns {
+            checkID(pattern.id)
+            if !pattern.isWellFormed {
+                issues.append(.init(kind: .malformedBreathingPattern(contentID: pattern.id.rawValue)))
+            }
+        }
+
+        for meditation in pack.meditations {
+            checkID(meditation.id)
+            if meditation.defaultDuration <= 0 {
+                issues.append(.init(kind: .malformedID(meditation.id.rawValue)))
+            }
+        }
+
+        for sound in pack.calmSounds {
+            checkID(sound.id)
+        }
+
+        // A harder moment filters the library down; if nothing survives, the
+        // affirmation card would be blank exactly when it matters most.
+        if !pack.affirmations.contains(where: \.suitsSensitiveMoments) {
+            issues.append(.init(kind: .emptyCategory("affirmations suitable for a harder moment")))
+        }
+        if pack.breathingPatterns.allSatisfy(\.isAdvanced) {
+            issues.append(.init(kind: .emptyCategory("breathing patterns suitable as a default suggestion")))
+        }
+
+        return issues
+    }
+
+    /// Checks a string for medical, diagnostic, or outcome-promising claims.
+    ///
+    /// Separate from `toneIssues` because the two rules protect different things:
+    /// tone protects the user from being blamed, claims protect them from being
+    /// told something untrue about their own health.
+    public static func claimIssues(in text: String, contentID: String) -> [ContentIssue] {
+        let lowered = text.lowercased()
+        return prohibitedClaims
+            .filter { lowered.contains($0) }
+            .map { ContentIssue(kind: .medicalOrOutcomeClaim(contentID: contentID, phrase: $0)) }
     }
 
     /// Runs the tone rules over an arbitrary user-facing string.

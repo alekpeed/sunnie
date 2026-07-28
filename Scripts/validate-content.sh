@@ -43,6 +43,12 @@ PROHIBITED_PHRASES = [
 ]
 PROHIBITED_LABELS = {"lazy", "careless", "irresponsible", "unhealthy", "sloppy", "pathetic"}
 PROHIBITED_DAY_CYCLE_NAMES = ["sunnie mornings", "sunnie evenings"]
+PROHIBITED_CLAIMS = [
+    "proves you", "you are depressed", "you are anxious", "you have anxiety",
+    "you must be feeling", "is a symptom of", "diagnoses your",
+    "medically proven", "clinically proven", "will cure", "cures your",
+    "guaranteed to", "this will fix", "will make you happy", "will make you calm",
+]
 
 REQUIRED_CATEGORIES = {
     "greeting", "celebration", "casualAffirmation", "postcard", "homeScene",
@@ -53,6 +59,13 @@ NICKNAME_INELIGIBLE = {
     "gentleReminder", "permissionRequest", "error", "privacyNotice",
     "healthExplanation", "travelDocumentAlert",
 }
+
+
+def check_claims(text, content_id):
+    lowered = text.lower()
+    for claim in PROHIBITED_CLAIMS:
+        if claim in lowered:
+            issues.append(f'{content_id}: medical or outcome claim "{claim}"')
 
 
 def check_tone(text, content_id):
@@ -157,6 +170,64 @@ def validate_themes(path):
                     issues.append(f"{theme_id}: unreadable colour {role}={value!r}")
 
 
+def validate_wellness(path):
+    pack = json.loads(path.read_text())
+    check_manifest(pack, path.name)
+
+    seen = set()
+
+    def check_id(content_id, label):
+        if not ID_PATTERN.match(content_id):
+            issues.append(f"{path.name}: malformed {label} ID {content_id!r}")
+        if content_id in seen:
+            issues.append(f"{path.name}: duplicate content ID {content_id}")
+        seen.add(content_id)
+
+    affirmations = pack.get("affirmations", [])
+    for affirmation in affirmations:
+        content_id = affirmation.get("id", "<missing id>")
+        check_id(content_id, "affirmation")
+        for field in ("text", "localizationKey", "tags", "phases", "suitsSensitiveMoments"):
+            if field not in affirmation:
+                issues.append(f"{content_id}: missing required field {field!r}")
+        text = affirmation.get("text", "")
+        if not text.strip():
+            issues.append(f"{content_id}: empty text")
+        check_tone(text, content_id)
+        check_claims(text, content_id)
+
+    # A harder moment filters the library down; if nothing survives, the
+    # affirmation card is blank exactly when it matters most.
+    gentle = [a for a in affirmations if a.get("suitsSensitiveMoments")]
+    if not gentle:
+        issues.append(f"{path.name}: no affirmations suitable for a harder moment")
+
+    patterns = pack.get("breathingPatterns", [])
+    for pattern in patterns:
+        content_id = pattern.get("id", "<missing id>")
+        check_id(content_id, "breathing pattern")
+        inhale = pattern.get("inhaleSeconds", 0)
+        exhale = pattern.get("exhaleSeconds", 0)
+        cycles = pattern.get("defaultCycles", 0)
+        if inhale <= 0 or exhale <= 0 or cycles <= 0:
+            issues.append(f"{content_id}: pattern would never advance")
+        for hold in ("holdAfterInhaleSeconds", "holdAfterExhaleSeconds"):
+            if pattern.get(hold, 0) < 0:
+                issues.append(f"{content_id}: negative {hold}")
+
+    if patterns and all(p.get("isAdvanced") for p in patterns):
+        issues.append(f"{path.name}: no breathing pattern is suitable as a default suggestion")
+
+    for meditation in pack.get("meditations", []):
+        content_id = meditation.get("id", "<missing id>")
+        check_id(content_id, "meditation")
+        if meditation.get("defaultDuration", 0) <= 0:
+            issues.append(f"{content_id}: non-positive default duration")
+
+    for sound in pack.get("calmSounds", []):
+        check_id(sound.get("id", "<missing id>"), "calm sound")
+
+
 found = False
 for path in sorted(content_dir.glob("*.json")):
     found = True
@@ -165,6 +236,8 @@ for path in sorted(content_dir.glob("*.json")):
             validate_messages(path)
         elif "themes" in path.name:
             validate_themes(path)
+        elif "wellness" in path.name:
+            validate_wellness(path)
         else:
             json.loads(path.read_text())
     except json.JSONDecodeError as error:

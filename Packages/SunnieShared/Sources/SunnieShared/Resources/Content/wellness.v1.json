@@ -1,0 +1,267 @@
+{
+  "manifest": {
+    "packID": "sunnie.pack.wellness",
+    "version": 1,
+    "schemaVersion": 1,
+    "displayNameKey": "content.pack.wellness",
+    "minimumAppVersion": "0.1.0"
+  },
+  "affirmations": [
+    {
+      "id": "sunnie.affirmation.gentle.01",
+      "text": "One little thing at a time is enough.",
+      "localizationKey": "sunnie.affirmation.gentle.01",
+      "tags": ["gentle", "selfCompassion"],
+      "phases": [],
+      "suitsSensitiveMoments": true
+    },
+    {
+      "id": "sunnie.affirmation.gentle.02",
+      "text": "You're allowed to take this slowly.",
+      "localizationKey": "sunnie.affirmation.gentle.02",
+      "tags": ["gentle", "selfCompassion"],
+      "phases": [],
+      "suitsSensitiveMoments": true
+    },
+    {
+      "id": "sunnie.affirmation.gentle.03",
+      "text": "Whatever today looks like, it's alright.",
+      "localizationKey": "sunnie.affirmation.gentle.03",
+      "tags": ["gentle", "selfCompassion"],
+      "phases": [],
+      "suitsSensitiveMoments": true
+    },
+    {
+      "id": "sunnie.affirmation.gentle.04",
+      "text": "Resting counts too.",
+      "localizationKey": "sunnie.affirmation.gentle.04",
+      "tags": ["gentle", "rest"],
+      "phases": [],
+      "suitsSensitiveMoments": true
+    },
+    {
+      "id": "sunnie.affirmation.morning.01",
+      "text": "A quiet start is still a start.",
+      "localizationKey": "sunnie.affirmation.morning.01",
+      "tags": ["morning", "gentle"],
+      "phases": ["morning"],
+      "suitsSensitiveMoments": true
+    },
+    {
+      "id": "sunnie.affirmation.morning.02",
+      "text": "There's no right way for a morning to go.",
+      "localizationKey": "sunnie.affirmation.morning.02",
+      "tags": ["morning", "selfCompassion"],
+      "phases": ["morning"],
+      "suitsSensitiveMoments": true
+    },
+    {
+      "id": "sunnie.affirmation.encouragement.01",
+      "text": "You've handled harder days than this one.",
+      "localizationKey": "sunnie.affirmation.encouragement.01",
+      "tags": ["encouragement"],
+      "phases": [],
+      "suitsSensitiveMoments": true
+    },
+    {
+      "id": "sunnie.affirmation.encouragement.02",
+      "text": "Look at everything you've already kept going.",
+      "localizationKey": "sunnie.affirmation.encouragement.02",
+      "tags": ["encouragement"],
+      "phases": ["day", "afternoon"],
+      "suitsSensitiveMoments": false
+    },
+    {
+      "id": "sunnie.affirmation.evening.01",
+      "text": "The day can be finished now, whatever's left in it.",
+      "localizationKey": "sunnie.affirmation.evening.01",
+      "tags": ["evening", "rest"],
+      "phases": ["evening", "night"],
+      "suitsSensitiveMoments": true
+    },
+    {
+      "id": "sunnie.affirmation.evening.02",
+      "text": "Tomorrow gets to be its own thing.",
+      "localizationKey": "sunnie.affirmation.evening.02",
+      "tags": ["evening", "rest"],
+      "phases": ["evening", "night", "lateNight"],
+      "suitsSensitiveMoments": true
+    },
+    {
+      "id": "sunnie.affirmation.travel.01",
+      "text": "Travelling well mostly means being kind to yourself in transit.",
+      "localizationKey": "sunnie.affirmation.travel.01",
+      "tags": ["travel", "selfCompassion"],
+      "phases": [],
+      "suitsSensitiveMoments": true
+    },
+    {
+      "id": "sunnie.affirmation.home.01",
+      "text": "It's good to be back.",
+      "localizationKey": "sunnie.affirmation.home.01",
+      "tags": ["home"],
+      "phases": [],
+      "suitsSensitiveMoments": true
+    },
+    {
+      "id": "sunnie.affirmation.plants.01",
+      "text": "Green things grow slowly, and that's the whole point of them.",
+      "localizationKey": "sunnie.affirmation.plants.01",
+      "tags": ["plants", "gentle"],
+      "phases": [],
+      "suitsSensitiveMoments": true
+    }
+  ],
+  "breathingPatterns": [
+    {
+      "id": "sunnie.breathing.equal",
+      "displayNameKey": "breathing.equal.name",
+      "descriptionKey": "breathing.equal.description",
+      "inhaleSeconds": 4,
+      "holdAfterInhaleSeconds": 0,
+      "exhaleSeconds": 4,
+      "holdAfterExhaleSeconds": 0,
+      "defaultCycles": 10,
+      "isAdvanced": false
+    },
+    {
+      "id": "sunnie.breathing.longerExhale",
+      "displayNameKey": "breathing.longerExhale.name",
+      "descriptionKey": "breathing.longerExhale.description",
+      "inhaleSeconds": 4,
+      "holdAfterInhaleSeconds": 0,
+      "exhaleSeconds": 6,
+      "holdAfterExhaleSeconds": 0,
+      "defaultCycles": 8,
+      "isAdvanced": false
+    },
+    {
+      "id": "sunnie.breathing.box",
+      "displayNameKey": "breathing.box.name",
+      "descriptionKey": "breathing.box.description",
+      "inhaleSeconds": 4,
+      "holdAfterInhaleSeconds": 4,
+      "exhaleSeconds": 4,
+      "holdAfterExhaleSeconds": 4,
+      "defaultCycles": 6,
+      "isAdvanced": true
+    }
+  ],
+  "meditations": [
+    {
+      "id": "sunnie.meditation.silent",
+      "displayNameKey": "meditation.silent.name",
+      "type": "meditation",
+      "defaultDuration": 300,
+      "availableDurations": [60, 180, 300, 600, 900],
+      "guidanceKeys": [],
+      "startCueID": "sunnie.audio.cue.chimeStart",
+      "endCueID": "sunnie.audio.cue.chimeEnd",
+      "ambienceCueID": null
+    },
+    {
+      "id": "sunnie.meditation.grounding",
+      "displayNameKey": "meditation.grounding.name",
+      "type": "grounding",
+      "defaultDuration": 180,
+      "availableDurations": [120, 180, 300],
+      "guidanceKeys": [
+        "meditation.grounding.step.1",
+        "meditation.grounding.step.2",
+        "meditation.grounding.step.3",
+        "meditation.grounding.step.4"
+      ],
+      "startCueID": "sunnie.audio.cue.chimeStart",
+      "endCueID": "sunnie.audio.cue.chimeEnd",
+      "ambienceCueID": null
+    },
+    {
+      "id": "sunnie.meditation.sleepWindDown",
+      "displayNameKey": "meditation.sleepWindDown.name",
+      "type": "sleepWindDown",
+      "defaultDuration": 600,
+      "availableDurations": [300, 600, 900, 1200],
+      "guidanceKeys": [
+        "meditation.sleepWindDown.step.1",
+        "meditation.sleepWindDown.step.2",
+        "meditation.sleepWindDown.step.3"
+      ],
+      "startCueID": null,
+      "endCueID": null,
+      "ambienceCueID": "sunnie.audio.ambience.night"
+    },
+    {
+      "id": "sunnie.meditation.travelReset",
+      "displayNameKey": "meditation.travelReset.name",
+      "type": "travelReset",
+      "defaultDuration": 180,
+      "availableDurations": [120, 180, 300],
+      "guidanceKeys": [
+        "meditation.travelReset.step.1",
+        "meditation.travelReset.step.2",
+        "meditation.travelReset.step.3"
+      ],
+      "startCueID": "sunnie.audio.cue.chimeStart",
+      "endCueID": "sunnie.audio.cue.chimeEnd",
+      "ambienceCueID": null
+    }
+  ],
+  "calmSounds": [
+    {
+      "id": "sunnie.calm.rain.soft",
+      "displayNameKey": "calm.rain.soft",
+      "category": "rain",
+      "audioCueID": "sunnie.audio.ambience.rainSoft",
+      "isMixable": true
+    },
+    {
+      "id": "sunnie.calm.rain.window",
+      "displayNameKey": "calm.rain.window",
+      "category": "rain",
+      "audioCueID": "sunnie.audio.ambience.rainWindow",
+      "isMixable": true
+    },
+    {
+      "id": "sunnie.calm.jungle.day",
+      "displayNameKey": "calm.jungle.day",
+      "category": "jungle",
+      "audioCueID": "sunnie.audio.ambience.jungleDay",
+      "isMixable": true
+    },
+    {
+      "id": "sunnie.calm.jungle.night",
+      "displayNameKey": "calm.jungle.night",
+      "category": "jungle",
+      "audioCueID": "sunnie.audio.ambience.jungleNight",
+      "isMixable": true
+    },
+    {
+      "id": "sunnie.calm.ocean.waves",
+      "displayNameKey": "calm.ocean.waves",
+      "category": "ocean",
+      "audioCueID": "sunnie.audio.ambience.oceanWaves",
+      "isMixable": true
+    },
+    {
+      "id": "sunnie.calm.cafe.quiet",
+      "displayNameKey": "calm.cafe.quiet",
+      "category": "cafe",
+      "audioCueID": "sunnie.audio.ambience.cafeQuiet",
+      "isMixable": true
+    },
+    {
+      "id": "sunnie.calm.night.crickets",
+      "displayNameKey": "calm.night.crickets",
+      "category": "night",
+      "audioCueID": "sunnie.audio.ambience.nightCrickets",
+      "isMixable": true
+    },
+    {
+      "id": "sunnie.calm.roomTone.warm",
+      "displayNameKey": "calm.roomTone.warm",
+      "category": "roomTone",
+      "audioCueID": "sunnie.audio.ambience.roomToneWarm",
+      "isMixable": true
+    }
+  ]
+}

@@ -30,6 +30,7 @@ public struct SunnieMessageService: SunnieMessageProviding {
             category: context.category,
             nickname: context.nickname,
             probability: context.nicknameProbability,
+            isSensitiveMoment: context.isSensitiveMoment,
             random: random
         )
 

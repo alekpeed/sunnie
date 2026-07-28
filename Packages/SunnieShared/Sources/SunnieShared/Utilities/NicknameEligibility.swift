@@ -2,10 +2,18 @@ import Foundation
 
 /// The single place that decides whether a Sunnie message uses "Noonies".
 ///
-/// Two independent gates must both pass. The category gate is absolute — a
-/// permission request or a travel document alert can never carry the nickname no
-/// matter what the dice say. The probability gate then makes it an occasional
-/// warmth rather than a verbal tic (roughly 1 in 20 eligible messages).
+/// Three independent gates must all pass.
+///
+/// The **category** gate is absolute: a permission request or a travel document
+/// alert can never carry the nickname, no matter what the dice say.
+///
+/// The **sensitivity** gate is also absolute, and catches what the category
+/// cannot. A celebration is nickname-eligible in general, but the same warm word
+/// answering a low-mood check-in reads as trivializing, so a sensitive moment
+/// suppresses it regardless of category.
+///
+/// The **probability** gate then makes it an occasional warmth rather than a
+/// verbal tic — roughly 1 in 20 otherwise-eligible messages.
 public enum NicknameEligibility {
 
     public static let defaultProbability = 0.05
@@ -13,11 +21,13 @@ public enum NicknameEligibility {
     /// Whether this moment is *allowed* to use the nickname, before chance.
     public static func isEligible(
         category: SunnieMessageCategory,
-        nickname: String?
+        nickname: String?,
+        isSensitiveMoment: Bool = false
     ) -> Bool {
         guard let nickname, !nickname.trimmingCharacters(in: .whitespaces).isEmpty else {
             return false
         }
+        guard !isSensitiveMoment else { return false }
         return category.isNicknameEligible
     }
 
@@ -28,9 +38,14 @@ public enum NicknameEligibility {
         category: SunnieMessageCategory,
         nickname: String?,
         probability: Double,
+        isSensitiveMoment: Bool = false,
         random: some RandomSource
     ) -> Bool {
-        guard isEligible(category: category, nickname: nickname) else { return false }
+        guard isEligible(
+            category: category,
+            nickname: nickname,
+            isSensitiveMoment: isSensitiveMoment
+        ) else { return false }
         let clamped = min(max(probability, 0), 1)
         if clamped <= 0 { return false }
         if clamped >= 1 { return true }

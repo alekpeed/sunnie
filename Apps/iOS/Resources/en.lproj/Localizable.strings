@@ -119,3 +119,77 @@
 "settings.section.privacy" = "Your information";
 "settings.privacy.body" = "Everything you record stays on your devices and in your private iCloud. Nothing is shared with anyone, and there is no advertising or tracking.";
 "settings.storage.ephemeral" = "I can't reach your saved information right now, so nothing you add is being kept. Restarting the app usually sorts it out.";
+
+/* ─────────────────────────────────────────────────────────────────────
+   Phase 3 groundwork — wellness.
+
+   Scale labels are descriptive, never diagnostic, and readable without
+   any accompanying image (WELLNESS_JOURNAL_AND_CALM.md §2). Each
+   dimension gets its own words: "low" means something different for
+   energy than it does for stress.
+   ───────────────────────────────────────────────────────────────────── */
+
+"content.pack.wellness" = "Wellness";
+
+"wellness.dimension.mood" = "Mood";
+"wellness.dimension.energy" = "Energy";
+"wellness.dimension.stress" = "Tension";
+"wellness.dimension.sleepQuality" = "Sleep";
+
+"wellness.scale.mood.1" = "Heavy";
+"wellness.scale.mood.2" = "Low";
+"wellness.scale.mood.3" = "Even";
+"wellness.scale.mood.4" = "Good";
+"wellness.scale.mood.5" = "Bright";
+
+"wellness.scale.energy.1" = "Empty";
+"wellness.scale.energy.2" = "Low";
+"wellness.scale.energy.3" = "Steady";
+"wellness.scale.energy.4" = "Good";
+"wellness.scale.energy.5" = "Full";
+
+"wellness.scale.stress.1" = "Calm";
+"wellness.scale.stress.2" = "Settled";
+"wellness.scale.stress.3" = "Some tension";
+"wellness.scale.stress.4" = "Tense";
+"wellness.scale.stress.5" = "Very tense";
+
+"wellness.scale.sleepQuality.1" = "Restless";
+"wellness.scale.sleepQuality.2" = "Broken";
+"wellness.scale.sleepQuality.3" = "Okay";
+"wellness.scale.sleepQuality.4" = "Good";
+"wellness.scale.sleepQuality.5" = "Deep";
+
+/* Breathing. Described as what happens, with no claim about what it does. */
+"breathing.equal.name" = "Equal breathing";
+"breathing.equal.description" = "Breathe in for four, out for four.";
+"breathing.longerExhale.name" = "Longer out-breath";
+"breathing.longerExhale.description" = "Breathe in for four, out for six.";
+"breathing.box.name" = "Box breathing";
+"breathing.box.description" = "Four counts in, hold, four out, hold. This one asks a bit more, and it's entirely optional.";
+
+/* Meditation. */
+"meditation.silent.name" = "Quiet sitting";
+"meditation.grounding.name" = "Grounding";
+"meditation.grounding.step.1" = "Notice five things you can see.";
+"meditation.grounding.step.2" = "Notice four things you can touch.";
+"meditation.grounding.step.3" = "Notice three things you can hear.";
+"meditation.grounding.step.4" = "Take one slow breath, and stop whenever you like.";
+"meditation.sleepWindDown.name" = "Wind down";
+"meditation.sleepWindDown.step.1" = "Let your shoulders drop.";
+"meditation.sleepWindDown.step.2" = "The day is finished now, whatever's left in it.";
+"meditation.sleepWindDown.step.3" = "Stay as long as you'd like. I'll keep it quiet.";
+"meditation.travelReset.name" = "Travel reset";
+"meditation.travelReset.step.1" = "You've arrived. That part's done.";
+"meditation.travelReset.step.2" = "Feel your feet on the floor.";
+"meditation.travelReset.step.3" = "Whatever time it is here, this moment is fine.";
+
+/* Calm sounds. */
+"calm.rain.soft" = "Soft rain";
+"calm.rain.window" = "Rain on a window";
+"calm.jungle.day" = "Jungle, daytime";
+"calm.jungle.night" = "Jungle, night";
+"calm.ocean.waves" = "Ocean waves";
+"calm.cafe.quiet" = "Quiet café";
+"calm.night.crickets" = "Crickets";
+"calm.roomTone.warm" = "Warm room";

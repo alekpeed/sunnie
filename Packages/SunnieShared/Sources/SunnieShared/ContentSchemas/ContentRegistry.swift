@@ -10,10 +10,16 @@ public final class ContentRegistry: Sendable {
 
     public let messagePack: SunnieMessagePack
     public let themePack: ThemePack
+    public let wellnessPack: WellnessPack
 
-    public init(messagePack: SunnieMessagePack, themePack: ThemePack) {
+    public init(
+        messagePack: SunnieMessagePack,
+        themePack: ThemePack,
+        wellnessPack: WellnessPack = FallbackContent.wellnessPack
+    ) {
         self.messagePack = messagePack
         self.themePack = themePack
+        self.wellnessPack = wellnessPack
     }
 
     /// Loads the packs that ship inside the shared package.
@@ -21,6 +27,7 @@ public final class ContentRegistry: Sendable {
         let log = SunnieLog(category: .content)
         let messages = decode(SunnieMessagePack.self, resource: "sunnie.messages.v1")
         let themes = decode(ThemePack.self, resource: "themes.v1")
+        let wellness = decode(WellnessPack.self, resource: "wellness.v1")
 
         if messages == nil {
             log.error("Built-in message pack failed to decode; using fallback content.")
@@ -28,10 +35,14 @@ public final class ContentRegistry: Sendable {
         if themes == nil {
             log.error("Built-in theme pack failed to decode; using fallback content.")
         }
+        if wellness == nil {
+            log.error("Built-in wellness pack failed to decode; using fallback content.")
+        }
 
         return ContentRegistry(
             messagePack: messages ?? FallbackContent.messagePack,
-            themePack: themes ?? FallbackContent.themePack
+            themePack: themes ?? FallbackContent.themePack,
+            wellnessPack: wellness ?? FallbackContent.wellnessPack
         )
     }
 
@@ -57,7 +68,9 @@ public final class ContentRegistry: Sendable {
     }
 
     public var allIssues: [ContentIssue] {
-        ContentValidator.validate(messagePack) + ContentValidator.validate(themePack)
+        ContentValidator.validate(messagePack)
+            + ContentValidator.validate(themePack)
+            + ContentValidator.validate(wellnessPack)
     }
 }
 
@@ -192,6 +205,52 @@ public enum FallbackContent {
         success: "#91B982",
         attention: "#D7A65A",
         error: "#C97972"
+    )
+
+    /// The smallest wellness set that keeps the affirmation card, the breathing
+    /// player, and the sound library from rendering empty.
+    ///
+    /// Every affirmation here suits a harder moment, because the fallback is what
+    /// ships when something has already gone wrong and the filtered library must
+    /// not come back empty.
+    public static let wellnessPack = WellnessPack(
+        manifest: manifest,
+        affirmations: [
+            .init(
+                id: "sunnie.affirmation.fallback.01",
+                text: "One little thing at a time is enough.",
+                localizationKey: "sunnie.affirmation.fallback.01",
+                tags: [.gentle, .selfCompassion]
+            ),
+            .init(
+                id: "sunnie.affirmation.fallback.02",
+                text: "You're allowed to take this slowly.",
+                localizationKey: "sunnie.affirmation.fallback.02",
+                tags: [.gentle]
+            )
+        ],
+        breathingPatterns: [
+            .init(
+                id: "sunnie.breathing.fallback.equal",
+                displayNameKey: "breathing.equal.name",
+                descriptionKey: "breathing.equal.description",
+                inhaleSeconds: 4,
+                holdAfterInhaleSeconds: 0,
+                exhaleSeconds: 4,
+                holdAfterExhaleSeconds: 0,
+                defaultCycles: 10
+            )
+        ],
+        meditations: [
+            .init(
+                id: "sunnie.meditation.fallback.silent",
+                displayNameKey: "meditation.silent.name",
+                type: .meditation,
+                defaultDuration: 300,
+                availableDurations: [60, 180, 300]
+            )
+        ],
+        calmSounds: []
     )
 
     public static let themePack = ThemePack(

@@ -39,6 +39,25 @@ public enum ActionKeyFactory {
         return ActionKey(rawValue: raw)
     }
 
+    /// Key for a wellness check-in.
+    ///
+    /// Bucketed to the minute like plant care, so a check-in saved on the Watch
+    /// and redelivered resolves to the same entry rather than appearing twice in
+    /// the history. Two genuinely separate check-ins minutes apart are rare, and
+    /// a duplicated entry would be the more confusing outcome.
+    public static func wellnessCheckIn(recordedAt: Date) -> ActionKey {
+        ActionKey(rawValue: "wellnessCheckIn.v1|\(bucketedEpoch(recordedAt))")
+    }
+
+    /// Key for a completed practice session.
+    ///
+    /// Keyed on the session's own identity rather than its timestamp: sessions
+    /// have a real start and end, so the identifier is already unique, and two
+    /// short breathing exercises inside one minute are two real sessions.
+    public static func wellnessSession(sessionID: UUID) -> ActionKey {
+        ActionKey(rawValue: "wellnessSession.v1|\(sessionID.uuidString)")
+    }
+
     /// Progression keys are derived from the care event's own action key, so
     /// evaluating the same event twice cannot award experience twice.
     public static func progression(
