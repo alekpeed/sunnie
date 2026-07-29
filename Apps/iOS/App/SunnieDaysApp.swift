@@ -51,6 +51,7 @@ struct SunnieDaysApp: App {
                     await appState.load()
                     await SampleData.seedIfNeeded(dependencies: dependencies)
                     await dependencies.processPendingWatchActions()
+                    await dependencies.performLaunchHousekeeping()
                 }
                 .onOpenURL { url in
                     router.handle(url: url)
@@ -108,7 +109,7 @@ struct RootTabView: View {
         case .today: TodayScreen()
         case .jungle: JungleScreen()
         case .travel: PlaceholderFeatureScreen(feature: .travel)
-        case .wellness: PlaceholderFeatureScreen(feature: .wellness)
+        case .wellness: WellnessScreen()
         case .more: MoreScreen()
         }
     }
@@ -120,10 +121,10 @@ struct RootTabView: View {
         case .plant(let id): PlantDetailScreen(plantID: id)
         case .themes: ThemesScreen()
         case .settings: SettingsScreen()
-        case .checkIn: PlaceholderFeatureScreen(feature: .wellness)
+        case .checkIn: WellnessScreen()
         case .meals: PlaceholderFeatureScreen(feature: .meals)
         case .games, .game: PlaceholderFeatureScreen(feature: .games)
-        case .journal: PlaceholderFeatureScreen(feature: .journal)
+        case .journal: JournalScreen()
         case .collections: PlaceholderFeatureScreen(feature: .collections)
         case .sunnieHome: PlaceholderFeatureScreen(feature: .sunnieHome)
         case .trip: PlaceholderFeatureScreen(feature: .travel)

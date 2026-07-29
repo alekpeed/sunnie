@@ -24,6 +24,7 @@ struct TodayScreen: View {
                 }
 
                 plantSection
+                wellnessSection
 
                 if let reaction = model?.lastReaction {
                     SunnieCard {
@@ -124,6 +125,64 @@ struct TodayScreen: View {
         }
     }
 
+    /// The wellness slice of Today.
+    ///
+    /// Reads from the summary provider, so Today stays independent of the
+    /// Wellness feature. Phrased as an offer in both states — having checked in
+    /// is stated as fact, not as a reason to be pleased or to do it again.
+    private var wellnessSection: some View {
+        SunnieCard {
+            SectionHeader(
+                title: String(
+                    localized: "today.card.wellness.title",
+                    defaultValue: "Wellness",
+                    comment: "Wellness card on Today"
+                ),
+                subtitle: wellnessSubtitle
+            )
+
+            if let affirmation = model?.affirmation {
+                Text(affirmation.text)
+                    .font(SunnieFont.body)
+                    .foregroundStyle(theme.color.textPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            HStack(spacing: Space.s) {
+                SunnieSecondaryButton(
+                    title: String(
+                        localized: "wellness.checkIn.action",
+                        defaultValue: "Check in",
+                        comment: "Opens the check-in"
+                    ),
+                    systemImage: "heart",
+                    action: { router.handle(.checkIn) }
+                )
+                SunnieSecondaryButton(
+                    title: String(
+                        localized: "today.journal.action",
+                        defaultValue: "Write",
+                        comment: "Opens the journal"
+                    ),
+                    systemImage: "square.and.pencil",
+                    action: { router.handle(.journal) }
+                )
+            }
+        }
+    }
+
+    private var wellnessSubtitle: String? {
+        guard let summary = model?.wellnessSummary else { return nil }
+        if summary.hasCheckedInToday {
+            return String(
+                localized: "today.wellness.checkedIn",
+                defaultValue: "You checked in today.",
+                comment: "Stated as fact, never as praise or a nudge"
+            )
+        }
+        return nil
+    }
+
     /// Structural stand-ins for the cards that arrive in later phases. They are
     /// present so the hierarchy is visible and so no card silently goes missing
     /// when its feature lands.
@@ -150,7 +209,6 @@ struct TodayScreen: View {
 /// Cards whose features are not implemented yet, in the documented Today order.
 private enum UpcomingCard: String, CaseIterable, Identifiable {
     case travel
-    case wellness
     case meals
     case dailyPuzzle
     case progression
@@ -160,7 +218,6 @@ private enum UpcomingCard: String, CaseIterable, Identifiable {
     var titleKey: String.LocalizationValue {
         switch self {
         case .travel: "today.card.travel.title"
-        case .wellness: "today.card.wellness.title"
         case .meals: "today.card.meals.title"
         case .dailyPuzzle: "today.card.puzzle.title"
         case .progression: "today.card.progression.title"
@@ -170,7 +227,6 @@ private enum UpcomingCard: String, CaseIterable, Identifiable {
     var subtitleKey: String.LocalizationValue {
         switch self {
         case .travel: "today.card.travel.subtitle"
-        case .wellness: "today.card.wellness.subtitle"
         case .meals: "today.card.meals.subtitle"
         case .dailyPuzzle: "today.card.puzzle.subtitle"
         case .progression: "today.card.progression.subtitle"

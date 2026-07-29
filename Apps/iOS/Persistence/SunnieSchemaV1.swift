@@ -395,13 +395,33 @@ final class SDPendingWatchAction {
 
 /// Migration plan.
 ///
-/// V1 is the initial schema, so there are no stages yet. The plan exists from day
-/// one because CLAUDE.md treats migrations as required product work — adding V2
-/// means appending a stage here and a migration test, never editing V1 in place.
+/// Migrations are product work, not an afterthought (CLAUDE.md). The rule this
+/// file enforces: a shipped schema version is frozen. Adding to the model set
+/// means a new `VersionedSchema` and a new stage here, never an edit to an
+/// existing one — someone's store on disk is already shaped like the old version.
+///
+/// V1 → V2 is purely additive (wellness, journal, media, reminders), so the stage
+/// is lightweight and SwiftData handles it. A future version that *changes* an
+/// existing model needs a custom stage with an explicit data transform, and V1's
+/// model classes will have to be copied into a frozen namespace at that point.
 enum SunnieMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [SunnieSchemaV1.self]
+        [SunnieSchemaV1.self, SunnieSchemaV2.self]
     }
 
-    static var stages: [MigrationStage] { [] }
+    static var stages: [MigrationStage] {
+        [migrateV1toV2]
+    }
+
+    /// Additive only: every V1 model keeps its exact shape, so no data moves.
+    static let migrateV1toV2 = MigrationStage.lightweight(
+        fromVersion: SunnieSchemaV1.self,
+        toVersion: SunnieSchemaV2.self
+    )
 }
+
+/// The version the app currently opens stores at.
+///
+/// Referenced in one place so bumping the schema is a single edit rather than a
+/// search for every `Schema(versionedSchema:)` call site.
+typealias SunnieCurrentSchema = SunnieSchemaV2

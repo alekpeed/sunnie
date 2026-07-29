@@ -193,3 +193,95 @@
 "calm.cafe.quiet" = "Quiet café";
 "calm.night.crickets" = "Crickets";
 "calm.roomTone.warm" = "Warm room";
+
+/* ─────────────────────────────────────────────────────────────────────
+   Phase 3 — wellness and journal screens.
+
+   Two rules hold throughout. Nothing is ever framed as expected: a
+   check-in already made is stated as fact, never praised, and one not
+   made is never mentioned. And stopping a practice early reads exactly
+   as neutrally as finishing it.
+   ───────────────────────────────────────────────────────────────────── */
+
+"common.dismiss" = "Thanks";
+"common.delete" = "Delete";
+
+/* Check-in */
+"wellness.checkIn.title" = "How are you right now?";
+"wellness.checkIn.title.short" = "Check in";
+"wellness.checkIn.action" = "Check in";
+"wellness.checkIn.optional" = "Only if you feel like it.";
+"wellness.checkIn.already" = "You've checked in today. You can add another whenever you like.";
+"wellness.checkIn.note" = "Anything you want to note? (optional)";
+"wellness.checkIn.footer" = "Every part of this is optional, and nothing is shared with anyone.";
+"wellness.checkIn.save" = "Save";
+"wellness.scale.unanswered" = "Rather not say";
+
+/* Affirmations */
+"wellness.affirmation.another" = "Another";
+"wellness.affirmation.none" = "Nothing to show here right now.";
+
+/* Suggestions — offered once, never repeated, always dismissible. */
+"wellness.suggestion.breathing" = "Would a slow breath help?";
+"wellness.suggestion.calmSounds" = "Something quiet to listen to?";
+"wellness.suggestion.journal" = "Want to write a bit more?";
+
+/* Practices */
+"wellness.practices.title" = "A quiet moment";
+"wellness.calm.title" = "Calm sounds";
+"wellness.calm.browse" = "Sound library";
+"wellness.loading" = "Gathering this up…";
+"practice.begin" = "Begin";
+"practice.stop" = "That's enough for now";
+"practice.ready" = "Whenever you're ready";
+"practice.done" = "Done";
+"practice.duration" = "How long";
+"breathing.phase.inhale" = "Breathe in";
+"breathing.phase.hold" = "Hold";
+"breathing.phase.exhale" = "Breathe out";
+
+/* Calm sound categories */
+"calm.category.rain" = "Rain";
+"calm.category.jungle" = "Jungle";
+"calm.category.ocean" = "Ocean";
+"calm.category.cafe" = "Café";
+"calm.category.night" = "Night";
+"calm.category.roomTone" = "Room tone";
+"calm.category.creatorMusic" = "Music";
+"calm.comingSoon" = "The sounds themselves are still being made. The list is here so you can see what's coming.";
+
+/* History — descriptive counts only, no causal or diagnostic claim. */
+"wellness.history.title" = "Your record";
+"wellness.history.summary" = "The last month";
+"wellness.history.checkIns" = "Check-ins";
+"wellness.history.practices" = "Quiet moments";
+"wellness.history.minutes" = "Minutes";
+"wellness.history.seeAll" = "See all of it";
+"wellness.history.empty" = "Nothing recorded yet. There's no hurry.";
+"wellness.history.nothingRecorded" = "Nothing recorded for this one yet.";
+
+/* Today */
+"today.wellness.checkedIn" = "You checked in today.";
+"today.journal.action" = "Write";
+
+/* Journal */
+"journal.new" = "New entry";
+"journal.loading" = "Opening your journal…";
+"journal.section.drafts" = "Unfinished";
+"journal.section.drafts.footer" = "These save as you go. Nothing is lost by closing them.";
+"journal.section.entries" = "Entries";
+"journal.section.gratitude" = "Glad about";
+"journal.empty.title" = "Nothing written yet";
+"journal.empty.message" = "Whenever you'd like to write something down, it'll be here.";
+"journal.search.none" = "Nothing matching that.";
+"journal.draft" = "Draft";
+"journal.untitled" = "Untitled";
+"journal.deleted" = "Entry removed.";
+"journal.undo" = "Undo";
+"journal.editor.title" = "Entry";
+"journal.title" = "Title (optional)";
+"journal.body" = "Write anything…";
+"journal.gratitude.add" = "Something you're glad about";
+"journal.gratitude.addAction" = "Add this";
+"journal.close" = "Close";
+"journal.done" = "Done";

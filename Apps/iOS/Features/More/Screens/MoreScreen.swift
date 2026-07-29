@@ -75,10 +75,10 @@ enum MoreDestination: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Themes and Settings exist in this phase; the rest are stubs.
+    /// Journal, Themes, and Settings exist; the rest are stubs.
     var isImplemented: Bool {
         switch self {
-        case .themes, .settings: true
+        case .journal, .themes, .settings: true
         default: false
         }
     }

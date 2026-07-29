@@ -26,22 +26,32 @@ final class AppDependencies {
     let themeEngine: ThemeEngine
     let timeEngine: TimePhaseEngine
     let messageService: SunnieMessageService
+    let affirmationService: AffirmationService
 
     let plantRepository: any PlantRepository
     let careEventRepository: any PlantCareEventRepository
     let progressionRepository: any ProgressionRepository
     let preferencesRepository: any PreferencesRepository
     let pendingWatchActionRepository: any PendingWatchActionRepository
+    let wellnessRepository: any WellnessRepository
+    let journalRepository: any JournalRepository
+    let mediaRepository: any MediaRepository
+    let reminderRepository: any ReminderRepository
 
     let progressionEngine: ProgressionEngine
     let summaryProvider: PlantSummaryProvider
+    let wellnessSummaryProvider: WellnessSummaryProvider
     let eventBus: DomainEventBus
+    let reminderScheduler: ReminderScheduler
 
     let notificationService: NotificationService
     let audioService: AudioService
     let haptics: HapticService
 
     let logPlantCare: LogPlantCare
+    let recordWellnessCheckIn: RecordWellnessCheckIn
+    let manageWellnessSession: ManageWellnessSession
+    let manageJournalEntry: ManageJournalEntry
 
     // @ObservationIgnored keeps these as plain stored properties. The
     // @Observable macro turns a `var` into a computed property whose setter
@@ -70,28 +80,47 @@ final class AppDependencies {
         self.themeEngine = ThemeEngine(registry: registry)
         self.timeEngine = TimePhaseEngine(calendar: clock.calendar)
         self.messageService = SunnieMessageService(registry: registry)
+        self.affirmationService = AffirmationService(pack: registry.wellnessPack)
 
         let plants = SwiftDataPlantRepository(modelContainer: modelContainer)
         let events = SwiftDataPlantCareEventRepository(modelContainer: modelContainer)
         let progression = SwiftDataProgressionRepository(modelContainer: modelContainer)
         let preferences = SwiftDataPreferencesRepository(modelContainer: modelContainer)
         let watchQueue = SwiftDataPendingWatchActionRepository(modelContainer: modelContainer)
+        let wellness = SwiftDataWellnessRepository(modelContainer: modelContainer)
+        let journal = SwiftDataJournalRepository(modelContainer: modelContainer)
+        let media = SwiftDataMediaRepository(modelContainer: modelContainer)
+        let reminders = SwiftDataReminderRepository(modelContainer: modelContainer)
 
         self.plantRepository = plants
         self.careEventRepository = events
         self.progressionRepository = progression
         self.preferencesRepository = preferences
         self.pendingWatchActionRepository = watchQueue
+        self.wellnessRepository = wellness
+        self.journalRepository = journal
+        self.mediaRepository = media
+        self.reminderRepository = reminders
 
         self.progressionEngine = ProgressionEngine(repository: progression)
         self.summaryProvider = PlantSummaryProvider(
             plantRepository: plants, clock: clock
+        )
+        self.wellnessSummaryProvider = WellnessSummaryProvider(
+            repository: wellness, clock: clock
         )
         self.eventBus = DomainEventBus()
 
         self.notificationService = NotificationService()
         self.audioService = AudioService()
         self.haptics = HapticService()
+
+        self.reminderScheduler = ReminderScheduler(
+            repository: reminders,
+            notifications: notificationService,
+            preferencesRepository: preferences,
+            clock: clock
+        )
 
         // The Watch bridge is created after the use case it feeds, so the
         // dependency runs one way: connectivity delivers into the processor,
@@ -113,9 +142,44 @@ final class AppDependencies {
             deviceID: deviceID
         )
 
+        self.recordWellnessCheckIn = RecordWellnessCheckIn(
+            repository: wellness,
+            preferencesRepository: preferences,
+            progressionEngine: progressionEngine,
+            messageProvider: messageService,
+            timeResolver: timeEngine,
+            eventPublisher: eventBus,
+            summaryProvider: wellnessSummaryProvider,
+            clock: clock,
+            deviceID: deviceID
+        )
+
+        self.manageWellnessSession = ManageWellnessSession(
+            repository: wellness,
+            summaryProvider: wellnessSummaryProvider,
+            audio: audioService,
+            clock: clock,
+            deviceID: deviceID
+        )
+
+        self.manageJournalEntry = ManageJournalEntry(
+            repository: journal,
+            eventPublisher: eventBus,
+            clock: clock
+        )
+
         if enableWatchConnectivity {
             configureWatchConnectivity()
         }
+    }
+
+    /// Launch housekeeping that must not block the first frame.
+    ///
+    /// Both are cheap and idempotent: journal entries past the thirty-day restore
+    /// window are destroyed, and media files whose owner is gone are swept up.
+    func performLaunchHousekeeping() async {
+        _ = try? await manageJournalEntry.purgeExpired()
+        _ = try? await mediaRepository.deleteOrphans()
     }
 
     /// Convenience initializer for previews and tests: a fresh in-memory store

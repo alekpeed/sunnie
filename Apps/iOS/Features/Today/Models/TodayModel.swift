@@ -23,6 +23,10 @@ final class TodayModel {
 
     private(set) var state: LoadState = .idle
     private(set) var greeting: SunnieMessage?
+    /// The wellness slice, from its own provider. Today never queries wellness
+    /// storage directly (TECHNICAL_ARCHITECTURE.md §6).
+    private(set) var wellnessSummary: WellnessSummary?
+    private(set) var affirmation: AffirmationDefinition?
     /// Sunnie's reaction to the most recent completion, shown briefly.
     private(set) var lastReaction: SunnieMessage?
 
@@ -52,6 +56,14 @@ final class TodayModel {
             state = .loading
         }
 
+        // The wellness slice is best-effort: a failure there must not take the
+        // plant card down with it.
+        wellnessSummary = try? await dependencies.wellnessSummaryProvider.summary()
+        affirmation = dependencies.affirmationService.affirmation(for: .init(
+            phase: appState.timeContext.phase,
+            isSensitiveMoment: wellnessSummary?.mostRecentCheckIn?.suggestsSensitiveMoment ?? false
+        ))
+
         do {
             let summary = try await dependencies.summaryProvider.summary()
             state = .loaded(summary)
@@ -72,12 +84,14 @@ final class TodayModel {
         guard eventToken == nil else { return }
 
         eventToken = await dependencies.eventBus.subscribe { [weak self] event in
-            guard event.type == .plantCareLogged else { return }
+            guard event.type == .plantCareLogged
+                || event.type == .wellnessCheckInRecorded else { return }
             await self?.reload()
         }
     }
 
     private func reload() async {
+        wellnessSummary = try? await dependencies.wellnessSummaryProvider.summary()
         do {
             let summary = try await dependencies.summaryProvider.summary()
             state = .loaded(summary)

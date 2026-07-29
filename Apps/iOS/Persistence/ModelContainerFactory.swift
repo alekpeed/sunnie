@@ -16,10 +16,18 @@ enum ModelContainerFactory {
         case onDisk(cloudKit: Bool)
         /// Used by tests. Nothing touches the file system.
         case inMemory
+        /// A store at an explicit location. Migration tests need this: an
+        /// in-memory store cannot be closed and reopened at a newer schema
+        /// version, which is exactly the thing under test.
+        case onDiskAt(URL)
     }
 
-    static func make(storage: Storage = .onDisk(cloudKit: false)) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: SunnieSchemaV1.self)
+    static func make(
+        storage: Storage = .onDisk(cloudKit: false),
+        schemaVersion: any VersionedSchema.Type = SunnieCurrentSchema.self,
+        migrationPlan: (any SchemaMigrationPlan.Type)? = SunnieMigrationPlan.self
+    ) throws -> ModelContainer {
+        let schema = Schema(versionedSchema: schemaVersion)
 
         let configuration: ModelConfiguration
         switch storage {
@@ -34,11 +42,17 @@ enum ModelContainerFactory {
                 isStoredInMemoryOnly: false,
                 cloudKitDatabase: cloudKit ? .automatic : .none
             )
+        case .onDiskAt(let url):
+            configuration = ModelConfiguration(
+                schema: schema,
+                url: url,
+                cloudKitDatabase: .none
+            )
         }
 
         return try ModelContainer(
             for: schema,
-            migrationPlan: SunnieMigrationPlan.self,
+            migrationPlan: migrationPlan,
             configurations: [configuration]
         )
     }
