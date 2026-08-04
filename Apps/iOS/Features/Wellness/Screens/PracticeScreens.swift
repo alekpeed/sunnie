@@ -266,9 +266,14 @@ struct CalmSoundsScreen: View {
     /// timer is not really the thing keeping the sound going.
     private static let timerOptions: [Int] = [5, 10, 15, 20, 30, 45, 60]
 
+    /// How long the fade at the end of a sleep timer takes.
+    private static let fadeSeconds = 20.0
+
     @State private var playingID: ContentID?
     @State private var favorites: Set<ContentID> = []
     @State private var timerMinutes: Int?
+    @State private var volume: Double = 0.7
+    @State private var sleepTimer: Task<Void, Never>?
 
     var body: some View {
         List {
@@ -308,7 +313,10 @@ struct CalmSoundsScreen: View {
         .navigationTitle(Text("wellness.calm.title", bundle: .main))
         .task { await loadPreferences() }
         .onDisappear {
-            Task { await dependencies.audioService.stopAmbience() }
+            // Leaving the screen stops the sound. Noise that kept playing after
+            // navigating away, with no visible control, would be worse than
+            // useless — the user would have to hunt for the off switch.
+            Task { await stopEverything() }
         }
     }
 
@@ -400,20 +408,60 @@ struct CalmSoundsScreen: View {
             .preferencesRepository.preferences() else { return }
         favorites = Set(preferences.favoriteCalmSoundIDs)
         timerMinutes = preferences.calmSoundTimerMinutes
+        volume = preferences.audio.masterGain
     }
 
+    /// Starting anything stops whatever was playing first, whichever player it
+    /// belonged to. Noise and recorded ambience are separate engines with
+    /// separate audio-session policies, and leaving both running would layer two
+    /// sounds the user only asked for one of.
     private func toggle(_ sound: CalmSoundDefinition) async {
-        if playingID == sound.id {
+        guard playingID != sound.id else {
             playingID = nil
-            await dependencies.audioService.stopAmbience()
+            await stopEverything()
+            return
+        }
+
+        await stopEverything()
+        playingID = sound.id
+
+        if let color = NoiseColor.from(contentID: sound.id) {
+            await dependencies.noiseEngine.start(color)
+            await dependencies.noiseEngine.setVolume(volume)
         } else {
-            playingID = sound.id
             await dependencies.audioService.startAmbience(sound.audioCueID)
-            // Starting playback clears any previous timer, so the choice is
-            // re-applied against the sound that is actually playing now.
-            if let timerMinutes {
-                await dependencies.audioService.startSleepTimer(minutes: timerMinutes)
-            }
+        }
+
+        // Starting playback clears any previous timer, so the choice is
+        // re-applied against the sound that is actually playing now.
+        if let timerMinutes {
+            await startTimer(minutes: timerMinutes, isNoise: sound.category.isGenerated)
+        }
+    }
+
+    private func stopEverything() async {
+        sleepTimer?.cancel()
+        sleepTimer = nil
+        await dependencies.audioService.stopAmbience()
+        await dependencies.noiseEngine.stop()
+    }
+
+    /// Noise fades through its own engine; recorded ambience through the audio
+    /// service. Same behaviour either way — a hard stop would wake someone who
+    /// has just fallen asleep, which is the usual reason a timer is set at all.
+    private func startTimer(minutes: Int, isNoise: Bool) async {
+        sleepTimer?.cancel()
+        guard minutes > 0 else { return }
+
+        guard isNoise else {
+            await dependencies.audioService.startSleepTimer(minutes: minutes)
+            return
+        }
+
+        sleepTimer = Task { [dependencies] in
+            try? await Task.sleep(nanoseconds: UInt64(minutes) * 60 * 1_000_000_000)
+            guard !Task.isCancelled else { return }
+            await dependencies.noiseEngine.fadeOutAndStop(over: Self.fadeSeconds)
         }
     }
 
@@ -427,11 +475,18 @@ struct CalmSoundsScreen: View {
     }
 
     private func applyTimer(_ minutes: Int?) async {
-        if let minutes {
-            await dependencies.audioService.startSleepTimer(minutes: minutes)
-        } else {
+        guard let minutes else {
+            sleepTimer?.cancel()
+            sleepTimer = nil
             await dependencies.audioService.cancelSleepTimer()
+            await persist { $0.calmSoundTimerMinutes = nil }
+            return
         }
+
+        // Only meaningful against something that is playing. Setting a timer
+        // with nothing on stores the preference and waits.
+        let isNoise = await dependencies.noiseEngine.currentColor != nil
+        await startTimer(minutes: minutes, isNoise: isNoise)
         await persist { $0.calmSoundTimerMinutes = minutes }
     }
 

@@ -47,6 +47,7 @@ final class AppDependencies {
 
     let notificationService: NotificationService
     let audioService: AudioService
+    let noiseEngine: any NoiseGenerating
     let haptics: HapticService
 
     let logPlantCare: LogPlantCare
@@ -122,6 +123,7 @@ final class AppDependencies {
 
         self.notificationService = NotificationService()
         self.audioService = AudioService()
+        self.noiseEngine = NoiseEngine()
         self.haptics = HapticService()
 
         self.reminderScheduler = ReminderScheduler(

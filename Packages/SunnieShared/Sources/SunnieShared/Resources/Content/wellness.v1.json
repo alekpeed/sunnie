@@ -11,7 +11,10 @@
       "id": "sunnie.affirmation.gentle.01",
       "text": "One little thing at a time is enough.",
       "localizationKey": "sunnie.affirmation.gentle.01",
-      "tags": ["gentle", "selfCompassion"],
+      "tags": [
+        "gentle",
+        "selfCompassion"
+      ],
       "phases": [],
       "suitsSensitiveMoments": true
     },
@@ -19,7 +22,10 @@
       "id": "sunnie.affirmation.gentle.02",
       "text": "You're allowed to take this slowly.",
       "localizationKey": "sunnie.affirmation.gentle.02",
-      "tags": ["gentle", "selfCompassion"],
+      "tags": [
+        "gentle",
+        "selfCompassion"
+      ],
       "phases": [],
       "suitsSensitiveMoments": true
     },
@@ -27,7 +33,10 @@
       "id": "sunnie.affirmation.gentle.03",
       "text": "Whatever today looks like, it's alright.",
       "localizationKey": "sunnie.affirmation.gentle.03",
-      "tags": ["gentle", "selfCompassion"],
+      "tags": [
+        "gentle",
+        "selfCompassion"
+      ],
       "phases": [],
       "suitsSensitiveMoments": true
     },
@@ -35,7 +44,10 @@
       "id": "sunnie.affirmation.gentle.04",
       "text": "Resting counts too.",
       "localizationKey": "sunnie.affirmation.gentle.04",
-      "tags": ["gentle", "rest"],
+      "tags": [
+        "gentle",
+        "rest"
+      ],
       "phases": [],
       "suitsSensitiveMoments": true
     },
@@ -43,23 +55,35 @@
       "id": "sunnie.affirmation.morning.01",
       "text": "A quiet start is still a start.",
       "localizationKey": "sunnie.affirmation.morning.01",
-      "tags": ["morning", "gentle"],
-      "phases": ["morning"],
+      "tags": [
+        "morning",
+        "gentle"
+      ],
+      "phases": [
+        "morning"
+      ],
       "suitsSensitiveMoments": true
     },
     {
       "id": "sunnie.affirmation.morning.02",
       "text": "There's no right way for a morning to go.",
       "localizationKey": "sunnie.affirmation.morning.02",
-      "tags": ["morning", "selfCompassion"],
-      "phases": ["morning"],
+      "tags": [
+        "morning",
+        "selfCompassion"
+      ],
+      "phases": [
+        "morning"
+      ],
       "suitsSensitiveMoments": true
     },
     {
       "id": "sunnie.affirmation.encouragement.01",
       "text": "You've handled harder days than this one.",
       "localizationKey": "sunnie.affirmation.encouragement.01",
-      "tags": ["encouragement"],
+      "tags": [
+        "encouragement"
+      ],
       "phases": [],
       "suitsSensitiveMoments": true
     },
@@ -67,31 +91,52 @@
       "id": "sunnie.affirmation.encouragement.02",
       "text": "Look at everything you've already kept going.",
       "localizationKey": "sunnie.affirmation.encouragement.02",
-      "tags": ["encouragement"],
-      "phases": ["day", "afternoon"],
+      "tags": [
+        "encouragement"
+      ],
+      "phases": [
+        "day",
+        "afternoon"
+      ],
       "suitsSensitiveMoments": false
     },
     {
       "id": "sunnie.affirmation.evening.01",
       "text": "The day can be finished now, whatever's left in it.",
       "localizationKey": "sunnie.affirmation.evening.01",
-      "tags": ["evening", "rest"],
-      "phases": ["evening", "night"],
+      "tags": [
+        "evening",
+        "rest"
+      ],
+      "phases": [
+        "evening",
+        "night"
+      ],
       "suitsSensitiveMoments": true
     },
     {
       "id": "sunnie.affirmation.evening.02",
       "text": "Tomorrow gets to be its own thing.",
       "localizationKey": "sunnie.affirmation.evening.02",
-      "tags": ["evening", "rest"],
-      "phases": ["evening", "night", "lateNight"],
+      "tags": [
+        "evening",
+        "rest"
+      ],
+      "phases": [
+        "evening",
+        "night",
+        "lateNight"
+      ],
       "suitsSensitiveMoments": true
     },
     {
       "id": "sunnie.affirmation.travel.01",
       "text": "Travelling well mostly means being kind to yourself in transit.",
       "localizationKey": "sunnie.affirmation.travel.01",
-      "tags": ["travel", "selfCompassion"],
+      "tags": [
+        "travel",
+        "selfCompassion"
+      ],
       "phases": [],
       "suitsSensitiveMoments": true
     },
@@ -99,7 +144,9 @@
       "id": "sunnie.affirmation.home.01",
       "text": "It's good to be back.",
       "localizationKey": "sunnie.affirmation.home.01",
-      "tags": ["home"],
+      "tags": [
+        "home"
+      ],
       "phases": [],
       "suitsSensitiveMoments": true
     },
@@ -107,7 +154,10 @@
       "id": "sunnie.affirmation.plants.01",
       "text": "Green things grow slowly, and that's the whole point of them.",
       "localizationKey": "sunnie.affirmation.plants.01",
-      "tags": ["plants", "gentle"],
+      "tags": [
+        "plants",
+        "gentle"
+      ],
       "phases": [],
       "suitsSensitiveMoments": true
     }
@@ -153,7 +203,13 @@
       "displayNameKey": "meditation.silent.name",
       "type": "meditation",
       "defaultDuration": 300,
-      "availableDurations": [60, 180, 300, 600, 900],
+      "availableDurations": [
+        60,
+        180,
+        300,
+        600,
+        900
+      ],
       "guidanceKeys": [],
       "startCueID": "sunnie.audio.cue.chimeStart",
       "endCueID": "sunnie.audio.cue.chimeEnd",
@@ -164,7 +220,11 @@
       "displayNameKey": "meditation.grounding.name",
       "type": "grounding",
       "defaultDuration": 180,
-      "availableDurations": [120, 180, 300],
+      "availableDurations": [
+        120,
+        180,
+        300
+      ],
       "guidanceKeys": [
         "meditation.grounding.step.1",
         "meditation.grounding.step.2",
@@ -180,7 +240,12 @@
       "displayNameKey": "meditation.sleepWindDown.name",
       "type": "sleepWindDown",
       "defaultDuration": 600,
-      "availableDurations": [300, 600, 900, 1200],
+      "availableDurations": [
+        300,
+        600,
+        900,
+        1200
+      ],
       "guidanceKeys": [
         "meditation.sleepWindDown.step.1",
         "meditation.sleepWindDown.step.2",
@@ -195,7 +260,11 @@
       "displayNameKey": "meditation.travelReset.name",
       "type": "travelReset",
       "defaultDuration": 180,
-      "availableDurations": [120, 180, 300],
+      "availableDurations": [
+        120,
+        180,
+        300
+      ],
       "guidanceKeys": [
         "meditation.travelReset.step.1",
         "meditation.travelReset.step.2",
@@ -207,6 +276,27 @@
     }
   ],
   "calmSounds": [
+    {
+      "id": "sunnie.calm.noise.brown",
+      "displayNameKey": "noise.brown",
+      "category": "noise",
+      "audioCueID": "sunnie.audio.noise.brown",
+      "isMixable": false
+    },
+    {
+      "id": "sunnie.calm.noise.pink",
+      "displayNameKey": "noise.pink",
+      "category": "noise",
+      "audioCueID": "sunnie.audio.noise.pink",
+      "isMixable": false
+    },
+    {
+      "id": "sunnie.calm.noise.white",
+      "displayNameKey": "noise.white",
+      "category": "noise",
+      "audioCueID": "sunnie.audio.noise.white",
+      "isMixable": false
+    },
     {
       "id": "sunnie.calm.rain.soft",
       "displayNameKey": "calm.rain.soft",

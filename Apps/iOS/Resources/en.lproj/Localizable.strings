@@ -567,3 +567,14 @@
 "settings.export.footer" = "A copy of everything in your jungle, to keep or take elsewhere. Nothing leaves your phone unless you send it somewhere.";
 "export.format.json" = "Export as JSON";
 "export.format.csv" = "Export as spreadsheet";
+
+/* Generated noise. Described by what it sounds like, not by its spectrum —
+   "-6 dB per octave" is true and useless to the person choosing one. */
+"calm.category.noise" = "Steady sound";
+"noise.white" = "White noise";
+"noise.pink" = "Pink noise";
+"noise.brown" = "Brown noise";
+"noise.white.detail" = "Bright and even, like air moving.";
+"noise.pink.detail" = "Softer than white, with more weight underneath.";
+"noise.brown.detail" = "Deep and rumbly, like distant surf.";
+"calm.noise.footer" = "These are made as they play, so they never loop and never run out.";

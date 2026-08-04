@@ -36,6 +36,21 @@
 		</dict>
 	</array>
 
+	<!--
+		Background audio, for the generated noise player only. Without this iOS
+		suspends the app when the user leaves it and playback stops — which looks
+		exactly like an audio bug and is not one (NOISE_IMPLEMENTATION.md §9).
+
+		A sleep sound that dies when the screen locks is not a sleep sound, so this
+		is load-bearing rather than a nicety. Sunnie's cues and ambience do not use
+		it: they run under .ambient and stop with the app, which is correct for them
+		(ADR-018).
+	-->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchScreen</key>

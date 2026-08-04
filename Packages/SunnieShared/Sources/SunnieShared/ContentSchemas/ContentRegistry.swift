@@ -250,7 +250,20 @@ public enum FallbackContent {
                 availableDurations: [60, 180, 300]
             )
         ],
-        calmSounds: []
+        // The recorded ambiences are deliberately absent — without their assets
+        // they would be a list of things that do nothing. The generated colours
+        // are here because they need no asset at all: noise is computed, so it
+        // works even when the content pack failed to load, which is exactly when
+        // the sound library must not come back empty.
+        calmSounds: NoiseColor.allCases.map { color in
+            CalmSoundDefinition(
+                id: color.contentID,
+                displayNameKey: color.localizationKey,
+                category: .noise,
+                audioCueID: ContentID(rawValue: "sunnie.audio.noise.\(color.rawValue)"),
+                isMixable: false
+            )
+        }
     )
 
     public static let themePack = ThemePack(

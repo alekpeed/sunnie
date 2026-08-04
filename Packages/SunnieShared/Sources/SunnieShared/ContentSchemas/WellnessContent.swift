@@ -151,6 +151,11 @@ public struct MeditationDefinition: Identifiable, Hashable, Sendable, Codable {
 }
 
 public enum CalmSoundCategory: String, Hashable, Sendable, Codable, CaseIterable {
+    /// Generated rather than recorded — white, pink, and brown noise, computed
+    /// sample by sample (NOISE_IMPLEMENTATION.md). First in the list because it
+    /// is the only category that makes sound today; the recorded ambiences wait
+    /// on Phase 10.
+    case noise
     case rain
     case jungle
     case ocean
@@ -158,6 +163,12 @@ public enum CalmSoundCategory: String, Hashable, Sendable, Codable, CaseIterable
     case night
     case roomTone
     case creatorMusic
+
+    /// Whether these sounds are computed rather than played from a file.
+    ///
+    /// The sound library needs this to know which player to hand a selection to,
+    /// and to avoid promising an asset that will never exist for these.
+    public var isGenerated: Bool { self == .noise }
 }
 
 /// A loopable ambience track. The asset arrives in Phase 10; the definition

@@ -242,6 +242,36 @@ public protocol AudioPlaying: Sendable {
     func apply(preferences: AudioPreferences) async
 }
 
+/// Generated noise (NOISE_IMPLEMENTATION.md).
+///
+/// Separate from `AudioPlaying` because it is a different kind of thing: nothing
+/// is loaded, decoded, or looped — samples are computed as they are needed. It
+/// also needs a different audio-session policy from the rest of the app's sound
+/// (ADR-018), and keeping the two behind different protocols is what stops a
+/// caller reaching for the wrong one by accident.
+public protocol NoiseGenerating: Sendable {
+    var currentColor: NoiseColor? { get async }
+    func start(_ color: NoiseColor) async
+    func stop() async
+    /// 0…1, applied before the limiter.
+    func setVolume(_ volume: Double) async
+    /// Fades to silence over the given duration, then stops.
+    ///
+    /// Fading rather than cutting, because the usual reason for stopping a sleep
+    /// sound is that someone is asleep and a hard stop would wake them.
+    func fadeOutAndStop(over seconds: Double) async
+}
+
+/// Stand-in for previews, tests, and any composition without audio.
+public struct SilentNoiseGenerator: NoiseGenerating {
+    public init() {}
+    public var currentColor: NoiseColor? { get async { nil } }
+    public func start(_ color: NoiseColor) async {}
+    public func stop() async {}
+    public func setVolume(_ volume: Double) async {}
+    public func fadeOutAndStop(over seconds: Double) async {}
+}
+
 /// Confirmation feedback. Separated from audio so haptics can be disabled
 /// independently (VISUAL_DESIGN_SYSTEM.md §11).
 public protocol HapticFeedback: Sendable {

@@ -423,3 +423,80 @@ rewritten is not an append-only log, and the spec asks for the opposite.
 
 `PLANT_CARE.md` §7. `JungleFlowTests.correctionsAreAppendOnly` and
 `correctionsAreIdempotent`. The note on `SunnieSchemaV3`.
+
+---
+
+## ADR-018: Generated noise uses a different audio session from the rest of the app
+
+**Status:** Accepted · **Date:** 2026-08-04 · **Phase:** 3 (calm sounds), extending Phase 10
+
+### Context
+
+Sunnie Days added white, pink, and brown noise generators
+(`NOISE_IMPLEMENTATION.md`). They are DSP, not assets: samples are computed as
+they are needed, so this is the first calm sound that actually makes sound —
+the recorded ambiences wait on Phase 10.
+
+That created a conflict. `AudioService` configures `AVAudioSession` as
+`.ambient`, deliberately: Sunnie's cues and ambience must never interrupt the
+user's music, and must respect the ring/silent switch. Under `.ambient` audio
+also stops when the screen locks.
+
+For a sleep sound, every one of those is wrong in a different way. Someone
+running brown noise to fall asleep has the phone on silent and the screen off.
+A sleep sound that dies at lock is not a sleep sound, and one that stops because
+the ringer switch is flipped is broken in a way the user will read as a bug.
+
+There is one `AVAudioSession` per process. Whichever category is set last wins,
+so this could not be left implicit.
+
+### Decision
+
+Two policies, stated and owned:
+
+- **Sunnie's cues and ambience** keep `.ambient`. Unchanged.
+- **Generated noise** uses `.playback` with `.mixWithOthers`, set by
+  `NoiseEngine` when it starts, and the app declares `UIBackgroundModes = audio`.
+
+`.mixWithOthers` is what keeps `.playback` from being a regression: noise plays
+underneath other apps' audio rather than taking over, so it still never silences
+the user's own music. Phone calls still interrupt it, and it resumes on
+`.shouldResume`.
+
+The calm-sound library treats the two players as mutually exclusive. Starting
+either stops the other, and leaving the screen stops both — noise that kept
+playing after navigating away, with no visible control, would leave the user
+hunting for the off switch.
+
+### Consequences
+
+- Noise keeps playing with the screen locked and the ringer off, which is the
+  entire point.
+- Whichever player ran most recently has set the category. That is acceptable
+  because they are mutually exclusive by construction, but it is a real
+  invariant: a future feature that plays a cue *while* noise is running must
+  decide the policy explicitly rather than inheriting whatever is current.
+- `UIBackgroundModes = audio` is now declared. App Review expects a real
+  background-audio feature behind it, and there is one.
+- Noise ships with no assets and works offline forever. It is also in the
+  fallback content pack, so it survives a failed content load — the one calm
+  sound that cannot be missing.
+
+### Alternatives considered
+
+**Use `.playback` for everything.** Rejected: Sunnie's care confirmation chirp
+interrupting a podcast, or sounding when the phone is on silent, is exactly the
+behaviour the tone rules rule out.
+
+**Keep noise on `.ambient`.** Rejected: it would stop at screen lock, which
+makes the sleep timer meaningless and reads as a bug.
+
+**Route noise through `AudioService`.** Rejected: the service is built around
+resolving a content ID to a bundled file, and noise has no file. Merging them
+would mean one type with two unrelated playback paths and two session policies,
+which is harder to reason about than two types with one each.
+
+### Documents/tests affected
+
+`NOISE_IMPLEMENTATION.md` §9, §10. `AUDIO_MIDI_AND_SOUNDSCAPES.md`.
+`NoiseDSPTests`. `Info.plist`.
