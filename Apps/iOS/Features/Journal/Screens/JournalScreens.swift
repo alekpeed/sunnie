@@ -355,6 +355,16 @@ struct JournalEditorScreen: View {
                 } header: {
                     Text("journal.section.gratitude", bundle: .main)
                 }
+
+                Section {
+                    AttachmentsSection(owner: .journalEntry(entry.id))
+                } header: {
+                    Text("journal.section.attachments", bundle: .main)
+                } footer: {
+                    // Says plainly that attaching is optional, so an entry
+                    // without one never reads as unfinished.
+                    Text("journal.section.attachments.footer", bundle: .main)
+                }
             }
             .navigationTitle(Text("journal.editor.title", bundle: .main))
             .navigationBarTitleDisplayMode(.inline)

@@ -54,6 +54,15 @@ public protocol MediaRepository: Sendable {
     func attachments(for owner: MediaOwner) async throws -> [MediaAttachment]
     func data(for attachmentID: UUID) async throws -> Data?
     func delete(attachmentID: UUID) async throws
+    /// Moves every attachment from one owner to another.
+    ///
+    /// A capture surface has to name an owner before the record it belongs to
+    /// exists — someone can attach a photo to a check-in they have not saved yet.
+    /// The surface invents the ID, and if saving resolves to a different record
+    /// (an idempotent save collapsing onto an existing one), the attachments
+    /// follow rather than being stranded. Returns how many moved.
+    @discardableResult
+    func reassign(from oldOwner: MediaOwner, to newOwner: MediaOwner) async throws -> Int
     /// Removes files with no owning record left. Media outliving its entry is the
     /// normal way storage silently fills up.
     func deleteOrphans() async throws -> Int

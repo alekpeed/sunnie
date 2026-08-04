@@ -158,6 +158,44 @@ actor SwiftDataMediaRepository: MediaRepository {
         }
     }
 
+    /// Re-points attachments at a different owner.
+    ///
+    /// Only the owner columns change; tokens and files are untouched, so nothing
+    /// is rewritten or re-encoded and the operation cannot lose bytes. Moving to
+    /// the same owner is a no-op rather than an error, which keeps the caller from
+    /// having to compare IDs before asking.
+    @discardableResult
+    func reassign(from oldOwner: MediaOwner, to newOwner: MediaOwner) async throws -> Int {
+        guard oldOwner != newOwner else { return 0 }
+
+        let kind = MediaOwnerKind(owner: oldOwner).rawValue
+        let ownerID = MediaOwnerKind.id(of: oldOwner)
+
+        let descriptor = FetchDescriptor<SDMediaAttachment>(
+            predicate: #Predicate<SDMediaAttachment> {
+                $0.ownerKindRaw == kind && $0.ownerID == ownerID
+            }
+        )
+
+        let models = try modelContext.fetch(descriptor)
+        guard !models.isEmpty else { return 0 }
+
+        let newKind = MediaOwnerKind(owner: newOwner).rawValue
+        let newID = MediaOwnerKind.id(of: newOwner)
+        for model in models {
+            model.ownerKindRaw = newKind
+            model.ownerID = newID
+        }
+
+        do {
+            try modelContext.save()
+            return models.count
+        } catch {
+            modelContext.rollback()
+            throw DomainError.persistenceFailed(operation: "reassignMediaOwner")
+        }
+    }
+
     /// Removes files with no record, and records whose owner is gone.
     ///
     /// Owner kinds whose feature does not exist yet are left alone — a trip

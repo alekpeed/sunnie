@@ -48,6 +48,9 @@ struct SunnieDaysApp: App {
                 .environment(\.sunnieTheme, appState.theme)
                 .modelContainer(dependencies.modelContainer)
                 .task {
+                    dependencies.configureNotifications { route in
+                        router.handle(route)
+                    }
                     await appState.load()
                     await SampleData.seedIfNeeded(dependencies: dependencies)
                     await dependencies.processPendingWatchActions()

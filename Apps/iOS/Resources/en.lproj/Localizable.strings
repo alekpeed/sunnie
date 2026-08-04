@@ -285,3 +285,61 @@
 "journal.gratitude.addAction" = "Add this";
 "journal.close" = "Close";
 "journal.done" = "Done";
+
+/* Attachments — always optional, never framed as something missing. */
+"journal.section.attachments" = "Photos and voice notes";
+"journal.section.attachments.footer" = "Only if you want to. An entry is complete without them.";
+"wellness.checkIn.section.attachments" = "Photo or voice note";
+"attachment.addPhoto" = "Photo";
+"attachment.addVoiceNote" = "Voice note";
+"attachment.stopRecording" = "Stop";
+"attachment.photo" = "Photo";
+"attachment.voiceNote %lld" = "Voice note, %lld seconds";
+"attachment.recording %lld" = "Recording — %lld seconds";
+"attachment.remove" = "Remove this";
+"attachment.error.photo" = "I couldn't read that photo. Nothing else has changed.";
+"attachment.error.save" = "That didn't attach just now. Everything you've written is still here.";
+"attachment.error.microphone" = "Recording needs microphone access, which you can turn on in Settings. Everything else works without it.";
+"voiceNote.error.start" = "I couldn't start recording just now. Nothing else has changed.";
+
+/* Calm sounds — the timer's default is to keep playing. */
+"calm.section.favorites" = "Yours";
+"calm.timer" = "Fade out after";
+"calm.timer.off" = "Keep playing";
+"calm.timer.minutes %lld" = "%lld minutes";
+"calm.timer.footer" = "Sound fades out slowly rather than stopping all at once.";
+"calm.favorite.add" = "Keep this one handy";
+"calm.favorite.remove" = "Stop keeping this one handy";
+
+/* Notifications */
+"notification.title.default" = "Sunnie Days";
+"notification.action.complete" = "Done";
+"notification.action.snooze" = "Later";
+"notification.action.skipToday" = "Not today";
+
+/* Reminder categories and cadence */
+"reminder.category.plantCare" = "Plant care";
+"reminder.category.travelPreparation" = "Travel preparation";
+"reminder.category.departureChecklist" = "Departure checklist";
+"reminder.category.returnChecklist" = "Coming home";
+"reminder.category.mealPrep" = "Meal prep";
+"reminder.category.packedFood" = "Packed food";
+"reminder.category.hydration" = "Water";
+"reminder.category.wellnessRoutine" = "Check-ins";
+"reminder.category.journalPrompt" = "Journal";
+"reminder.category.meditationBreathing" = "Quiet moments";
+"reminder.category.dailyPuzzle" = "Daily puzzle";
+"reminder.category.collectionEvent" = "Collections";
+"reminder.cadence.disabled" = "None";
+"reminder.cadence.single" = "Once";
+"reminder.cadence.singleWithReOffer" = "Once, and again later";
+"reminder.cadence.regular" = "Regularly";
+
+/* Settings — reminders and quiet hours */
+"settings.section.cadence" = "How often";
+"settings.cadence.footer" = "Everything starts at None. Nothing turns itself on, and a reminder you don't act on never leads to more of them.";
+"settings.section.quietHours" = "Quiet hours";
+"settings.quietHours.enabled" = "Keep quiet at night";
+"settings.quietHours.start" = "From";
+"settings.quietHours.end" = "Until";
+"settings.quietHours.footer" = "Reminders due during these hours wait until the end of the window. Nothing is cancelled — it just doesn't wake you.";

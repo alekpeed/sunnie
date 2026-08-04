@@ -43,11 +43,16 @@ struct WellnessScreen: View {
         }
         .sheet(isPresented: checkInBinding) {
             if let model {
-                CheckInSheet { mood, energy, stress, sleep, note in
+                CheckInSheet { draft in
                     Task {
                         await model.recordCheckIn(
-                            mood: mood, energy: energy, stress: stress,
-                            sleepQuality: sleep, note: note
+                            draftID: draft.id,
+                            mood: draft.mood,
+                            energy: draft.energy,
+                            stress: draft.stress,
+                            sleepQuality: draft.sleepQuality,
+                            note: draft.note,
+                            hasAttachments: draft.hasAttachments
                         )
                     }
                 }
@@ -342,11 +347,26 @@ struct WellnessScreen: View {
 struct CheckInSheet: View {
     @Environment(\.dismiss) private var dismiss
 
-    let onSave: (
-        WellnessScaleValue?, WellnessScaleValue?,
-        WellnessScaleValue?, WellnessScaleValue?, String?
-    ) -> Void
+    /// What the sheet collected. A struct rather than six positional arguments,
+    /// because two of them are the same optional type and swapping them would
+    /// compile.
+    struct Draft {
+        let id: UUID
+        let mood: WellnessScaleValue?
+        let energy: WellnessScaleValue?
+        let stress: WellnessScaleValue?
+        let sleepQuality: WellnessScaleValue?
+        let note: String?
+        let hasAttachments: Bool
+    }
 
+    let onSave: (Draft) -> Void
+
+    /// Named before the entry is saved so a photo or voice note can be attached
+    /// while the form is still open. If the sheet is dismissed without saving, the
+    /// attachments have no owning record and launch housekeeping sweeps them up.
+    @State private var draftID = UUID()
+    @State private var attachmentCount = 0
     @State private var mood: WellnessScaleValue?
     @State private var energy: WellnessScaleValue?
     @State private var stress: WellnessScaleValue?
@@ -375,6 +395,14 @@ struct CheckInSheet: View {
                 } footer: {
                     Text("wellness.checkIn.footer", bundle: .main)
                 }
+
+                Section {
+                    AttachmentsSection(owner: .checkIn(draftID)) { count in
+                        attachmentCount = count
+                    }
+                } header: {
+                    Text("wellness.checkIn.section.attachments", bundle: .main)
+                }
             }
             .navigationTitle(Text("wellness.checkIn.title.short", bundle: .main))
             .navigationBarTitleDisplayMode(.inline)
@@ -391,7 +419,15 @@ struct CheckInSheet: View {
                         comment: "Saves the check-in"
                     )) {
                         let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
-                        onSave(mood, energy, stress, sleepQuality, trimmed.isEmpty ? nil : trimmed)
+                        onSave(Draft(
+                            id: draftID,
+                            mood: mood,
+                            energy: energy,
+                            stress: stress,
+                            sleepQuality: sleepQuality,
+                            note: trimmed.isEmpty ? nil : trimmed,
+                            hasAttachments: attachmentCount > 0
+                        ))
                     }
                 }
             }

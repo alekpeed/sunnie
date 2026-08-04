@@ -35,6 +35,7 @@ struct LogPlantCare: Sendable {
     private let preferencesRepository: any PreferencesRepository
     private let watchSync: any WatchSyncing
     private let eventPublisher: any DomainEventPublishing
+    private let reminders: any ReminderOffering
     private let clock: any SunnieClock
     private let deviceID: DeviceID
 
@@ -55,6 +56,7 @@ struct LogPlantCare: Sendable {
         preferencesRepository: any PreferencesRepository,
         watchSync: any WatchSyncing,
         eventPublisher: any DomainEventPublishing,
+        reminders: any ReminderOffering = NoReminders(),
         clock: any SunnieClock,
         deviceID: DeviceID
     ) {
@@ -67,6 +69,7 @@ struct LogPlantCare: Sendable {
         self.preferencesRepository = preferencesRepository
         self.watchSync = watchSync
         self.eventPublisher = eventPublisher
+        self.reminders = reminders
         self.clock = clock
         self.deviceID = deviceID
     }
@@ -154,6 +157,7 @@ struct LogPlantCare: Sendable {
         )
 
         await summaryProvider.invalidate()
+        await rescheduleReminders(for: plant, schedule: updatedSchedule)
         let message = try? await reaction()
         await pushToWatch()
 
@@ -199,6 +203,41 @@ struct LogPlantCare: Sendable {
         )
         try await plantRepository.save(updated)
         return updated
+    }
+
+    /// Cancels any pending reminder for this plant and offers one for the new due
+    /// date.
+    ///
+    /// Cancelling first is what stops a reminder arriving for something already
+    /// done — including when it was the Watch that did it
+    /// (NOTIFICATIONS_AND_REMINDERS.md §5). Offering afterwards is only an offer:
+    /// the scheduler decides whether the user's cadence, quiet hours, and the
+    /// daily ceiling allow it, and suppression is a normal, silent outcome.
+    private func rescheduleReminders(
+        for plant: Plant,
+        schedule: PlantCareSchedule?
+    ) async {
+        await reminders.cancelAll(for: plant.id)
+
+        guard
+            let schedule,
+            schedule.isEnabled,
+            let nextDue = schedule.nextDueDate,
+            nextDue > clock.now
+        else { return }
+
+        await reminders.offer(
+            category: .plantCare,
+            sourceEntityID: plant.id,
+            route: "sunniedays://plant/\(plant.id.uuidString)",
+            desiredFireDate: nextDue,
+            subject: plant.displayName,
+            actionPayload: [
+                NotificationPayloadKeys.plantID: plant.id.uuidString,
+                NotificationPayloadKeys.careType: schedule.careType.storageKey,
+                NotificationPayloadKeys.scheduleID: schedule.id.uuidString
+            ]
+        )
     }
 
     /// Progression must never break the flow. A failure here costs experience,

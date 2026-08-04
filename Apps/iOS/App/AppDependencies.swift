@@ -52,6 +52,7 @@ final class AppDependencies {
     let recordWellnessCheckIn: RecordWellnessCheckIn
     let manageWellnessSession: ManageWellnessSession
     let manageJournalEntry: ManageJournalEntry
+    let attachMedia: AttachMedia
 
     // @ObservationIgnored keeps these as plain stored properties. The
     // @Observable macro turns a `var` into a computed property whose setter
@@ -119,8 +120,12 @@ final class AppDependencies {
             repository: reminders,
             notifications: notificationService,
             preferencesRepository: preferences,
+            messageProvider: messageService,
+            timeResolver: timeEngine,
             clock: clock
         )
+
+        self.attachMedia = AttachMedia(repository: media, clock: clock)
 
         // The Watch bridge is created after the use case it feeds, so the
         // dependency runs one way: connectivity delivers into the processor,
@@ -138,6 +143,7 @@ final class AppDependencies {
             preferencesRepository: preferences,
             watchSync: WatchSyncBox(),
             eventPublisher: eventBus,
+            reminders: reminderScheduler,
             clock: clock,
             deviceID: deviceID
         )
@@ -171,6 +177,71 @@ final class AppDependencies {
         if enableWatchConnectivity {
             configureWatchConnectivity()
         }
+    }
+
+    /// Connects delivered notifications to routing and to the use cases that
+    /// honour their action buttons.
+    ///
+    /// Called once at launch. Registering the categories is what makes "Done",
+    /// "Later", and "Not today" appear at all, and it must happen before any
+    /// notification is delivered — a request scheduled against an unregistered
+    /// category arrives as a plain banner with no buttons.
+    ///
+    /// This does not ask for permission. The app is fully usable with
+    /// notifications denied, and the request lives in Settings behind a button
+    /// the user chooses to press (ONBOARDING_SETTINGS_AND_PERMISSIONS.md §7).
+    func configureNotifications(
+        onRoute: @escaping @MainActor @Sendable (AppRoute) -> Void
+    ) {
+        notificationService.registerCategories()
+
+        notificationService.onRouteRequested = { routeString in
+            // An unrecognised route resolves to nothing rather than to a default
+            // screen: landing somewhere unexpected is more confusing than the tap
+            // simply opening the app.
+            guard
+                let url = URL(string: routeString),
+                let route = DeepLinkParser.route(from: url)
+            else { return }
+            Task { @MainActor in onRoute(route) }
+        }
+
+        notificationService.onAction = { action in
+            Task { @MainActor [weak self] in
+                await self?.handle(action)
+            }
+        }
+    }
+
+    /// Honours what the user did to a notification.
+    ///
+    /// "Done" logs the real care action rather than only noting the tap, which is
+    /// why the reminder carries the plant and care type in its payload. The action
+    /// goes through the same use case as a tap in the app, so it is idempotent,
+    /// earns progression once, and reaches the Watch — pressing "Done" on the
+    /// phone and then watering in the app within the same minute records one event
+    /// (ADR-013).
+    private func handle(_ action: DeliveredNotificationAction) async {
+        await reminderScheduler.recordResponse(
+            reminderID: action.reminderID, response: action.response
+        )
+
+        guard action.response == .completed else { return }
+        guard
+            let plantID = action.payload[NotificationPayloadKeys.plantID]
+                .flatMap(UUID.init(uuidString:)),
+            let careType = action.payload[NotificationPayloadKeys.careType]
+                .flatMap(CareType.init(storageKey:))
+        else { return }
+
+        let scheduleID = action.payload[NotificationPayloadKeys.scheduleID]
+            .flatMap(UUID.init(uuidString:))
+
+        // A failure here is not surfaced. The user has already put the phone
+        // down; the task simply stays due, which is the honest outcome.
+        _ = try? await logPlantCare(
+            plantID: plantID, careType: careType, scheduleID: scheduleID
+        )
     }
 
     /// Launch housekeeping that must not block the first frame.

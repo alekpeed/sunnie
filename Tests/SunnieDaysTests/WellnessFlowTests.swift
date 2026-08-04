@@ -308,12 +308,62 @@ struct WellnessFlowTests {
         let plan = await dependencies.reminderScheduler.offer(
             category: .wellnessRoutine,
             sourceEntityID: UUID(),
-            messageID: "sunnie.message.gentleReminder.01",
             route: "sunniedays://wellness/checkin",
-            desiredFireDate: Self.referenceDate.addingTimeInterval(3600),
-            cadenceLevel: .single
+            desiredFireDate: Self.referenceDate.addingTimeInterval(3600)
         )
 
         #expect(!plan.isScheduled)
+    }
+
+    @Test("Cadence is read from preferences, not from the caller")
+    func cadenceComesFromPreferences() async throws {
+        // A caller cannot schedule at a cadence the user did not choose: there is
+        // no parameter through which to pass one. Absent means disabled, so a
+        // category the user has never configured is silent even with permission.
+        var preferences = UserPreferences.default
+        #expect(preferences.reminderLevel(for: .plantCare) == .disabled)
+
+        preferences.setReminderLevel(.singleWithReOffer, for: .plantCare)
+        #expect(preferences.reminderLevel(for: .plantCare) == .singleWithReOffer)
+        // Setting one category leaves the others alone.
+        #expect(preferences.reminderLevel(for: .hydration) == .disabled)
+
+        preferences.setReminderLevel(.disabled, for: .plantCare)
+        #expect(preferences.reminderLevel(for: .plantCare) == .disabled)
+    }
+
+    @Test("An unrecognised stored cadence falls back to disabled")
+    func unknownCadenceIsDisabled() async throws {
+        // A value written by a newer build must not be read as some arbitrary
+        // level. Silence is the only safe interpretation.
+        var preferences = UserPreferences.default
+        preferences.reminderLevels[ReminderCategory.plantCare.rawValue] = 99
+
+        #expect(preferences.reminderLevel(for: .plantCare) == .disabled)
+    }
+
+    @Test("A check-in with only an attachment is still an entry")
+    func attachmentOnlyCheckInIsSaved() async throws {
+        let dependencies = try makeDependencies()
+
+        // No scales, no note — the only content is a voice note the sheet
+        // already attached to the draft ID.
+        let draftID = UUID()
+        let result = try await dependencies.recordWellnessCheckIn(
+            id: draftID,
+            hasAttachments: true
+        )
+
+        #expect(result.wasNewlyRecorded)
+        #expect(result.checkIn.id == draftID)
+    }
+
+    @Test("A wholly blank check-in is still refused")
+    func blankCheckInIsRefused() async throws {
+        let dependencies = try makeDependencies()
+
+        await #expect(throws: DomainError.self) {
+            _ = try await dependencies.recordWellnessCheckIn()
+        }
     }
 }

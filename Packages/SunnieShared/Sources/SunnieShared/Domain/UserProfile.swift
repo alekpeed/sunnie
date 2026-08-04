@@ -109,6 +109,16 @@ public struct UserPreferences: Hashable, Sendable, Codable {
     /// Use sunrise/sunset instead of the clock fallback. Requires location
     /// permission, so it is off until the user grants it.
     public var useSolarTimes: Bool
+    /// Cadence level per reminder category, keyed by the category's raw value.
+    ///
+    /// A dictionary rather than fixed fields so a new category needs no schema
+    /// change. Absent means disabled — reminders are opt-in, one category at a
+    /// time (NOTIFICATIONS_AND_REMINDERS.md §5).
+    public var reminderLevels: [String: Int]
+    /// Calm sounds the user marked as favourites.
+    public var favoriteCalmSoundIDs: [ContentID]
+    /// Minutes before calm sounds fade out on their own. Nil means play until stopped.
+    public var calmSoundTimerMinutes: Int?
 
     public static let `default` = UserPreferences(
         activeThemeID: ThemeCatalog.lushTropicalJungleID,
@@ -120,7 +130,10 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         accessibility: AccessibilityOverrides(),
         nicknameProbability: 0.05,
         dietaryRuleIDs: [DietaryRule.noEggs],
-        useSolarTimes: false
+        useSolarTimes: false,
+        reminderLevels: [:],
+        favoriteCalmSoundIDs: [],
+        calmSoundTimerMinutes: nil
     )
 
     public init(
@@ -133,7 +146,10 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         accessibility: AccessibilityOverrides,
         nicknameProbability: Double,
         dietaryRuleIDs: [ContentID],
-        useSolarTimes: Bool
+        useSolarTimes: Bool,
+        reminderLevels: [String: Int] = [:],
+        favoriteCalmSoundIDs: [ContentID] = [],
+        calmSoundTimerMinutes: Int? = nil
     ) {
         self.activeThemeID = activeThemeID
         self.automaticDayCycle = automaticDayCycle
@@ -145,6 +161,22 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         self.nicknameProbability = nicknameProbability
         self.dietaryRuleIDs = dietaryRuleIDs
         self.useSolarTimes = useSolarTimes
+        self.reminderLevels = reminderLevels
+        self.favoriteCalmSoundIDs = favoriteCalmSoundIDs
+        self.calmSoundTimerMinutes = calmSoundTimerMinutes
+    }
+
+    /// The cadence the user chose for a category. Disabled unless they said otherwise.
+    public func reminderLevel(for category: ReminderCategory) -> AdaptiveCadenceLevel {
+        guard let raw = reminderLevels[category.rawValue] else { return .disabled }
+        return AdaptiveCadenceLevel(rawValue: raw) ?? .disabled
+    }
+
+    public mutating func setReminderLevel(
+        _ level: AdaptiveCadenceLevel,
+        for category: ReminderCategory
+    ) {
+        reminderLevels[category.rawValue] = level.rawValue
     }
 
     /// Decodes field by field, falling back to the default for anything absent.
@@ -183,6 +215,11 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         nicknameProbability = value(.nicknameProbability, fallback.nicknameProbability)
         dietaryRuleIDs = value(.dietaryRuleIDs, fallback.dietaryRuleIDs)
         useSolarTimes = value(.useSolarTimes, fallback.useSolarTimes)
+        reminderLevels = value(.reminderLevels, fallback.reminderLevels)
+        favoriteCalmSoundIDs = value(.favoriteCalmSoundIDs, fallback.favoriteCalmSoundIDs)
+        calmSoundTimerMinutes = try? container.decodeIfPresent(
+            Int.self, forKey: .calmSoundTimerMinutes
+        )
     }
 
     enum CodingKeys: String, CodingKey {
@@ -196,6 +233,9 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         case nicknameProbability
         case dietaryRuleIDs
         case useSolarTimes
+        case reminderLevels
+        case favoriteCalmSoundIDs
+        case calmSoundTimerMinutes
     }
 }
 

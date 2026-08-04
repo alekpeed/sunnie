@@ -30,4 +30,21 @@ enum LocalizationKeys {
     static func themeName(_ theme: ThemeDefinition) -> LocalizedStringKey {
         LocalizedStringKey(theme.displayNameKey)
     }
+
+    static func reminderCategory(_ category: ReminderCategory) -> LocalizedStringKey {
+        LocalizedStringKey("reminder.category." + category.rawValue)
+    }
+
+    /// Cadence levels are keyed by name rather than by their raw `Int`, so the
+    /// strings stay readable and reordering the enum cannot silently relabel them.
+    static func cadenceLevel(_ level: AdaptiveCadenceLevel) -> LocalizedStringKey {
+        let name: String
+        switch level {
+        case .disabled: name = "disabled"
+        case .single: name = "single"
+        case .singleWithReOffer: name = "singleWithReOffer"
+        case .regular: name = "regular"
+        }
+        return LocalizedStringKey("reminder.cadence." + name)
+    }
 }

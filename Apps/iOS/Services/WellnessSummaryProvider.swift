@@ -70,15 +70,17 @@ actor WellnessSummaryProvider {
 
 /// Turns a plan from `ReminderPlanner` into a real scheduled notification.
 ///
-/// The planner decides *whether and when*; this only carries out the decision and
-/// records it. Keeping them apart is what lets the whole cadence policy be tested
-/// without UserNotifications, a permission prompt, or a device.
-actor ReminderScheduler {
+/// The planner decides *whether and when*; this carries out the decision, resolves
+/// the copy, and records it. Keeping them apart is what lets the whole cadence
+/// policy be tested without UserNotifications, a permission prompt, or a device.
+actor ReminderScheduler: ReminderOffering {
 
     private let planner: ReminderPlanner.Type
     private let repository: any ReminderRepository
     private let notifications: any NotificationScheduling
     private let preferencesRepository: any PreferencesRepository
+    private let messageProvider: any SunnieMessageProviding
+    private let timeResolver: any TimePhaseResolving
     private let clock: any SunnieClock
     private let log = SunnieLog(category: .notifications)
 
@@ -86,26 +88,33 @@ actor ReminderScheduler {
         repository: any ReminderRepository,
         notifications: any NotificationScheduling,
         preferencesRepository: any PreferencesRepository,
+        messageProvider: any SunnieMessageProviding,
+        timeResolver: any TimePhaseResolving,
         clock: any SunnieClock,
         planner: ReminderPlanner.Type = ReminderPlanner.self
     ) {
         self.repository = repository
         self.notifications = notifications
         self.preferencesRepository = preferencesRepository
+        self.messageProvider = messageProvider
+        self.timeResolver = timeResolver
         self.clock = clock
         self.planner = planner
     }
 
     /// Offers a reminder. Returns the plan so callers can see what happened
     /// without having to ask storage.
+    ///
+    /// `cadenceLevel` is read from preferences rather than passed in, so a caller
+    /// cannot accidentally schedule at a cadence the user did not choose.
     @discardableResult
     func offer(
         category: ReminderCategory,
         sourceEntityID: UUID?,
-        messageID: ContentID,
         route: String,
         desiredFireDate: Date,
-        cadenceLevel: AdaptiveCadenceLevel,
+        subject: String? = nil,
+        actionPayload: [String: String] = [:],
         isTaskComplete: Bool = false,
         timeZonePolicy: ReminderTimeZonePolicy = .deviceTimeZone
     ) async -> ReminderPlan {
@@ -121,6 +130,11 @@ actor ReminderScheduler {
             preferences = try await preferencesRepository.preferences()
         } catch {
             preferences = .default
+        }
+
+        let cadenceLevel = preferences.reminderLevel(for: category)
+        guard cadenceLevel != .disabled else {
+            return .suppress(.cadenceDisabled)
         }
 
         var sentToday: [Date] = []
@@ -146,22 +160,37 @@ actor ReminderScheduler {
 
         guard let fireDate = plan.fireDate else { return plan }
 
+        guard let copy = await resolveCopy(
+            category: category, subject: subject, preferences: preferences
+        ) else {
+            // No content for this category means nothing to say. Better to stay
+            // quiet than to deliver an empty notification.
+            log.debug("No reminder copy available; not scheduling.")
+            return .suppress(.noSuitableTimeRemaining)
+        }
+
         let record = ScheduledReminderRecord(
             category: category,
             sourceEntityID: sourceEntityID,
             scheduledAt: fireDate,
             timeZonePolicy: timeZonePolicy,
-            cadenceLevel: cadenceLevel,
-            notificationRequestID: nil
+            cadenceLevel: cadenceLevel
         )
 
         do {
             try await notifications.schedule(
                 ScheduledReminderRequest(
                     id: record.id,
-                    messageID: messageID,
+                    messageID: copy.messageID,
+                    title: copy.title,
+                    body: copy.body,
                     fireDate: fireDate,
-                    route: route
+                    route: route,
+                    // Quiet hours were already honoured by the planner; this
+                    // keeps the delivery itself silent near the boundary.
+                    respectsQuietHours: preferences.quietHours.isEnabled,
+                    threadIdentifier: category.rawValue,
+                    actionPayload: actionPayload
                 )
             )
             var stored = record
@@ -177,14 +206,47 @@ actor ReminderScheduler {
         return plan
     }
 
+    /// Resolves what the notification will say.
+    ///
+    /// Always the `gentleReminder` category, which is never nickname-eligible —
+    /// a notification arriving unprompted is not a moment for "Noonies". The
+    /// subject (a plant name) becomes the title so the body stays soft.
+    private func resolveCopy(
+        category: ReminderCategory,
+        subject: String?,
+        preferences: UserPreferences
+    ) async -> (messageID: ContentID, title: String, body: String)? {
+        let profile = (try? await preferencesRepository.profile())
+        let timeContext = timeResolver.resolve(
+            at: clock.now,
+            preferences: preferences,
+            timeZone: clock.timeZone,
+            reduceMotion: false
+        )
+
+        guard let message = messageProvider.message(for: SunnieMessageContext(
+            category: .gentleReminder,
+            timeContext: timeContext,
+            displayName: profile?.displayName ?? DefaultProfile.displayName,
+            nickname: profile?.preferredNickname,
+            nicknameProbability: preferences.nicknameProbability
+        )) else { return nil }
+
+        let title = subject ?? String(
+            localized: "notification.title.default",
+            defaultValue: "Sunnie Days",
+            comment: "Notification title when there is no specific subject"
+        )
+        return (message.id, title, message.text)
+    }
+
     /// Cancels everything pending for a task.
     ///
     /// Called when a task completes, so a reminder never arrives for something
     /// already done — including when the Watch was what completed it
     /// (NOTIFICATIONS_AND_REMINDERS.md §5, §9).
     func cancelAll(for sourceEntityID: UUID) async {
-        let categories = ReminderCategory.allCases
-        for category in categories {
+        for category in ReminderCategory.allCases {
             let scheduled = (try? await repository.scheduled(category: category)) ?? []
             for record in scheduled where record.sourceEntityID == sourceEntityID {
                 await notifications.cancel(reminderID: record.id)
@@ -197,5 +259,8 @@ actor ReminderScheduler {
         try? await repository.markResponse(
             reminderID: reminderID, response: response, at: clock.now
         )
+        if response == .completed || response == .skippedForToday {
+            await notifications.cancel(reminderID: reminderID)
+        }
     }
 }

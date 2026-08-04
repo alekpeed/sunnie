@@ -60,12 +60,22 @@ struct RecordWellnessCheckIn: Sendable {
         self.deviceID = deviceID
     }
 
+    /// `id` lets a capture surface name the record before it exists, so a photo
+    /// or voice note can be attached while the form is still open. The save is
+    /// still idempotent by action key, so this ID is a proposal: if an entry for
+    /// this minute already exists, the stored one keeps its own ID and the caller
+    /// moves the attachments across.
     func callAsFunction(
+        id: UUID = UUID(),
         mood: WellnessScaleValue? = nil,
         energy: WellnessScaleValue? = nil,
         stress: WellnessScaleValue? = nil,
         sleepQuality: WellnessScaleValue? = nil,
         note: String? = nil,
+        /// Whether media is already attached to `id`. A photo or a voice note is
+        /// an entry on its own — without this, someone who recorded only a voice
+        /// note would tap Save and have it silently rejected as blank.
+        hasAttachments: Bool = false,
         recordedAt: Date? = nil
     ) async throws -> Result {
         let now = clock.now
@@ -73,6 +83,7 @@ struct RecordWellnessCheckIn: Sendable {
 
         let trimmedNote = note?.trimmingCharacters(in: .whitespacesAndNewlines)
         let checkIn = WellnessCheckIn(
+            id: id,
             recordedAt: timestamp,
             timeZoneID: clock.timeZone.identifier,
             mood: mood,
@@ -87,7 +98,7 @@ struct RecordWellnessCheckIn: Sendable {
 
         // An entirely blank entry is not saved. Recording one thing is enough,
         // but recording nothing is not an entry.
-        guard !checkIn.isEmpty else {
+        guard !checkIn.isEmpty || hasAttachments else {
             throw DomainError.validationFailed(reason: .emptyName)
         }
 

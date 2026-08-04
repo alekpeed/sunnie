@@ -97,21 +97,37 @@ final class WellnessModel {
         affirmation = next
     }
 
+    /// `draftID` is the ID the sheet attached photos and voice notes to while it
+    /// was open.
     func recordCheckIn(
+        draftID: UUID,
         mood: WellnessScaleValue?,
         energy: WellnessScaleValue?,
         stress: WellnessScaleValue?,
         sleepQuality: WellnessScaleValue?,
-        note: String?
+        note: String?,
+        hasAttachments: Bool
     ) async {
         do {
             let result = try await dependencies.recordWellnessCheckIn(
+                id: draftID,
                 mood: mood,
                 energy: energy,
                 stress: stress,
                 sleepQuality: sleepQuality,
-                note: note
+                note: note,
+                hasAttachments: hasAttachments
             )
+
+            // The save is idempotent by minute bucket, so it may have resolved
+            // onto an entry that already existed. When it does, the attachments
+            // move to the entry that was actually kept rather than being stranded
+            // on an ID nothing points at.
+            if result.checkIn.id != draftID {
+                try? await dependencies.mediaRepository.reassign(
+                    from: .checkIn(draftID), to: .checkIn(result.checkIn.id)
+                )
+            }
 
             acknowledgement = result.message
             suggestion = result.suggestion

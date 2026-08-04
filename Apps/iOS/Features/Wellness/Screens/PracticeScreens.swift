@@ -262,29 +262,34 @@ struct CalmSoundsScreen: View {
     @Environment(AppDependencies.self) private var dependencies
     @Environment(\.sunnieTheme) private var theme
 
+    /// Offered sleep-timer lengths. The list stops at an hour: past that the
+    /// timer is not really the thing keeping the sound going.
+    private static let timerOptions: [Int] = [5, 10, 15, 20, 30, 45, 60]
+
     @State private var playingID: ContentID?
+    @State private var favorites: Set<ContentID> = []
+    @State private var timerMinutes: Int?
 
     var body: some View {
         List {
+            if !favorites.isEmpty {
+                Section {
+                    ForEach(favoriteSounds) { sound in
+                        soundRow(sound)
+                    }
+                } header: {
+                    Text("calm.section.favorites", bundle: .main)
+                }
+            }
+
+            timerSection
+
             ForEach(CalmSoundCategory.allCases, id: \.self) { category in
                 let sounds = dependencies.affirmationService.calmSounds(in: category)
                 if !sounds.isEmpty {
                     Section {
                         ForEach(sounds) { sound in
-                            Button {
-                                Task { await toggle(sound) }
-                            } label: {
-                                HStack {
-                                    Text(LocalizedStringKey(sound.displayNameKey))
-                                        .foregroundStyle(theme.color.textPrimary)
-                                    Spacer()
-                                    Image(systemName: playingID == sound.id
-                                        ? "speaker.wave.2.fill" : "play.circle")
-                                        .foregroundStyle(theme.color.accentCalm)
-                                }
-                            }
-                            .accessibilityElement(children: .combine)
-                            .accessibilityAddTraits(playingID == sound.id ? [.isButton, .isSelected] : .isButton)
+                            soundRow(sound)
                         }
                     } header: {
                         Text(LocalizedStringKey("calm.category.\(category.rawValue)"))
@@ -301,9 +306,100 @@ struct CalmSoundsScreen: View {
         .scrollContentBackground(.hidden)
         .background(theme.color.canvas.ignoresSafeArea())
         .navigationTitle(Text("wellness.calm.title", bundle: .main))
+        .task { await loadPreferences() }
         .onDisappear {
             Task { await dependencies.audioService.stopAmbience() }
         }
+    }
+
+    /// The sleep timer.
+    ///
+    /// "Keep playing" is the default and a first-class choice, not an off switch
+    /// — someone who wants sound all night should not have to defeat a timer to
+    /// get it (WELLNESS_JOURNAL_AND_CALM.md §9).
+    private var timerSection: some View {
+        Section {
+            Picker(
+                String(
+                    localized: "calm.timer",
+                    defaultValue: "Fade out after",
+                    comment: "Sleep timer picker"
+                ),
+                selection: timerBinding
+            ) {
+                Text("calm.timer.off", bundle: .main).tag(Int?.none)
+                ForEach(Self.timerOptions, id: \.self) { minutes in
+                    Text(
+                        "calm.timer.minutes \(minutes)",
+                        bundle: .main,
+                        comment: "A sleep timer length in minutes"
+                    )
+                    .tag(Int?.some(minutes))
+                }
+            }
+        } footer: {
+            Text("calm.timer.footer", bundle: .main)
+        }
+    }
+
+    private func soundRow(_ sound: CalmSoundDefinition) -> some View {
+        HStack {
+            Button {
+                Task { await toggle(sound) }
+            } label: {
+                HStack {
+                    Text(LocalizedStringKey(sound.displayNameKey))
+                        .foregroundStyle(theme.color.textPrimary)
+                    Spacer()
+                    Image(systemName: playingID == sound.id
+                        ? "speaker.wave.2.fill" : "play.circle")
+                        .foregroundStyle(theme.color.accentCalm)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(
+                playingID == sound.id ? [.isButton, .isSelected] : .isButton
+            )
+
+            Button {
+                Task { await toggleFavorite(sound) }
+            } label: {
+                Image(systemName: favorites.contains(sound.id) ? "heart.fill" : "heart")
+                    .foregroundStyle(theme.color.accentCalm)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(
+                favorites.contains(sound.id)
+                    ? "calm.favorite.remove" : "calm.favorite.add",
+                bundle: .main
+            ))
+        }
+    }
+
+    /// Favourites in the order the content pack defines, not the order they were
+    /// added — a list that reshuffles itself is harder to use at night.
+    private var favoriteSounds: [CalmSoundDefinition] {
+        CalmSoundCategory.allCases
+            .flatMap { dependencies.affirmationService.calmSounds(in: $0) }
+            .filter { favorites.contains($0.id) }
+    }
+
+    private var timerBinding: Binding<Int?> {
+        Binding(
+            get: { timerMinutes },
+            set: { newValue in
+                timerMinutes = newValue
+                Task { await applyTimer(newValue) }
+            }
+        )
+    }
+
+    private func loadPreferences() async {
+        guard let preferences = try? await dependencies
+            .preferencesRepository.preferences() else { return }
+        favorites = Set(preferences.favoriteCalmSoundIDs)
+        timerMinutes = preferences.calmSoundTimerMinutes
     }
 
     private func toggle(_ sound: CalmSoundDefinition) async {
@@ -313,7 +409,39 @@ struct CalmSoundsScreen: View {
         } else {
             playingID = sound.id
             await dependencies.audioService.startAmbience(sound.audioCueID)
+            // Starting playback clears any previous timer, so the choice is
+            // re-applied against the sound that is actually playing now.
+            if let timerMinutes {
+                await dependencies.audioService.startSleepTimer(minutes: timerMinutes)
+            }
         }
+    }
+
+    private func toggleFavorite(_ sound: CalmSoundDefinition) async {
+        if favorites.contains(sound.id) {
+            favorites.remove(sound.id)
+        } else {
+            favorites.insert(sound.id)
+        }
+        await persist { $0.favoriteCalmSoundIDs = favoriteSounds.map(\.id) }
+    }
+
+    private func applyTimer(_ minutes: Int?) async {
+        if let minutes {
+            await dependencies.audioService.startSleepTimer(minutes: minutes)
+        } else {
+            await dependencies.audioService.cancelSleepTimer()
+        }
+        await persist { $0.calmSoundTimerMinutes = minutes }
+    }
+
+    /// Reads, mutates, and writes back, so a preference changed on another screen
+    /// in the meantime is not overwritten by a stale copy.
+    private func persist(_ mutate: (inout UserPreferences) -> Void) async {
+        guard var preferences = try? await dependencies
+            .preferencesRepository.preferences() else { return }
+        mutate(&preferences)
+        try? await dependencies.preferencesRepository.save(preferences)
     }
 }
 

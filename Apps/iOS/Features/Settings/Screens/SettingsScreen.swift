@@ -19,6 +19,8 @@ struct SettingsScreen: View {
             audioSection
             accessibilitySection
             notificationsSection
+            reminderCadenceSection
+            quietHoursSection
             privacySection
         }
         .scrollContentBackground(.hidden)
@@ -161,6 +163,105 @@ struct SettingsScreen: View {
         } footer: {
             Text("settings.reminders.footer", bundle: .main)
         }
+    }
+
+    /// Per-category cadence.
+    ///
+    /// Every category starts at "None" and stays there until the user chooses
+    /// otherwise: reminders are opt-in one kind at a time, and granting
+    /// notification permission does not by itself turn any of them on
+    /// (NOTIFICATIONS_AND_REMINDERS.md §5).
+    ///
+    /// Only the categories whose features exist are listed. Offering a switch for
+    /// travel reminders before travel is built would be a setting that does
+    /// nothing.
+    @ViewBuilder
+    private var reminderCadenceSection: some View {
+        if notificationStatus == .authorized || notificationStatus == .provisional {
+            Section {
+                ForEach(Self.availableReminderCategories, id: \.self) { category in
+                    Picker(
+                        selection: cadenceBinding(for: category)
+                    ) {
+                        ForEach(AdaptiveCadenceLevel.allCases, id: \.self) { level in
+                            Text(LocalizationKeys.cadenceLevel(level)).tag(level)
+                        }
+                    } label: {
+                        Text(LocalizationKeys.reminderCategory(category))
+                    }
+                }
+            } header: {
+                Text("settings.section.cadence", bundle: .main)
+            } footer: {
+                Text("settings.cadence.footer", bundle: .main)
+            }
+        }
+    }
+
+    /// Categories with a feature behind them today. Extended as features land.
+    private static let availableReminderCategories: [ReminderCategory] = [.plantCare]
+
+    /// Quiet hours.
+    ///
+    /// Nothing is cancelled by quiet hours — a reminder due inside the window is
+    /// moved to the edge of it, so the task is not lost, it just doesn't wake
+    /// anyone (NOTIFICATIONS_AND_REMINDERS.md §7).
+    private var quietHoursSection: some View {
+        Section {
+            Toggle(isOn: binding(
+                get: { $0.quietHours.isEnabled },
+                set: { $0.quietHours.isEnabled = $1 }
+            )) {
+                Text("settings.quietHours.enabled", bundle: .main)
+            }
+
+            if appState.preferences.quietHours.isEnabled {
+                Picker(selection: binding(
+                    get: { $0.quietHours.startHour },
+                    set: { $0.quietHours.startHour = $1 }
+                )) {
+                    ForEach(0..<24, id: \.self) { hour in
+                        Text(Self.hourLabel(hour)).tag(hour)
+                    }
+                } label: {
+                    Text("settings.quietHours.start", bundle: .main)
+                }
+
+                Picker(selection: binding(
+                    get: { $0.quietHours.endHour },
+                    set: { $0.quietHours.endHour = $1 }
+                )) {
+                    ForEach(0..<24, id: \.self) { hour in
+                        Text(Self.hourLabel(hour)).tag(hour)
+                    }
+                } label: {
+                    Text("settings.quietHours.end", bundle: .main)
+                }
+            }
+        } header: {
+            Text("settings.section.quietHours", bundle: .main)
+        } footer: {
+            Text("settings.quietHours.footer", bundle: .main)
+        }
+    }
+
+    /// Formats an hour in the user's locale, so a 24-hour region does not see
+    /// "10 PM".
+    private static func hourLabel(_ hour: Int) -> String {
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = 0
+        guard let date = Calendar.current.date(from: components) else { return "\(hour)" }
+        return date.formatted(.dateTime.hour())
+    }
+
+    private func cadenceBinding(
+        for category: ReminderCategory
+    ) -> Binding<AdaptiveCadenceLevel> {
+        binding(
+            get: { $0.reminderLevel(for: category) },
+            set: { $0.setReminderLevel($1, for: category) }
+        )
     }
 
     private var privacySection: some View {

@@ -86,23 +86,153 @@ public enum NotificationAuthorization: String, Hashable, Sendable {
 public struct ScheduledReminderRequest: Hashable, Sendable {
     public let id: UUID
     public let messageID: ContentID
+    /// Already-composed title. Resolved before scheduling, because a
+    /// notification with no title and no body simply never appears.
+    public let title: String
+    public let body: String
     public let fireDate: Date
     public let route: String
     public let respectsQuietHours: Bool
+    /// Groups related notifications so the system collapses them rather than
+    /// stacking five separate plant reminders (NOTIFICATIONS_AND_REMINDERS.md §9).
+    public let threadIdentifier: String
+    /// What a "Done" tap needs in order to record the real thing.
+    ///
+    /// Without this the action button could only note that it was pressed, which
+    /// would be worse than not offering it: the user would believe the task was
+    /// logged when nothing had been. Values are small identifiers, never content
+    /// (NOTIFICATIONS_AND_REMINDERS.md §6).
+    public let actionPayload: [String: String]
 
     public init(
         id: UUID,
         messageID: ContentID,
+        title: String,
+        body: String,
         fireDate: Date,
         route: String,
-        respectsQuietHours: Bool = true
+        respectsQuietHours: Bool = true,
+        threadIdentifier: String,
+        actionPayload: [String: String] = [:]
     ) {
         self.id = id
         self.messageID = messageID
+        self.title = title
+        self.body = body
         self.fireDate = fireDate
         self.route = route
         self.respectsQuietHours = respectsQuietHours
+        self.threadIdentifier = threadIdentifier
+        self.actionPayload = actionPayload
     }
+}
+
+/// What the user did to a delivered notification, and what is needed to honour it.
+public struct DeliveredNotificationAction: Hashable, Sendable {
+    public let reminderID: UUID
+    public let response: ReminderResponse
+    /// The `actionPayload` the reminder was scheduled with.
+    public let payload: [String: String]
+
+    public init(
+        reminderID: UUID,
+        response: ReminderResponse,
+        payload: [String: String] = [:]
+    ) {
+        self.reminderID = reminderID
+        self.response = response
+        self.payload = payload
+    }
+}
+
+/// Offering a reminder, as features see it.
+///
+/// Features ask for a reminder and never learn whether one was actually
+/// scheduled or why not — cadence, quiet hours, the daily ceiling, and
+/// permission are the scheduler's business. Behind a protocol so a feature
+/// depends on the capability rather than on the concrete scheduler
+/// (TECHNICAL_ARCHITECTURE.md §8).
+public protocol ReminderOffering: Sendable {
+    /// Offers one reminder. Returns the plan, which may be a suppression.
+    @discardableResult
+    func offer(
+        category: ReminderCategory,
+        sourceEntityID: UUID?,
+        route: String,
+        desiredFireDate: Date,
+        subject: String?,
+        actionPayload: [String: String],
+        isTaskComplete: Bool,
+        timeZonePolicy: ReminderTimeZonePolicy
+    ) async -> ReminderPlan
+
+    /// Cancels everything pending for a task, because it is done.
+    func cancelAll(for sourceEntityID: UUID) async
+
+    func recordResponse(reminderID: UUID, response: ReminderResponse) async
+}
+
+public extension ReminderOffering {
+    @discardableResult
+    func offer(
+        category: ReminderCategory,
+        sourceEntityID: UUID?,
+        route: String,
+        desiredFireDate: Date,
+        subject: String? = nil,
+        actionPayload: [String: String] = [:]
+    ) async -> ReminderPlan {
+        await offer(
+            category: category,
+            sourceEntityID: sourceEntityID,
+            route: route,
+            desiredFireDate: desiredFireDate,
+            subject: subject,
+            actionPayload: actionPayload,
+            isTaskComplete: false,
+            timeZonePolicy: .deviceTimeZone
+        )
+    }
+}
+
+/// Stand-in for tests, previews, and any composition without notifications.
+/// Every offer is suppressed, which is exactly what "no reminders" means.
+public struct NoReminders: ReminderOffering {
+    public init() {}
+
+    @discardableResult
+    public func offer(
+        category: ReminderCategory,
+        sourceEntityID: UUID?,
+        route: String,
+        desiredFireDate: Date,
+        subject: String?,
+        actionPayload: [String: String],
+        isTaskComplete: Bool,
+        timeZonePolicy: ReminderTimeZonePolicy
+    ) async -> ReminderPlan {
+        .suppress(.cadenceDisabled)
+    }
+
+
+    public func cancelAll(for sourceEntityID: UUID) async {}
+    public func recordResponse(reminderID: UUID, response: ReminderResponse) async {}
+}
+
+/// Keys used in a notification's payload, shared so the scheduler and the tap
+/// handler cannot drift apart.
+public enum NotificationPayloadKeys {
+    public static let route = "sunnie.notification.route"
+    public static let reminderID = "sunnie.notification.reminderID"
+    public static let messageID = "sunnie.notification.messageID"
+    /// Prefix for everything in `ScheduledReminderRequest.actionPayload`, so the
+    /// per-category values cannot collide with the keys above.
+    public static let actionPrefix = "sunnie.notification.action."
+
+    /// Well-known `actionPayload` keys.
+    public static let plantID = "plantID"
+    public static let careType = "careType"
+    public static let scheduleID = "scheduleID"
 }
 
 public protocol AudioPlaying: Sendable {
