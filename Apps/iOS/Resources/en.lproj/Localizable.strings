@@ -343,3 +343,227 @@
 "settings.quietHours.start" = "From";
 "settings.quietHours.end" = "Until";
 "settings.quietHours.footer" = "Reminders due during these hours wait until the end of the window. Nothing is cancelled — it just doesn't wake you.";
+
+/* Common */
+"common.save" = "Save";
+"common.edit" = "Edit";
+"common.done" = "Done";
+
+/* Care types */
+"care.water" = "Water";
+"care.fertilize" = "Feed";
+"care.mist" = "Mist";
+"care.rotate" = "Turn";
+"care.cleanLeaves" = "Clean the leaves";
+"care.prune" = "Prune";
+"care.repot" = "Repot";
+"care.propagate" = "Propagate";
+"care.pestTreatment" = "Treat for pests";
+"care.healthInspection" = "Look it over";
+"care.custom" = "Something else";
+
+/* Plant attributes */
+"light.lowLight" = "Low light";
+"light.indirectBright" = "Bright, indirect";
+"light.directSun" = "Direct sun";
+"light.dappled" = "Dappled";
+"light.unknown" = "Not sure";
+"difficulty.easy" = "Easygoing";
+"difficulty.moderate" = "Middling";
+"difficulty.demanding" = "Particular";
+"plantStatus.active" = "Here";
+"plantStatus.inactive" = "Resting";
+"plantStatus.archived" = "Archived";
+
+/* Plant editor */
+"plant.editor.new" = "New plant";
+"plant.editor.edit" = "Edit plant";
+"plant.section.essentials" = "The basics";
+"plant.section.essentials.footer" = "A name is all that's needed. Everything else can wait, or never happen.";
+"plant.section.details" = "Details";
+"plant.section.notes" = "Notes";
+"plant.section.photos" = "Photos";
+"plant.field.name" = "Name";
+"plant.field.nickname" = "Nickname (optional)";
+"plant.field.location" = "Where it lives";
+"plant.field.species" = "Species";
+"plant.field.variety" = "Variety";
+"plant.field.light" = "Light";
+"plant.field.difficulty" = "How particular is it?";
+"plant.field.acquired" = "When you got it";
+"plant.field.source" = "Where it came from";
+"plant.field.pot" = "Pot";
+"plant.field.soil" = "Soil";
+"plant.field.notes" = "Anything worth remembering";
+"plant.field.status" = "Status";
+"plant.location.none" = "Nowhere in particular";
+"plant.location.new" = "Add a room";
+"plant.location.newAction" = "Add this room";
+"plant.error.needsName" = "A name is all that's needed to save. Everything else can wait.";
+"plant.error.save" = "That didn't save just now. Nothing has changed, and you can try again.";
+
+/* Plant detail actions */
+"plant.options" = "Options";
+"plant.archive" = "Archive";
+"plant.archive.confirm" = "Archive this plant?";
+"plant.archive.action" = "Archive it";
+"plant.archive.message" = "Its history stays exactly where it is, and you can bring it back whenever you like. It just stops appearing in your daily list.";
+
+/* QR labels */
+"plant.qr.title" = "Its label";
+"plant.qr.show" = "Its label";
+"plant.qr.explain" = "Print this and pop it near the pot. Scanning it opens this plant. The code holds nothing but a reference — no notes, no name.";
+"plant.qr.share" = "Share the link";
+"plant.qr.accessibility %@" = "QR label for %@";
+"plant.qr.unavailable" = "The label couldn't be drawn just now.";
+"plant.qr.regenerate" = "Make a new label";
+"plant.qr.regenerate.confirm" = "Make a new label?";
+"plant.qr.regenerate.action" = "Make a new one";
+"plant.qr.regenerate.message" = "Any label you've already printed for this plant will stop working.";
+"plant.scan" = "Scan a label";
+"plant.scan.title" = "Scan";
+"plant.scan.hint" = "Point the camera at a plant label.";
+"plant.scan.unknown" = "That isn't a label from this app — or its plant isn't here any more.";
+"plant.scan.unavailable" = "Scanning needs a camera, which isn't available here.";
+
+/* Schedules */
+"schedule.add" = "Add a care rhythm";
+"schedule.paused" = "Paused";
+"schedule.editor.new" = "New rhythm";
+"schedule.editor.edit" = "Care rhythm";
+"schedule.field.careType" = "What kind of care";
+"schedule.field.enabled" = "Remind me about this";
+"schedule.field.enabled.footer" = "Turning this off keeps the rhythm but stops it appearing in your list.";
+"schedule.field.repeats" = "On a rhythm";
+"schedule.field.every %lld" = "Every %lld days";
+"schedule.field.hour" = "Around";
+"schedule.field.repeats.footer" = "This is a rhythm you've chosen, not a rule about the plant. Sunnie will say it may be ready — never that it must be done.";
+"schedule.field.seasonal" = "Through the year";
+"schedule.field.seasonal.footer" = "Most plants drink less when it's colder. This stretches the gaps out rather than changing anything about the plant.";
+"schedule.seasonal.none" = "The same all year";
+"schedule.seasonal.lessInWinter" = "A little less in winter";
+"schedule.seasonal.muchLessInWinter" = "Much less in winter";
+"schedule.delete" = "Remove this rhythm";
+"schedule.delete.footer" = "Care you've already logged stays in the history.";
+
+/* Collection */
+"collection.title" = "All plants";
+"collection.loading" = "Gathering your plants…";
+"collection.add" = "Add a plant";
+"collection.options" = "Options";
+"collection.filters" = "Filters";
+"collection.clearFilters" = "Show all";
+"collection.sort" = "Sort by";
+"collection.sort.name" = "Name";
+"collection.sort.nextDue" = "What's next";
+"collection.sort.lastCare" = "Longest since care";
+"collection.sort.acquiredDate" = "Newest first";
+"collection.mode.grid" = "As a grid";
+"collection.mode.list" = "As a list";
+"collection.select" = "Select";
+"collection.selectAll" = "Select plants";
+"collection.bulkCare %lld" = "Care for %lld";
+"collection.filtered %1$lld %2$lld" = "Showing %1$lld of %2$lld";
+"collection.chip.watching" = "Watching";
+"collection.empty.title" = "No plants yet";
+"collection.empty.message" = "Whenever you'd like to add one, Sunnie will help you look after it.";
+"collection.empty.filtered.title" = "Nothing matches that";
+"collection.empty.filtered.message" = "Your plants are all still here — the filters just don't match any of them right now.";
+"collection.error.load" = "I couldn't open your collection just now. Nothing has been lost, and you can try again.";
+"collection.filter.status" = "Status";
+"collection.filter.location" = "Room";
+"collection.filter.species" = "Species";
+"collection.filter.careType" = "Kind of care";
+"collection.filter.caretaker" = "Looked after by";
+"collection.filter.due" = "Coming up within";
+"collection.filter.due.any" = "Any time";
+"collection.filter.due.days %lld" = "%lld days";
+"collection.filter.due.footer" = "Anything already waiting is included, whichever window you pick.";
+
+/* Bulk care */
+"bulkCare.title" = "Log care";
+"bulkCare.type" = "What you did";
+"bulkCare.footer" = "You can change any single plant below without changing the rest.";
+"bulkCare.plants %lld" = "%lld plants";
+"bulkCare.override" = "For this one";
+"bulkCare.note" = "Note (optional)";
+"bulkCare.save" = "Log it";
+"bulkCare.result %lld" = "Logged for %lld plants.";
+"bulkCare.result.partial" = "These didn't go through. Everything else is saved.";
+"bulkCare.retry" = "Try those again";
+
+/* Health observations */
+"health.title" = "What you've noticed";
+"health.new" = "Note something";
+"health.editor.title" = "What you noticed";
+"health.section.open" = "Still watching";
+"health.section.resolved" = "Better now";
+"health.section.photos" = "Photos";
+"health.empty.title" = "Nothing noted";
+"health.empty.message" = "If you ever notice something about this plant, you can write it down here.";
+"health.resolve" = "Better now";
+"health.reopen" = "Reopen";
+"health.field.date" = "When you noticed";
+"health.field.category" = "What you saw";
+"health.field.severity" = "How much does it seem to matter?";
+"health.field.severity.footer" = "This is your read on it. Sunnie keeps the note; he doesn't work out what's wrong.";
+"health.field.notes" = "What you noticed";
+"health.field.cause" = "What you think might have caused it (optional)";
+"health.field.treatment" = "What you tried (optional)";
+"health.field.followUp" = "Remind me to look again";
+"health.field.followUpDate" = "On";
+
+"symptom.yellowingLeaves" = "Yellowing leaves";
+"symptom.brownTips" = "Brown tips";
+"symptom.droopingLeaves" = "Drooping";
+"symptom.leafDrop" = "Dropping leaves";
+"symptom.spots" = "Spots";
+"symptom.pests" = "Something living on it";
+"symptom.mould" = "Mould";
+"symptom.stuntedGrowth" = "Not growing much";
+"symptom.rootConcern" = "Something at the roots";
+"symptom.damage" = "Damage";
+"symptom.other" = "Something else";
+"severity.mild" = "Slight";
+"severity.noticeable" = "Noticeable";
+"severity.significant" = "A lot";
+
+/* Growth timeline */
+"growth.title" = "How it's grown";
+"growth.new" = "Add to the timeline";
+"growth.editor.title" = "This moment";
+"growth.section.timeline" = "Over time";
+"growth.section.comparison" = "Then and now";
+"growth.section.photo" = "Photo";
+"growth.comparison.then" = "Then";
+"growth.comparison.now" = "Now";
+"growth.empty.title" = "No photos yet";
+"growth.empty.message" = "A photo now gives you something to compare against later. There's no hurry.";
+"growth.field.date" = "When";
+"growth.field.measure" = "Record a measurement";
+"growth.field.measure.footer" = "Only if you feel like it. A photo on its own is plenty.";
+"growth.field.metric" = "What you measured";
+"growth.field.value" = "Measurement";
+"growth.field.unit" = "Unit (cm, in — whatever you use)";
+"growth.field.milestone" = "Mark this as a moment";
+"growth.field.milestoneLabel" = "What happened (first flower, repotted…)";
+"growth.field.note" = "Note (optional)";
+"growth.metric.height" = "Height";
+"growth.metric.width" = "Width";
+"growth.metric.leafCount" = "Leaves";
+"growth.metric.newGrowth" = "New growth";
+"growth.delta.up %1$@ %2$@" = "%1$@: up %2$@ since then";
+"growth.delta.down %1$@ %2$@" = "%1$@: down %2$@ since then";
+
+/* Travel coverage */
+"coverage.instructions.none %@" = "%@ shouldn't need anything while you're away.";
+"coverage.instructions.line %1$@ %2$@" = "%1$@ — may be ready around %2$@";
+
+/* Jungle */
+"jungle.options" = "Options";
+
+/* Export */
+"settings.section.export" = "Your data";
+"settings.export.footer" = "A copy of everything in your jungle, to keep or take elsewhere. Nothing leaves your phone unless you send it somewhere.";
+"export.format.json" = "Export as JSON";
+"export.format.csv" = "Export as spreadsheet";

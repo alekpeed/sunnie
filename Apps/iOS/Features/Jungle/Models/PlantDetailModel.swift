@@ -22,6 +22,9 @@ final class PlantDetailModel {
 
     private(set) var state: LoadState = .idle
     private(set) var lastReaction: SunnieMessage?
+    /// Drives the "Watching" chip. A count rather than a flag so the same value
+    /// can label the row later without another query.
+    private(set) var openObservationCount = 0
     var isQuickCarePresented = false
 
     let plantID: UUID
@@ -54,6 +57,13 @@ final class PlantDetailModel {
                 .schedules(forPlantID: plantID)
             let events = try await dependencies.careEventRepository
                 .events(forPlantID: plantID, limit: historyLimit)
+
+            // Best effort: a failure here costs the "Watching" chip, not the
+            // screen.
+            openObservationCount = (try? await dependencies.managePlantHealth
+                .observations(forPlantID: plantID)
+                .filter { !$0.isResolved }
+                .count) ?? 0
 
             state = .loaded(Loaded(
                 plant: plant,

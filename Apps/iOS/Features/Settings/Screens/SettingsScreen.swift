@@ -12,6 +12,8 @@ struct SettingsScreen: View {
     @Environment(\.sunnieTheme) private var theme
 
     @State private var notificationStatus: NotificationAuthorization = .notDetermined
+    @State private var isExporting = false
+    @State private var exportedFiles: [URL] = []
 
     var body: some View {
         Form {
@@ -21,6 +23,7 @@ struct SettingsScreen: View {
             notificationsSection
             reminderCadenceSection
             quietHoursSection
+            exportSection
             privacySection
         }
         .scrollContentBackground(.hidden)
@@ -262,6 +265,65 @@ struct SettingsScreen: View {
             get: { $0.reminderLevel(for: category) },
             set: { $0.setReminderLevel($1, for: category) }
         )
+    }
+
+    /// Export (PLANT_CARE.md §12).
+    ///
+    /// The user's data is theirs, and this is how they take a copy the app cannot
+    /// lose. Both formats are offered because they answer different questions:
+    /// JSON keeps the structure, CSV opens in a spreadsheet.
+    private var exportSection: some View {
+        Section {
+            ForEach(JungleExportWriter.Format.allCases, id: \.self) { format in
+                Button {
+                    Task { await export(format) }
+                } label: {
+                    HStack {
+                        Text(LocalizedStringKey(format.localizationKey))
+                        Spacer()
+                        if isExporting {
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isExporting)
+            }
+        } header: {
+            Text("settings.section.export", bundle: .main)
+        } footer: {
+            Text("settings.export.footer", bundle: .main)
+        }
+        .sheet(isPresented: exportSheetBinding) {
+            if !exportedFiles.isEmpty {
+                ShareSheet(items: exportedFiles)
+            }
+        }
+    }
+
+    private var exportSheetBinding: Binding<Bool> {
+        Binding(
+            get: { !exportedFiles.isEmpty },
+            set: { if !$0 { exportedFiles = [] } }
+        )
+    }
+
+    /// Writes the export to a temporary directory and hands it to the share
+    /// sheet. Nothing is written into the app's own storage on the way out, and
+    /// the directory is unique per export so two in a row cannot mix.
+    private func export(_ format: JungleExportWriter.Format) async {
+        isExporting = true
+        defer { isExporting = false }
+
+        do {
+            let export = try await dependencies.exportJungle.build()
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("SunnieExport-\(UUID().uuidString)", isDirectory: true)
+            exportedFiles = try dependencies.exportJungle.write(
+                export, format: format, to: directory
+            )
+        } catch {
+            exportedFiles = []
+        }
     }
 
     private var privacySection: some View {

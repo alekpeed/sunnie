@@ -37,6 +37,7 @@ final class AppDependencies {
     let journalRepository: any JournalRepository
     let mediaRepository: any MediaRepository
     let reminderRepository: any ReminderRepository
+    let plantHealthRepository: any PlantHealthRepository
 
     let progressionEngine: ProgressionEngine
     let summaryProvider: PlantSummaryProvider
@@ -49,6 +50,11 @@ final class AppDependencies {
     let haptics: HapticService
 
     let logPlantCare: LogPlantCare
+    let logBulkCare: LogBulkCare
+    let managePlant: ManagePlant
+    let managePlantHealth: ManagePlantHealth
+    let planTravelCoverage: PlanTravelCoverage
+    let exportJungle: ExportJungle
     let recordWellnessCheckIn: RecordWellnessCheckIn
     let manageWellnessSession: ManageWellnessSession
     let manageJournalEntry: ManageJournalEntry
@@ -92,6 +98,7 @@ final class AppDependencies {
         let journal = SwiftDataJournalRepository(modelContainer: modelContainer)
         let media = SwiftDataMediaRepository(modelContainer: modelContainer)
         let reminders = SwiftDataReminderRepository(modelContainer: modelContainer)
+        let plantHealth = SwiftDataPlantHealthRepository(modelContainer: modelContainer)
 
         self.plantRepository = plants
         self.careEventRepository = events
@@ -102,6 +109,7 @@ final class AppDependencies {
         self.journalRepository = journal
         self.mediaRepository = media
         self.reminderRepository = reminders
+        self.plantHealthRepository = plantHealth
 
         self.progressionEngine = ProgressionEngine(repository: progression)
         self.summaryProvider = PlantSummaryProvider(
@@ -146,6 +154,40 @@ final class AppDependencies {
             reminders: reminderScheduler,
             clock: clock,
             deviceID: deviceID
+        )
+
+        self.logBulkCare = LogBulkCare(logCare: logPlantCare, clock: clock)
+
+        self.managePlant = ManagePlant(
+            plantRepository: plants,
+            careEventRepository: events,
+            progressionEngine: progressionEngine,
+            summaryProvider: summaryProvider,
+            reminders: reminderScheduler,
+            eventPublisher: eventBus,
+            clock: clock
+        )
+
+        self.managePlantHealth = ManagePlantHealth(
+            repository: plantHealth,
+            progressionEngine: progressionEngine,
+            clock: clock,
+            deviceID: deviceID
+        )
+
+        self.planTravelCoverage = PlanTravelCoverage(
+            plantRepository: plants,
+            careEventRepository: events,
+            healthRepository: plantHealth,
+            progressionEngine: progressionEngine,
+            clock: clock
+        )
+
+        self.exportJungle = ExportJungle(
+            plantRepository: plants,
+            careEventRepository: events,
+            healthRepository: plantHealth,
+            clock: clock
         )
 
         self.recordWellnessCheckIn = RecordWellnessCheckIn(

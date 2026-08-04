@@ -347,3 +347,79 @@ no benefit.
 ### Documents/tests affected
 
 `PROJECT_STRUCTURE_AND_CODING_STANDARDS.md` §1.
+
+---
+
+## ADR-017: Care-event corrections are a separate record, not a field
+
+**Status:** Accepted · **Date:** 2026-08-04 · **Phase:** 4
+
+### Context
+
+The care log is append-only (PLANT_CARE.md §7), and the spec asks that editing a
+care event "preserve an audit-friendly modification record or replacement
+relationship when practical." Phase 4 needed to implement that.
+
+The obvious design is a `supersededByEventID` field on `SDPlantCareEvent`. It is
+one nullable column and reads naturally.
+
+It also breaks something. `SDPlantCareEvent` has existed unchanged since schema
+V1, and V1, V2, and V3 all share the same model classes rather than freezing a
+copy per version — which is only sound while no existing model changes shape. The
+note on `SunnieSchemaV2` says exactly this. Adding a column to the care event
+would mean:
+
+- `SunnieSchemaV1.models` would describe a shape V1 never had, so the schema
+  declaration would be a lie about what shipped;
+- `SchemaMigrationTests` could no longer construct a genuine V1 store to migrate,
+  because writing one goes through the same shared class — so the test that
+  guards a year of care history against a bad migration would quietly stop
+  testing anything;
+- the shared-class shortcut would have to be unwound for every model at once:
+  V1's and V2's copied into frozen namespaces and the stages made custom.
+
+That last piece of work is real and will eventually be necessary. It is not
+justified by adding an edit history.
+
+### Decision
+
+Model the correction as its own record, `SDCareEventSupersession`, holding the
+plant, the superseded event, the replacement event, and when the correction was
+made. `SDPlantCareEvent` keeps the exact shape it had in V1, and the V2 → V3
+migration stays lightweight and purely additive.
+
+`PlantCareEventRepository.replace(eventID:with:)` saves the replacement through
+the normal idempotent path and then records the link, once.
+`supersededEventIDs(forPlantID:)` gives history screens the set to mark.
+
+### Consequences
+
+- Reading "was this event corrected?" is a second query rather than a column.
+  Batched per plant, so a history screen costs one extra fetch, not one per row.
+- Both records survive a correction. History shows the original marked as
+  superseded rather than replacing it, which is the point of an append-only log.
+- Correcting the same event twice with the same replacement is a no-op; the link
+  is checked before it is written.
+- If recording the link fails, the replacement is still stored. The cost is the
+  "superseded" marker, not the correction.
+- The shared-model shortcut survives one more schema version. The next change
+  that alters an existing model's shape must do the namespace freeze properly,
+  and this ADR is the standing note that the work is owed.
+
+### Alternatives considered
+
+**A field on the care event.** Rejected for the reasons above — it would have
+made a migration test stop testing migrations, which is the kind of failure that
+is silent until it matters.
+
+**Do the namespace freeze now.** Rejected as scope: it touches every model and
+every mapping, and nothing in Phase 4 needs it. Better done deliberately, when a
+change actually requires it, than as a side effect of an edit history.
+
+**Mutate the event in place.** Rejected outright. An append-only log that can be
+rewritten is not an append-only log, and the spec asks for the opposite.
+
+### Documents/tests affected
+
+`PLANT_CARE.md` §7. `JungleFlowTests.correctionsAreAppendOnly` and
+`correctionsAreIdempotent`. The note on `SunnieSchemaV3`.

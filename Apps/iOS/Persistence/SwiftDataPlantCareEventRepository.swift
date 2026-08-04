@@ -53,6 +53,109 @@ actor SwiftDataPlantCareEventRepository: PlantCareEventRepository {
         }
     }
 
+    /// A page of history. Paged rather than fetched whole because a plant with
+    /// 500+ events would otherwise load the lot to show twenty rows
+    /// (PLANT_CARE.md §15).
+    func events(
+        forPlantID plantID: UUID,
+        limit: Int,
+        offset: Int
+    ) async throws -> [PlantCareEvent] {
+        var descriptor = FetchDescriptor<SDPlantCareEvent>(
+            predicate: #Predicate<SDPlantCareEvent> { $0.plantID == plantID },
+            sortBy: [SortDescriptor(\.performedAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = max(0, limit)
+        descriptor.fetchOffset = max(0, offset)
+        do {
+            return try modelContext.fetch(descriptor).map { ModelMapping.domain($0) }
+        } catch {
+            throw DomainError.persistenceFailed(operation: "careEventPage")
+        }
+    }
+
+    func eventCount(forPlantID plantID: UUID) async throws -> Int {
+        do {
+            return try modelContext.fetchCount(FetchDescriptor<SDPlantCareEvent>(
+                predicate: #Predicate<SDPlantCareEvent> { $0.plantID == plantID }
+            ))
+        } catch {
+            throw DomainError.persistenceFailed(operation: "careEventCount")
+        }
+    }
+
+    func allEvents(limit: Int) async throws -> [PlantCareEvent] {
+        var descriptor = FetchDescriptor<SDPlantCareEvent>(
+            sortBy: [SortDescriptor(\.performedAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = max(0, limit)
+        do {
+            return try modelContext.fetch(descriptor).map { ModelMapping.domain($0) }
+        } catch {
+            throw DomainError.persistenceFailed(operation: "allCareEvents")
+        }
+    }
+
+    /// Records a correction.
+    ///
+    /// The replacement is saved through the normal idempotent path, so a repeated
+    /// correction does not create a second event. The supersession link is then
+    /// written only if it is not already there — correcting the same event twice
+    /// with the same replacement is a no-op rather than a growing pile of links.
+    ///
+    /// If the replacement turns out to be a duplicate of an event that is *not*
+    /// the one being corrected, the link still points at the stored event, which
+    /// keeps the history honest about what actually replaced what.
+    func replace(
+        eventID: UUID,
+        with replacement: PlantCareEvent
+    ) async throws -> SaveOutcome<PlantCareEvent> {
+        let outcome = try await save(replacement)
+        let stored = outcome.value
+
+        // Nothing supersedes itself.
+        guard stored.id != eventID else { return outcome }
+
+        let storedID = stored.id
+        var existing = FetchDescriptor<SDCareEventSupersession>(
+            predicate: #Predicate<SDCareEventSupersession> {
+                $0.supersededEventID == eventID && $0.replacementEventID == storedID
+            }
+        )
+        existing.fetchLimit = 1
+
+        do {
+            if try modelContext.fetch(existing).isEmpty {
+                modelContext.insert(SDCareEventSupersession(
+                    plantID: stored.plantID,
+                    supersededEventID: eventID,
+                    replacementEventID: storedID,
+                    recordedAt: stored.createdAt
+                ))
+                try modelContext.save()
+            }
+        } catch {
+            modelContext.rollback()
+            // The replacement is already stored. Failing to record the link costs
+            // the "superseded" marker in the history, not the correction itself,
+            // so the outcome is still returned rather than thrown away.
+            log.error("Recording a care-event supersession failed.")
+        }
+
+        return outcome
+    }
+
+    func supersededEventIDs(forPlantID plantID: UUID) async throws -> Set<UUID> {
+        do {
+            let links = try modelContext.fetch(FetchDescriptor<SDCareEventSupersession>(
+                predicate: #Predicate<SDCareEventSupersession> { $0.plantID == plantID }
+            ))
+            return Set(links.map(\.supersededEventID))
+        } catch {
+            throw DomainError.persistenceFailed(operation: "supersededEventIDs")
+        }
+    }
+
     func mostRecentEvent(
         forPlantID plantID: UUID,
         careType: CareType

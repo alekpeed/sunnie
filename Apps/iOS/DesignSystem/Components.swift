@@ -252,3 +252,23 @@ struct ErrorStateView: View {
         }
     }
 }
+
+// MARK: - Sharing
+
+/// Bridges `UIActivityViewController`, which SwiftUI's `ShareLink` cannot cover
+/// here: an export is several files at once, and `ShareLink` takes a single item.
+///
+/// Files are already written to a temporary directory by the time this appears,
+/// so nothing is generated during presentation.
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(
+        _ controller: UIActivityViewController,
+        context: Context
+    ) {}
+}

@@ -14,6 +14,8 @@ struct JungleScreen: View {
     private let showsDueOnly: Bool
 
     @State private var model: JungleModel?
+    @State private var isAddingPlant = false
+    @State private var isScanning = false
 
     init(showsDueOnly: Bool = false) {
         self.showsDueOnly = showsDueOnly
@@ -62,6 +64,71 @@ struct JungleScreen: View {
         }
         .onDisappear {
             Task { await model?.onDisappear() }
+        }
+        .toolbar {
+            if !showsDueOnly {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button {
+                            isAddingPlant = true
+                        } label: {
+                            Label(
+                                String(
+                                    localized: "collection.add",
+                                    defaultValue: "Add a plant",
+                                    comment: "Adds a plant"
+                                ),
+                                systemImage: "plus"
+                            )
+                        }
+
+                        Button {
+                            isScanning = true
+                        } label: {
+                            Label(
+                                String(
+                                    localized: "plant.scan",
+                                    defaultValue: "Scan a label",
+                                    comment: "Opens the QR scanner"
+                                ),
+                                systemImage: "qrcode.viewfinder"
+                            )
+                        }
+
+                        Button {
+                            router.push(.collection)
+                        } label: {
+                            Label(
+                                String(
+                                    localized: "collection.title",
+                                    defaultValue: "All plants",
+                                    comment: "Opens the full collection"
+                                ),
+                                systemImage: "square.grid.2x2"
+                            )
+                        }
+                    } label: {
+                        Label(
+                            String(
+                                localized: "jungle.options",
+                                defaultValue: "Options",
+                                comment: "Jungle options menu"
+                            ),
+                            systemImage: "ellipsis.circle"
+                        )
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $isAddingPlant) {
+            PlantEditorScreen(existing: nil) { _ in
+                Task { await model?.load() }
+            }
+        }
+        .sheet(isPresented: $isScanning) {
+            PlantScannerSheet { plant in
+                router.push(.plant(plant.id))
+            }
         }
     }
 

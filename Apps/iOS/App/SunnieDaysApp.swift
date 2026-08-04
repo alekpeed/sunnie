@@ -121,7 +121,10 @@ struct RootTabView: View {
     private func destination(for route: AppRoute) -> some View {
         switch route {
         case .jungleDue: JungleScreen(showsDueOnly: true)
+        case .collection: CollectionScreen()
         case .plant(let id): PlantDetailScreen(plantID: id)
+        case .plantHealth(let id): PlantHealthScreen(plantID: id)
+        case .plantGrowth(let id): GrowthTimelineScreen(plantID: id)
         case .themes: ThemesScreen()
         case .settings: SettingsScreen()
         case .checkIn: WellnessScreen()

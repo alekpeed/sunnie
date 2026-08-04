@@ -34,7 +34,10 @@ enum AppRoute: Hashable {
     case today
     case jungle
     case jungleDue
+    case collection
     case plant(UUID)
+    case plantHealth(UUID)
+    case plantGrowth(UUID)
     case travel
     case trip(UUID)
     case wellness
@@ -53,7 +56,7 @@ enum AppRoute: Hashable {
     var tab: AppTab {
         switch self {
         case .today: .today
-        case .jungle, .jungleDue, .plant: .jungle
+        case .jungle, .jungleDue, .collection, .plant, .plantHealth, .plantGrowth: .jungle
         case .travel, .trip: .travel
         case .wellness, .checkIn: .wellness
         case .meals, .games, .game, .journal,
@@ -76,7 +79,9 @@ enum AppRoute: Hashable {
 /// Unrecognised links resolve to nil rather than to a default screen: silently
 /// landing somewhere unexpected is more confusing than doing nothing.
 enum DeepLinkParser {
-    static let scheme = "sunniedays"
+    /// Taken from the shared constant so the parser and the QR payload cannot
+    /// drift apart — a printed label uses the same scheme.
+    static let scheme = DeepLinkScheme.scheme
 
     static func route(from url: URL) -> AppRoute? {
         guard url.scheme?.lowercased() == scheme else { return nil }
@@ -92,6 +97,7 @@ enum DeepLinkParser {
         switch (first, second) {
         case ("today", _): return .today
         case ("jungle", "due"): return .jungleDue
+        case ("jungle", "collection"): return .collection
         case ("jungle", _): return .jungle
         case ("plant", let id?): return UUID(uuidString: id).map(AppRoute.plant)
         case ("travel", _): return .travel

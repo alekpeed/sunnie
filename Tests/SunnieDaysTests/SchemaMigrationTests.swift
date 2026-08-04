@@ -188,26 +188,103 @@ struct SchemaMigrationTests {
 
     // MARK: - The plan itself
 
-    @Test("The migration plan lists both versions in order")
+    @Test("The migration plan lists every version in order, with a stage between each")
     func planIsOrdered() {
         let versions = SunnieMigrationPlan.schemas.map { $0.versionIdentifier }
 
-        #expect(versions.count == 2)
-        #expect(versions[0] == Schema.Version(1, 0, 0))
-        #expect(versions[1] == Schema.Version(2, 0, 0))
-        #expect(SunnieMigrationPlan.stages.count == 1)
+        #expect(versions == [
+            Schema.Version(1, 0, 0),
+            Schema.Version(2, 0, 0),
+            Schema.Version(3, 0, 0)
+        ])
+        // One stage fewer than versions, always. A missing stage means a store
+        // that cannot be opened at all.
+        #expect(SunnieMigrationPlan.stages.count == versions.count - 1)
     }
 
-    @Test("V2 keeps every V1 model")
-    func v2IsAdditive() {
-        // The stage is lightweight, which is only correct while V2 is a strict
-        // superset of V1. Dropping a model here without changing the stage would
-        // silently destroy data.
-        let v1 = Set(SunnieSchemaV1.models.map { String(describing: $0) })
-        let v2 = Set(SunnieSchemaV2.models.map { String(describing: $0) })
+    @Test("Every schema version is a strict superset of the one before it")
+    func everyStageIsAdditive() {
+        // Each stage is lightweight, which is only correct while the newer
+        // version keeps every model the older one had. Dropping a model here
+        // without changing the stage would silently destroy data.
+        let versions = [
+            ("V1", SunnieSchemaV1.models),
+            ("V2", SunnieSchemaV2.models),
+            ("V3", SunnieSchemaV3.models)
+        ].map { ($0.0, Set($0.1.map { String(describing: $0) })) }
 
-        #expect(v1.isSubset(of: v2), "V2 dropped: \(v1.subtracting(v2))")
-        #expect(v2.count > v1.count)
+        for (previous, next) in zip(versions, versions.dropFirst()) {
+            #expect(
+                previous.1.isSubset(of: next.1),
+                "\(next.0) dropped: \(previous.1.subtracting(next.1))"
+            )
+            #expect(next.1.count > previous.1.count, "\(next.0) added nothing")
+        }
+    }
+
+    @Test("The care-event model has not changed shape since V1")
+    func careEventShapeIsFrozen() {
+        // V1, V2, and V3 share model classes rather than freezing a copy per
+        // version, which is only sound while no existing model changes. This is
+        // the guard on that: if a property is ever added to the care event, the
+        // shared-class shortcut has to be unwound first and this test is where
+        // that gets noticed (ADR-017).
+        //
+        // Corrections are recorded in SDCareEventSupersession precisely so this
+        // stays true.
+        let properties = Set(
+            Mirror(reflecting: SDPlantCareEvent()).children.compactMap(\.label)
+        )
+        let expected: Set<String> = [
+            "id", "plantID", "careTypeKey", "performedAt", "sourceDeviceID",
+            "caretakerID", "note", "photoID", "measurement", "measurementUnit",
+            "actionKey", "createdAt"
+        ]
+
+        #expect(
+            properties.isSuperset(of: expected),
+            "Care event lost: \(expected.subtracting(properties))"
+        )
+        #expect(
+            properties.subtracting(expected).isEmpty,
+            "Care event gained: \(properties.subtracting(expected)) — see ADR-017"
+        )
+    }
+
+    @Test("The V3 models are usable immediately after migrating")
+    func v3ModelsWorkAfterMigration() async throws {
+        let url = makeStoreURL()
+        defer { removeStore(at: url) }
+
+        let plantID = UUID()
+        do {
+            let container = try ModelContainerFactory.make(
+                storage: .onDiskAt(url),
+                schemaVersion: SunnieSchemaV1.self,
+                migrationPlan: nil
+            )
+            let context = ModelContext(container)
+            context.insert(SDPlant(id: plantID, name: "Fern", qrToken: "t"))
+            try context.save()
+        }
+
+        let migrated = try ModelContainerFactory.make(storage: .onDiskAt(url))
+        let repository = SwiftDataPlantHealthRepository(modelContainer: migrated)
+
+        let now = Date()
+        try await repository.save(PlantHealthObservation(
+            plantID: plantID,
+            observedAt: now,
+            category: .yellowingLeaves,
+            sourceDeviceID: DeviceID(rawValue: "phone"),
+            createdAt: now,
+            modifiedAt: now
+        ))
+
+        #expect(try await repository.observations(forPlantID: plantID).count == 1)
+        // The V1 plant is still there afterwards.
+        let context = ModelContext(migrated)
+        #expect(try context.fetch(FetchDescriptor<SDPlant>()).count == 1)
     }
 
     @Test("The app opens stores at the current schema version")

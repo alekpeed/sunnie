@@ -19,20 +19,14 @@ public enum CareScheduleCalculator {
         calendar: Calendar,
         timeZone: TimeZone
     ) -> Date? {
-        guard let baseInterval = schedule.recurrence.intervalDays, baseInterval > 0 else {
-            return nil
-        }
-
         var zonedCalendar = calendar
         zonedCalendar.timeZone = timeZone
 
-        let month = zonedCalendar.component(.month, from: completion)
-        let season = Season.from(month: month)
-        let multiplier = schedule.seasonalModifier.multiplier(for: season)
-
-        // A seasonal multiplier must never collapse an interval to zero, which
-        // would make a task perpetually due.
-        let adjusted = max(1, Int((Double(baseInterval) * multiplier).rounded()))
+        guard let adjusted = effectiveIntervalDays(
+            for: schedule, at: completion, calendar: zonedCalendar
+        ) else {
+            return nil
+        }
 
         guard let shifted = zonedCalendar.date(
             byAdding: .day, value: adjusted, to: completion
@@ -49,6 +43,32 @@ public enum CareScheduleCalculator {
         components.timeZone = timeZone
 
         return zonedCalendar.date(from: components) ?? shifted
+    }
+
+    /// The schedule's interval in days, with the seasonal modifier for whichever
+    /// season `date` falls in already applied.
+    ///
+    /// Shared by the due-date calculation and by coverage projection, so a
+    /// fortnight in winter means the same number of days to both. Returns nil for
+    /// a manual schedule, which has no interval by definition.
+    ///
+    /// The calendar's time zone decides which season a date is in, so callers
+    /// must pass an already-zoned calendar.
+    public static func effectiveIntervalDays(
+        for schedule: PlantCareSchedule,
+        at date: Date,
+        calendar: Calendar
+    ) -> Int? {
+        guard let baseInterval = schedule.recurrence.intervalDays, baseInterval > 0 else {
+            return nil
+        }
+
+        let season = Season.from(month: calendar.component(.month, from: date))
+        let multiplier = schedule.seasonalModifier.multiplier(for: season)
+
+        // A seasonal multiplier must never collapse an interval to zero, which
+        // would make a task perpetually due.
+        return max(1, Int((Double(baseInterval) * multiplier).rounded()))
     }
 
     /// Applies a completion to a schedule, returning the updated value.

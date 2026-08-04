@@ -31,6 +31,44 @@ enum LocalizationKeys {
         LocalizedStringKey(theme.displayNameKey)
     }
 
+    static func lightProfile(_ profile: LightProfile) -> LocalizedStringKey {
+        LocalizedStringKey("light." + profile.rawValue)
+    }
+
+    static func difficulty(_ difficulty: CareDifficulty) -> LocalizedStringKey {
+        LocalizedStringKey("difficulty." + difficulty.rawValue)
+    }
+
+    static func plantStatus(_ status: PlantStatus) -> LocalizedStringKey {
+        LocalizedStringKey("plantStatus." + status.rawValue)
+    }
+
+    static func careType(_ careType: CareType) -> LocalizedStringKey {
+        // A custom care type carries its own content ID, which has no entry in
+        // the strings file. It falls back to a generic label rather than showing
+        // a raw identifier.
+        if case .custom = careType {
+            return LocalizedStringKey("care.custom")
+        }
+        return LocalizedStringKey("care." + careType.storageKey)
+    }
+
+    static func symptom(_ category: SymptomCategory) -> LocalizedStringKey {
+        LocalizedStringKey(category.localizationKey)
+    }
+
+    static func severity(_ severity: ObservationSeverity) -> LocalizedStringKey {
+        LocalizedStringKey(severity.localizationKey)
+    }
+
+    static func growthMetric(_ metric: GrowthMetric) -> LocalizedStringKey {
+        LocalizedStringKey(metric.localizationKey)
+    }
+
+    static func sortOrder(_ order: PlantSortOrder) -> LocalizedStringKey {
+        LocalizedStringKey(order.localizationKey)
+    }
+
     static func reminderCategory(_ category: ReminderCategory) -> LocalizedStringKey {
         LocalizedStringKey("reminder.category." + category.rawValue)
     }
