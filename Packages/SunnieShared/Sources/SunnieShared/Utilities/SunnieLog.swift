@@ -27,6 +27,9 @@ public struct SunnieLog: Sendable {
         case notifications
         case content
         case ui
+        /// WeatherKit, EventKit, MapKit — anything whose failure is ordinary
+        /// and must not reach the user as an error.
+        case integrations
     }
 
     public func debug(_ message: String) {

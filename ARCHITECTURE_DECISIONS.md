@@ -500,3 +500,128 @@ which is harder to reason about than two types with one each.
 
 `NOISE_IMPLEMENTATION.md` §9, §10. `AUDIO_MIDI_AND_SOUNDSCAPES.md`.
 `NoiseDSPTests`. `Info.plist`.
+
+---
+
+## ADR-019: Trip status is derived, and lived in the destination's day
+
+**Status:** Accepted · **Date:** 2026-08-04 · **Phase:** 5
+
+### Context
+
+A trip has a status — planning, upcoming, active, returning, completed,
+archived (TRAVEL_AND_FLIGHT_ATTENDANT.md §3). The obvious implementation stores
+it and changes it when the user says so, or when a background task notices a
+date has passed.
+
+Both go wrong. A stored status that the user maintains is wrong the moment they
+forget; a stored status that a background task maintains is wrong whenever the
+task did not run — which on iOS is often, and always on the launch that matters.
+Either way the travel dashboard shows a trip as "upcoming" while the user is
+standing in the destination.
+
+There is a second question underneath it: *whose* day decides. A trip ending on
+the 15th is over at midnight — but midnight where? Someone in Tokyo at 01:00 on
+the 16th is home in nine hours; it is still the 15th in New York.
+
+### Decision
+
+**Status is computed, never stored**, by `TripStatusCalculator.status(for:now:calendar:)`
+from the trip's dates and the current instant. The only persisted status is an
+explicit archive, which is a user decision rather than a fact about time.
+
+**Days are counted in the destination's zone** where the trip has one, falling
+back to home. Comparison is by calendar day, not by instant, so a trip starting
+at 06:00 is already active at 09:00 that morning, and one ending today is still
+`returning` at 23:00 rather than becoming history at some unrelated midnight.
+
+The last day is `returning` rather than `active` — that is the day the return
+checklist matters — except on a single-day trip, where there is no separate
+return day and calling it `returning` all day would be wrong.
+
+### Consequences
+
+- A status can never be stale. There is no background job to miss, no migration
+  that has to fix up statuses, and no "refresh" the user has to know about.
+- `statusOverride` exists but is honoured only for `.archived`. Any other stored
+  value is ignored while dates exist, which is deliberate: it means a status set
+  once and forgotten cannot outlive its truth.
+- A past trip is always `completed` whatever its dates say. It was added for the
+  record, and a past trip dated next year must not appear as upcoming.
+- Every boundary is a pure function of stated inputs, so all of it is tested
+  against arrays and fixed dates — including a trip spanning a daylight-saving
+  change and two zones that switch on different dates.
+- The absence window used for plant coverage runs to the *end* of the last day.
+  Care due on the afternoon someone flies home is inside the absence.
+
+### Alternatives considered
+
+**Store the status and update it on launch.** Rejected: correct only if the app
+is opened, which is exactly the assumption that fails.
+
+**Compare instants rather than days.** Simpler, and wrong in a way users notice:
+a trip would end at an arbitrary moment mid-morning rather than at the end of
+its last day.
+
+**Always use the home zone.** Rejected: it makes the app disagree with the
+traveller about what day it is, which is the one thing a travel app must get
+right.
+
+### Documents/tests affected
+
+`TRAVEL_AND_FLIGHT_ATTENDANT.md` §3, §8. `TravelTests` — the status, boundary,
+and time-zone suites.
+
+---
+
+## ADR-020: Weather and calendar failures are silent
+
+**Status:** Accepted · **Date:** 2026-08-04 · **Phase:** 5
+
+### Context
+
+Phase 5 added two optional integrations. WeatherKit needs an entitlement, a
+network, and a coordinate. EventKit needs permission the user may never grant.
+Both fail routinely and for reasons that are nobody's fault.
+
+The house style elsewhere in this app is that a failure the user can act on gets
+surfaced kindly, and one they cannot gets logged. These are firmly the second
+kind — but they sit on a screen where an error message would be prominent.
+
+### Decision
+
+`WeatherProviding.summary` and every `CalendarProviding` read return **nil or an
+empty array rather than throwing**, for offline, unauthorised, unentitled, and
+missing-coordinate alike. The trip screen renders without a weather line or a
+calendar link, and says nothing.
+
+Two things are still surfaced, because the user *can* act on them: a denied
+calendar permission is stated where the toggle is, with a note that everything
+else works without it; and weather older than an hour is labelled as such,
+because stale weather presented as current is worse than none.
+
+Weather never modifies a record. A weather-driven packing suggestion carries its
+reason and is added only on confirmation (TRAVEL_AND_FLIGHT_ATTENDANT.md §9).
+
+A linked calendar event that has moved is **reported, never applied**. The trip
+is the source of truth for Sunnie Days-specific content (§10), and silently
+rewriting someone's dates because a calendar entry changed would be exactly the
+unrequested edit the spec rules out. The screen offers the new dates; the user
+taps.
+
+### Consequences
+
+- The trip screen has no weather error state and no calendar error state, which
+  is fewer states to design and fewer to get wrong.
+- Both entitlement and permission can be absent forever and the feature is whole.
+  WeatherKit is declared inactive in the entitlements file alongside CloudKit and
+  HealthKit, for the same reason those are.
+- Weather is cached for fifteen minutes per rounded coordinate, so reopening a
+  trip screen does not burn quota.
+- A test cannot distinguish "offline" from "denied" through the protocol. That is
+  intentional — nothing in the app should branch on the difference.
+
+### Documents/tests affected
+
+`TRAVEL_AND_FLIGHT_ATTENDANT.md` §9, §10, §16. `Info.plist`,
+`SunnieDays.entitlements`.

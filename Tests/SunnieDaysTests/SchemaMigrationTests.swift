@@ -195,7 +195,8 @@ struct SchemaMigrationTests {
         #expect(versions == [
             Schema.Version(1, 0, 0),
             Schema.Version(2, 0, 0),
-            Schema.Version(3, 0, 0)
+            Schema.Version(3, 0, 0),
+            Schema.Version(4, 0, 0)
         ])
         // One stage fewer than versions, always. A missing stage means a store
         // that cannot be opened at all.
@@ -210,7 +211,8 @@ struct SchemaMigrationTests {
         let versions = [
             ("V1", SunnieSchemaV1.models),
             ("V2", SunnieSchemaV2.models),
-            ("V3", SunnieSchemaV3.models)
+            ("V3", SunnieSchemaV3.models),
+            ("V4", SunnieSchemaV4.models)
         ].map { ($0.0, Set($0.1.map { String(describing: $0) })) }
 
         for (previous, next) in zip(versions, versions.dropFirst()) {

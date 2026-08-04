@@ -87,6 +87,8 @@
 	<string>Sunnie can add photos of your plants to their growth history. Photos stay on your devices.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Sunnie can add photos from your library to a plant, trip, or journal entry. They stay on your devices.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Sunnie can add a trip to your calendar and notice if it moves. Your trips work fine without it.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Sunnie can record a short voice note for your journal. Recordings stay on your devices.</string>
 </dict>

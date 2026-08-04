@@ -242,6 +242,154 @@ public protocol AudioPlaying: Sendable {
     func apply(preferences: AudioPreferences) async
 }
 
+/// A weather summary for a place (TRAVEL_AND_FLIGHT_ATTENDANT.md §9).
+///
+/// Deliberately small. This is not a weather app: one line and an icon on a trip
+/// screen is the whole requirement, and modelling more would mean maintaining
+/// more.
+public struct WeatherSummary: Hashable, Sendable {
+    public let condition: Condition
+    public let temperatureCelsius: Double
+    public let highCelsius: Double?
+    public let lowCelsius: Double?
+    /// When this was fetched. Shown, because stale weather presented as current
+    /// is worse than no weather.
+    public let fetchedAt: Date
+    /// Apple requires attribution for WeatherKit data. Carried with the data so
+    /// it cannot be displayed without it.
+    public let attributionText: String
+    public let attributionURL: URL?
+
+    public enum Condition: String, Hashable, Sendable, Codable, CaseIterable {
+        case clear
+        case cloudy
+        case rain
+        case snow
+        case wind
+        case fog
+        case storm
+        case unknown
+
+        public var localizationKey: String { "weather.\(rawValue)" }
+
+        public var symbolName: String {
+            switch self {
+            case .clear: "sun.max"
+            case .cloudy: "cloud"
+            case .rain: "cloud.rain"
+            case .snow: "cloud.snow"
+            case .wind: "wind"
+            case .fog: "cloud.fog"
+            case .storm: "cloud.bolt.rain"
+            case .unknown: "questionmark.circle"
+            }
+        }
+    }
+
+    public init(
+        condition: Condition,
+        temperatureCelsius: Double,
+        highCelsius: Double? = nil,
+        lowCelsius: Double? = nil,
+        fetchedAt: Date,
+        attributionText: String,
+        attributionURL: URL? = nil
+    ) {
+        self.condition = condition
+        self.temperatureCelsius = temperatureCelsius
+        self.highCelsius = highCelsius
+        self.lowCelsius = lowCelsius
+        self.fetchedAt = fetchedAt
+        self.attributionText = attributionText
+        self.attributionURL = attributionURL
+    }
+
+    /// Whether this is old enough that the screen should say so.
+    public func isStale(now: Date, after seconds: TimeInterval = 3600) -> Bool {
+        now.timeIntervalSince(fetchedAt) > seconds
+    }
+}
+
+/// Weather lookup, when permission and network allow.
+///
+/// Returns nil rather than throwing for the ordinary cases — offline, no
+/// permission, no coordinate. None of those is an error the user needs told
+/// about; the screen simply shows no weather (TRAVEL_AND_FLIGHT_ATTENDANT.md §9,
+/// §16).
+public protocol WeatherProviding: Sendable {
+    func summary(latitude: Double, longitude: Double) async -> WeatherSummary?
+}
+
+/// Stand-in for previews, tests, and any build without WeatherKit.
+public struct UnavailableWeatherProvider: WeatherProviding {
+    public init() {}
+    public func summary(latitude: Double, longitude: Double) async -> WeatherSummary? { nil }
+}
+
+/// A calendar event, as the app needs it (TRAVEL_AND_FLIGHT_ATTENDANT.md §10).
+public struct CalendarEvent: Identifiable, Hashable, Sendable {
+    public let id: String
+    public let title: String
+    public let startsAt: Date
+    public let endsAt: Date
+    public let isAllDay: Bool
+    public let location: String?
+
+    public init(
+        id: String,
+        title: String,
+        startsAt: Date,
+        endsAt: Date,
+        isAllDay: Bool = false,
+        location: String? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.startsAt = startsAt
+        self.endsAt = endsAt
+        self.isAllDay = isAllDay
+        self.location = location
+    }
+}
+
+public enum CalendarAuthorization: String, Hashable, Sendable {
+    case notDetermined
+    case authorized
+    /// iOS 17+ write-only access. Enough to create a trip event, not enough to
+    /// read one.
+    case writeOnly
+    case denied
+}
+
+/// Calendar access. Entirely optional — the app is fully usable with it denied,
+/// and the trip stays the source of truth for everything Sunnie Days-specific
+/// whatever the calendar says (TRAVEL_AND_FLIGHT_ATTENDANT.md §10).
+public protocol CalendarProviding: Sendable {
+    func authorizationStatus() async -> CalendarAuthorization
+    func requestAccess() async -> CalendarAuthorization
+    func events(from start: Date, to end: Date) async -> [CalendarEvent]
+    /// Creates an event for a trip and returns its identifier, or nil if it could
+    /// not be created. A failure here costs a calendar entry, never the trip.
+    func createEvent(
+        title: String,
+        startsAt: Date,
+        endsAt: Date,
+        notes: String?
+    ) async -> String?
+    func event(withIdentifier identifier: String) async -> CalendarEvent?
+}
+
+public struct UnavailableCalendarProvider: CalendarProviding {
+    public init() {}
+    public func authorizationStatus() async -> CalendarAuthorization { .denied }
+    public func requestAccess() async -> CalendarAuthorization { .denied }
+    public func events(from start: Date, to end: Date) async -> [CalendarEvent] { [] }
+    public func createEvent(
+        title: String, startsAt: Date, endsAt: Date, notes: String?
+    ) async -> String? { nil }
+    public func event(withIdentifier identifier: String) async -> CalendarEvent? { nil }
+}
+
 /// Generated noise (NOISE_IMPLEMENTATION.md).
 ///
 /// Separate from `AudioPlaying` because it is a different kind of thing: nothing

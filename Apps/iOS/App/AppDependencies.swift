@@ -38,6 +38,7 @@ final class AppDependencies {
     let mediaRepository: any MediaRepository
     let reminderRepository: any ReminderRepository
     let plantHealthRepository: any PlantHealthRepository
+    let travelRepository: any TravelRepository
 
     let progressionEngine: ProgressionEngine
     let summaryProvider: PlantSummaryProvider
@@ -48,6 +49,8 @@ final class AppDependencies {
     let notificationService: NotificationService
     let audioService: AudioService
     let noiseEngine: any NoiseGenerating
+    let weatherProvider: any WeatherProviding
+    let calendarProvider: any CalendarProviding
     let haptics: HapticService
 
     let logPlantCare: LogPlantCare
@@ -56,6 +59,9 @@ final class AppDependencies {
     let managePlantHealth: ManagePlantHealth
     let planTravelCoverage: PlanTravelCoverage
     let exportJungle: ExportJungle
+    let manageTrip: ManageTrip
+    let managePacking: ManagePacking
+    let manageChecklists: ManageChecklists
     let recordWellnessCheckIn: RecordWellnessCheckIn
     let manageWellnessSession: ManageWellnessSession
     let manageJournalEntry: ManageJournalEntry
@@ -100,6 +106,7 @@ final class AppDependencies {
         let media = SwiftDataMediaRepository(modelContainer: modelContainer)
         let reminders = SwiftDataReminderRepository(modelContainer: modelContainer)
         let plantHealth = SwiftDataPlantHealthRepository(modelContainer: modelContainer)
+        let travel = SwiftDataTravelRepository(modelContainer: modelContainer)
 
         self.plantRepository = plants
         self.careEventRepository = events
@@ -111,6 +118,7 @@ final class AppDependencies {
         self.mediaRepository = media
         self.reminderRepository = reminders
         self.plantHealthRepository = plantHealth
+        self.travelRepository = travel
 
         self.progressionEngine = ProgressionEngine(repository: progression)
         self.summaryProvider = PlantSummaryProvider(
@@ -124,6 +132,8 @@ final class AppDependencies {
         self.notificationService = NotificationService()
         self.audioService = AudioService()
         self.noiseEngine = NoiseEngine()
+        self.weatherProvider = SunnieWeatherService()
+        self.calendarProvider = SunnieCalendarService()
         self.haptics = HapticService()
 
         self.reminderScheduler = ReminderScheduler(
@@ -191,6 +201,16 @@ final class AppDependencies {
             healthRepository: plantHealth,
             clock: clock
         )
+
+        self.manageTrip = ManageTrip(
+            repository: travel,
+            progressionEngine: progressionEngine,
+            eventPublisher: eventBus,
+            clock: clock
+        )
+
+        self.managePacking = ManagePacking(repository: travel, clock: clock)
+        self.manageChecklists = ManageChecklists(repository: travel, clock: clock)
 
         self.recordWellnessCheckIn = RecordWellnessCheckIn(
             repository: wellness,

@@ -111,7 +111,7 @@ struct RootTabView: View {
         switch tab {
         case .today: TodayScreen()
         case .jungle: JungleScreen()
-        case .travel: PlaceholderFeatureScreen(feature: .travel)
+        case .travel: TravelScreen()
         case .wellness: WellnessScreen()
         case .more: MoreScreen()
         }
@@ -133,7 +133,19 @@ struct RootTabView: View {
         case .journal: JournalScreen()
         case .collections: PlaceholderFeatureScreen(feature: .collections)
         case .sunnieHome: PlaceholderFeatureScreen(feature: .sunnieHome)
-        case .trip: PlaceholderFeatureScreen(feature: .travel)
+        case .trip(let id): TripOverviewScreen(tripID: id)
+        case .packing(let id): PackingScreen(tripID: id)
+        case .tripChecklist(let id, let phase):
+            // An unrecognised phase falls back to the leaving checklist rather
+            // than failing: the route is only ever built from the enum, so this
+            // is a guard against a stale saved navigation path, not user input.
+            TripChecklistScreen(
+                tripID: id,
+                phase: ChecklistKind.Phase(rawValue: phase) ?? .leaving
+            )
+        case .itinerary(let id): ItineraryScreen(tripID: id)
+        case .plantCoverage(let id): PlantCoverageScreen(tripID: id)
+        case .worldMap: WorldMapScreen()
         case .today, .jungle, .travel, .wellness:
             // Tab roots are never pushed; `AppRouter.handle` selects the tab
             // instead. Reaching here would be a routing bug, so show the root

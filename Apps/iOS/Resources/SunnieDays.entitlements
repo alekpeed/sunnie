@@ -31,6 +31,17 @@
 	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
 	<string>$(TeamIdentifierPrefix)$(CFBundleIdentifier)</string>
 
+	<!--
+		WeatherKit, for trip weather (TRAVEL_AND_FLIGHT_ATTENDANT.md §9).
+
+		Inactive like the rest of this file. Weather is entirely optional: with
+		no entitlement `SunnieWeatherService` returns nil and the trip screen
+		simply leaves the weather line out, which is the same path it takes when
+		offline. Nothing about a trip depends on it.
+	-->
+	<key>com.apple.developer.weatherkit</key>
+	<false/>
+
 	<!-- Added in Phase 9, when Health reads and writes are implemented. -->
 	<key>com.apple.developer.healthkit</key>
 	<false/>

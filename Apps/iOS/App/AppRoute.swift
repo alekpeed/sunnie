@@ -40,6 +40,13 @@ enum AppRoute: Hashable {
     case plantGrowth(UUID)
     case travel
     case trip(UUID)
+    case packing(UUID)
+    /// The phase is carried as its raw value so the route stays `Hashable` and
+    /// `Codable`-friendly without the enum leaking into navigation state.
+    case tripChecklist(UUID, String)
+    case itinerary(UUID)
+    case plantCoverage(UUID)
+    case worldMap
     case wellness
     case checkIn
     case meals
@@ -57,7 +64,8 @@ enum AppRoute: Hashable {
         switch self {
         case .today: .today
         case .jungle, .jungleDue, .collection, .plant, .plantHealth, .plantGrowth: .jungle
-        case .travel, .trip: .travel
+        case .travel, .trip, .packing, .tripChecklist, .itinerary,
+             .plantCoverage, .worldMap: .travel
         case .wellness, .checkIn: .wellness
         case .meals, .games, .game, .journal,
              .collections, .sunnieHome, .themes, .settings: .more
@@ -102,6 +110,7 @@ enum DeepLinkParser {
         case ("plant", let id?): return UUID(uuidString: id).map(AppRoute.plant)
         case ("travel", _): return .travel
         case ("trip", let id?): return UUID(uuidString: id).map(AppRoute.trip)
+        case ("map", _): return .worldMap
         case ("wellness", "checkin"): return .checkIn
         case ("wellness", _): return .wellness
         case ("meals", _): return .meals

@@ -406,11 +406,16 @@ final class SDPendingWatchAction {
 /// model classes will have to be copied into a frozen namespace at that point.
 enum SunnieMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
-        [SunnieSchemaV1.self, SunnieSchemaV2.self, SunnieSchemaV3.self]
+        [
+            SunnieSchemaV1.self,
+            SunnieSchemaV2.self,
+            SunnieSchemaV3.self,
+            SunnieSchemaV4.self
+        ]
     }
 
     static var stages: [MigrationStage] {
-        [migrateV1toV2, migrateV2toV3]
+        [migrateV1toV2, migrateV2toV3, migrateV3toV4]
     }
 
     /// Additive only: every V1 model keeps its exact shape, so no data moves.
@@ -427,10 +432,19 @@ enum SunnieMigrationPlan: SchemaMigrationPlan {
         fromVersion: SunnieSchemaV2.self,
         toVersion: SunnieSchemaV3.self
     )
+
+    /// Additive again: trips, segments, places, packing, templates, checklists,
+    /// and memories are all new models. `SDPlantTravelCoverage` already carried
+    /// `tripID` from V3, so trips arriving here needed no change to it — the one
+    /// place this could plausibly have stopped being additive.
+    static let migrateV3toV4 = MigrationStage.lightweight(
+        fromVersion: SunnieSchemaV3.self,
+        toVersion: SunnieSchemaV4.self
+    )
 }
 
 /// The version the app currently opens stores at.
 ///
 /// Referenced in one place so bumping the schema is a single edit rather than a
 /// search for every `Schema(versionedSchema:)` call site.
-typealias SunnieCurrentSchema = SunnieSchemaV3
+typealias SunnieCurrentSchema = SunnieSchemaV4

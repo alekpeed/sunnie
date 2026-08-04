@@ -111,6 +111,54 @@ public protocol PlantCareEventRepository: Sendable {
     func supersededEventIDs(forPlantID plantID: UUID) async throws -> Set<UUID>
 }
 
+/// Trips, places, packing, checklists, and memories
+/// (TRAVEL_AND_FLIGHT_ATTENDANT.md).
+///
+/// One boundary for the whole feature. Splitting it further would mean a screen
+/// that shows a trip's packing progress needing two repositories to answer one
+/// question.
+public protocol TravelRepository: Sendable {
+    func trips(includingArchived: Bool) async throws -> [Trip]
+    func trip(id: UUID) async throws -> Trip?
+    func save(_ trip: Trip) async throws
+    /// Removes the trip and everything belonging only to it. Plant coverage rows
+    /// go too — they are about this trip and mean nothing without it.
+    func delete(tripID: UUID) async throws
+
+    func segments(forTripID tripID: UUID) async throws -> [TripSegment]
+    func save(_ segment: TripSegment) async throws
+    func deleteSegment(id: UUID) async throws
+
+    func places() async throws -> [Place]
+    func place(id: UUID) async throws -> Place?
+    func save(_ place: Place) async throws
+    func deletePlace(id: UUID) async throws
+    /// Places with the facts the map and list need to filter them, in one pass.
+    func placeListItems() async throws -> [PlaceListItem]
+
+    func packingItems(forTripID tripID: UUID) async throws -> [PackingItem]
+    func save(_ item: PackingItem) async throws
+    /// Inserts many at once, for applying a template.
+    func savePackingItems(_ items: [PackingItem]) async throws
+    func deletePackingItem(id: UUID) async throws
+
+    func packingTemplates() async throws -> [PackingTemplate]
+    func packingTemplate(id: UUID) async throws -> PackingTemplate?
+    func save(_ template: PackingTemplate) async throws
+    func deletePackingTemplate(id: UUID) async throws
+
+    func checklistItems(forTripID tripID: UUID) async throws -> [ChecklistItem]
+    func save(_ item: ChecklistItem) async throws
+    func saveChecklistItems(_ items: [ChecklistItem]) async throws
+    func deleteChecklistItem(id: UUID) async throws
+
+    func memories(forTripID tripID: UUID?) async throws -> [TravelMemory]
+    func allMemories(limit: Int) async throws -> [TravelMemory]
+    func memory(id: UUID) async throws -> TravelMemory?
+    func save(_ memory: TravelMemory) async throws
+    func deleteMemory(id: UUID) async throws
+}
+
 public protocol ProgressionRepository: Sendable {
     func profile() async throws -> ProgressionProfile
     func save(_ profile: ProgressionProfile) async throws
