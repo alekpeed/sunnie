@@ -34,6 +34,11 @@ public enum ProgressionEventType: String, Hashable, Sendable, Codable, CaseItera
     case plantHealthIssueResolved
     case wellnessCheckInRecorded
     case puzzleCompleted
+    /// A day's meals planned. Rewards the planning, never what was eaten —
+    /// there is no reward here for restriction or for hitting a target
+    /// (MEALS_AND_PREP.md §12).
+    case mealsPlanned
+    case mealPrepCompleted
 }
 
 /// A recorded progression-relevant occurrence.

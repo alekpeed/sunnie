@@ -159,6 +159,41 @@ public protocol TravelRepository: Sendable {
     func deleteMemory(id: UUID) async throws
 }
 
+/// Recipes, meal plans, grocery, pantry, prep, and timers
+/// (MEALS_AND_PREP.md).
+public protocol MealRepository: Sendable {
+    func recipes() async throws -> [Recipe]
+    func recipe(id: UUID) async throws -> Recipe?
+    func save(_ recipe: Recipe) async throws
+    func deleteRecipe(id: UUID) async throws
+
+    /// Entries for one day. The date is normalised to the start of day by the
+    /// caller, so a day's meals group without a range query.
+    func entries(forDay day: Date) async throws -> [MealPlanEntry]
+    func entries(from start: Date, to end: Date) async throws -> [MealPlanEntry]
+    func entry(id: UUID) async throws -> MealPlanEntry?
+    func save(_ entry: MealPlanEntry) async throws
+    func deleteEntry(id: UUID) async throws
+
+    func groceryItems() async throws -> [GroceryItem]
+    func save(_ item: GroceryItem) async throws
+    func saveGroceryItems(_ items: [GroceryItem]) async throws
+    func deleteGroceryItem(id: UUID) async throws
+
+    func pantryItems() async throws -> [PantryItem]
+    func pantryItem(id: UUID) async throws -> PantryItem?
+    func save(_ item: PantryItem) async throws
+    func deletePantryItem(id: UUID) async throws
+
+    func prepTasks() async throws -> [PrepTask]
+    func save(_ task: PrepTask) async throws
+    func deletePrepTask(id: UUID) async throws
+
+    func timers() async throws -> [KitchenTimer]
+    func save(_ timer: KitchenTimer) async throws
+    func deleteTimer(id: UUID) async throws
+}
+
 public protocol ProgressionRepository: Sendable {
     func profile() async throws -> ProgressionProfile
     func save(_ profile: ProgressionProfile) async throws

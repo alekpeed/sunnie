@@ -55,7 +55,7 @@
 "today.card.wellness.title" = "Wellness";
 "today.card.wellness.subtitle" = "Check-ins, breathing, and calm sounds.";
 "today.card.meals.title" = "Meals";
-"today.card.meals.subtitle" = "Planning and prep, always egg-free.";
+"today.card.meals.subtitle" = "Planning and prep, with your food rules on.";
 "today.card.puzzle.title" = "Daily puzzle";
 "today.card.puzzle.subtitle" = "A small, unhurried game.";
 "today.card.progression.title" = "Collections";
@@ -88,7 +88,7 @@
 "placeholder.wellness.title" = "Wellness";
 "placeholder.wellness.message" = "Check-ins, gratitude, breathing, and calm sounds are on the way.";
 "placeholder.meals.title" = "Meals";
-"placeholder.meals.message" = "Meal planning, recipes, and prep are on the way. Everything will be egg-free.";
+"placeholder.meals.message" = "Meal planning, recipes, and prep are on the way.";
 "placeholder.games.title" = "Games";
 "placeholder.games.message" = "A daily puzzle and a small library of games are on the way.";
 "placeholder.journal.title" = "Journal";
@@ -817,3 +817,144 @@
 "weather.fog" = "Foggy";
 "weather.storm" = "Storms";
 "weather.unknown" = "Not sure";
+
+/* Meals — no calorie counting, no macros, no diet management (spec §13). */
+"meals.loading" = "Looking at your food…";
+"meals.error.load" = "I couldn't open your meals just now. Nothing has been lost, and you can try again.";
+"meals.section.today" = "Today";
+"meals.section.timers" = "Timers";
+"meals.section.prep" = "To get ready";
+"meals.section.useFirst" = "Use before you go";
+"meals.section.ideas" = "Could be nice";
+"meals.today.none" = "Nothing planned yet. That's allowed.";
+"meals.prep.none" = "Nothing to get ready.";
+"meals.plan" = "Plan a meal";
+"meals.packed" = "Packed";
+"meals.prepared" = "Ready";
+"meals.grocery" = "Shopping list";
+"meals.pantry" = "What's in";
+"meals.recipes" = "Recipes";
+"meals.dayContext" = "Kind of day";
+"meals.slot.empty" = "Nothing planned";
+"meals.useFirst.footer" = "Ordered by the dates you wrote down. Sunnie can't tell whether something's still good — only you can.";
+
+"meals.context.home" = "At home";
+"meals.context.work" = "Working";
+"meals.context.travel" = "Travelling";
+"meals.context.layover" = "Layover";
+"meals.context.recovery" = "Taking it easy";
+"meals.context.custom" = "Something else";
+"meals.slot.breakfast" = "Breakfast";
+"meals.slot.lunch" = "Lunch";
+"meals.slot.dinner" = "Dinner";
+"meals.slot.snack" = "Snack";
+"meals.slot.custom" = "Other";
+
+"meals.reason.usesPantryFirst" = "Uses something you've got in";
+"meals.reason.quick" = "Fits the time you have";
+"meals.reason.portable" = "Travels well";
+"meals.reason.favorite" = "One of yours";
+"meals.reason.notRecent" = "Not had it in a while";
+
+"meals.timer.untitled" = "Timer";
+"meals.timer.done" = "That's time.";
+"meals.timer.finished" = "Done";
+"meals.timer.stop" = "Stop this timer";
+"meals.timer.ten" = "10-minute timer";
+"meals.timer.thirty" = "30-minute timer";
+
+"meals.editor.title" = "This meal";
+"meals.field.day" = "Which day";
+"meals.field.slot" = "When";
+"meals.field.recipe" = "From your recipes";
+"meals.field.custom" = "Or just write it";
+"meals.field.packed" = "Taking it with me";
+"meals.field.refrigerate" = "Needs the fridge";
+"meals.field.hasPrep" = "Make it ahead";
+"meals.field.prepAt" = "Make it";
+"meals.field.notes" = "Notes";
+"meals.recipe.none" = "None";
+"meals.setAside %lld" = "%lld recipes set aside by your food rules.";
+
+/* Recipes */
+"recipes.add" = "Add a recipe";
+"recipes.editor.title" = "Recipe";
+"recipes.empty.title" = "No recipes yet";
+"recipes.empty.message" = "Write down the things you actually cook. Sunnie will only ever suggest from these.";
+"recipes.field.title" = "What it's called";
+"recipes.field.favorite" = "One of your favourites";
+"recipes.field.ingredient" = "Add an ingredient";
+"recipes.field.step" = "Add a step";
+"recipes.field.prep %lld" = "Prep: %lld minutes";
+"recipes.field.cook %lld" = "Cooking: %lld minutes";
+"recipes.field.portability" = "How well it travels";
+"recipes.field.refrigerated" = "Keeps in the fridge";
+"recipes.field.container" = "What to put it in";
+"recipes.section.ingredients" = "Ingredients";
+"recipes.section.steps" = "How to make it";
+"recipes.section.timing" = "How long";
+"recipes.section.travel" = "Taking it out";
+"recipes.section.travel.footer" = "How long something keeps is your own note. Sunnie stores it and never checks it.";
+"recipes.addIngredient" = "Add this ingredient";
+"recipes.addStep" = "Add this step";
+"recipes.minutes %lld" = "%lld minutes";
+"recipes.flagged" = "matched";
+"recipes.flagged.footer" = "Something here matches one of your food rules, so this recipe won't come up in suggestions. Sunnie reads the words you typed — it has no ingredient list of its own and can't tell you what's safe.";
+"recipes.setAside %lld" = "%lld set aside";
+"recipes.setAside.because %@" = "matched: %@";
+"recipes.setAside.footer" = "These are still yours and still here. Sunnie set them aside because the ingredient names match a rule you've turned on. It's reading text, not checking food.";
+
+/* Grocery */
+"grocery.category.produce" = "Fruit and veg";
+"grocery.category.dairy" = "Dairy";
+"grocery.category.bakery" = "Bakery";
+"grocery.category.meatAndFish" = "Meat and fish";
+"grocery.category.frozen" = "Frozen";
+"grocery.category.pantry" = "Cupboard";
+"grocery.category.drinks" = "Drinks";
+"grocery.category.household" = "Household";
+"grocery.category.other" = "Everything else";
+"grocery.add" = "Add something";
+"grocery.addAction" = "Add this";
+"grocery.buy" = "Mark as got";
+"grocery.unbuy" = "Mark as not got";
+"grocery.for %@" = "for %@";
+"grocery.added %lld" = "Added %lld things.";
+"grocery.fromPlan" = "Add what's planned";
+"grocery.toPantry" = "Put the bought things away";
+"grocery.duplicates" = "Listed twice";
+"grocery.duplicate %1$@ %2$lld" = "%1$@ — %2$lld times";
+"grocery.merge" = "Merge";
+"grocery.empty.title" = "Nothing on the list";
+"grocery.empty.message" = "Add things as you think of them, or pull them in from what you've planned.";
+
+/* Pantry */
+"pantry.add" = "Add something";
+"pantry.editor.title" = "In the cupboard";
+"pantry.section.useFirst" = "Use these first";
+"pantry.section.everything" = "Everything else";
+"pantry.useFirst" = "Use first";
+"pantry.empty.title" = "Nothing recorded";
+"pantry.empty.message" = "Things move here when you tick them off the shopping list, or you can add them yourself.";
+"pantry.field.name" = "What it is";
+"pantry.field.amount" = "How much";
+"pantry.field.category" = "Kind";
+"pantry.field.location" = "Where it lives";
+"pantry.field.hasBestBefore" = "It has a date on it";
+"pantry.field.bestBefore" = "Date on the packet";
+"pantry.field.useFirst" = "Use this before I go away";
+"pantry.field.bestBefore.footer" = "Sunnie keeps the date you wrote and uses it to sort this list. It doesn't know whether anything is still good — that's always your call.";
+
+/* Portability and mess */
+"meals.portability.easy" = "Travels easily";
+"meals.portability.workable" = "Travels alright";
+"meals.portability.awkward" = "Awkward to carry";
+"meals.portability.stayHome" = "Better at home";
+"meals.mess.tidy" = "Tidy";
+"meals.mess.someMess" = "A bit messy";
+"meals.mess.messy" = "Messy";
+
+/* Settings — food rules */
+"settings.section.food" = "Food";
+"settings.food.footer" = "Recipes whose ingredients match a rule you've turned on are set aside rather than suggested. You can still see them and still cook them. Sunnie matches the words you typed — it has no ingredient database and can't tell you anything is safe to eat.";
+"diet.noEggs" = "No eggs";

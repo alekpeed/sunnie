@@ -39,6 +39,7 @@ final class AppDependencies {
     let reminderRepository: any ReminderRepository
     let plantHealthRepository: any PlantHealthRepository
     let travelRepository: any TravelRepository
+    let mealRepository: any MealRepository
 
     let progressionEngine: ProgressionEngine
     let summaryProvider: PlantSummaryProvider
@@ -62,6 +63,9 @@ final class AppDependencies {
     let manageTrip: ManageTrip
     let managePacking: ManagePacking
     let manageChecklists: ManageChecklists
+    let manageMeals: ManageMeals
+    let manageGrocery: ManageGrocery
+    let managePrep: ManagePrep
     let recordWellnessCheckIn: RecordWellnessCheckIn
     let manageWellnessSession: ManageWellnessSession
     let manageJournalEntry: ManageJournalEntry
@@ -107,6 +111,7 @@ final class AppDependencies {
         let reminders = SwiftDataReminderRepository(modelContainer: modelContainer)
         let plantHealth = SwiftDataPlantHealthRepository(modelContainer: modelContainer)
         let travel = SwiftDataTravelRepository(modelContainer: modelContainer)
+        let meals = SwiftDataMealRepository(modelContainer: modelContainer)
 
         self.plantRepository = plants
         self.careEventRepository = events
@@ -119,6 +124,7 @@ final class AppDependencies {
         self.reminderRepository = reminders
         self.plantHealthRepository = plantHealth
         self.travelRepository = travel
+        self.mealRepository = meals
 
         self.progressionEngine = ProgressionEngine(repository: progression)
         self.summaryProvider = PlantSummaryProvider(
@@ -211,6 +217,22 @@ final class AppDependencies {
 
         self.managePacking = ManagePacking(repository: travel, clock: clock)
         self.manageChecklists = ManageChecklists(repository: travel, clock: clock)
+
+        self.manageMeals = ManageMeals(
+            repository: meals,
+            preferencesRepository: preferences,
+            progressionEngine: progressionEngine,
+            clock: clock
+        )
+
+        self.manageGrocery = ManageGrocery(repository: meals, clock: clock)
+
+        self.managePrep = ManagePrep(
+            repository: meals,
+            notifications: notificationService,
+            progressionEngine: progressionEngine,
+            clock: clock
+        )
 
         self.recordWellnessCheckIn = RecordWellnessCheckIn(
             repository: wellness,

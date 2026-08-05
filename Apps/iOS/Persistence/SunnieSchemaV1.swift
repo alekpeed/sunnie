@@ -410,12 +410,13 @@ enum SunnieMigrationPlan: SchemaMigrationPlan {
             SunnieSchemaV1.self,
             SunnieSchemaV2.self,
             SunnieSchemaV3.self,
-            SunnieSchemaV4.self
+            SunnieSchemaV4.self,
+            SunnieSchemaV5.self
         ]
     }
 
     static var stages: [MigrationStage] {
-        [migrateV1toV2, migrateV2toV3, migrateV3toV4]
+        [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5]
     }
 
     /// Additive only: every V1 model keeps its exact shape, so no data moves.
@@ -441,10 +442,17 @@ enum SunnieMigrationPlan: SchemaMigrationPlan {
         fromVersion: SunnieSchemaV3.self,
         toVersion: SunnieSchemaV4.self
     )
+
+    /// Additive: recipes, plan entries, grocery, pantry, prep tasks, and timers
+    /// are all new models.
+    static let migrateV4toV5 = MigrationStage.lightweight(
+        fromVersion: SunnieSchemaV4.self,
+        toVersion: SunnieSchemaV5.self
+    )
 }
 
 /// The version the app currently opens stores at.
 ///
 /// Referenced in one place so bumping the schema is a single edit rather than a
 /// search for every `Schema(versionedSchema:)` call site.
-typealias SunnieCurrentSchema = SunnieSchemaV4
+typealias SunnieCurrentSchema = SunnieSchemaV5

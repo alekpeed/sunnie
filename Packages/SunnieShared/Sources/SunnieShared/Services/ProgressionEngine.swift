@@ -42,7 +42,9 @@ public struct ProgressionEngine: Sendable {
                 .travelCoverageCompleted: 35,
                 .plantHealthIssueResolved: 30,
                 .wellnessCheckInRecorded: 10,
-                .puzzleCompleted: 15
+                .puzzleCompleted: 15,
+                .mealsPlanned: 15,
+                .mealPrepCompleted: 20
             ],
             firstTimeRewards: [
                 .firstPlantAdded: "sunnie.reward.collectible.firstSprout",

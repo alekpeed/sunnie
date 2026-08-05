@@ -23,6 +23,7 @@ struct SettingsScreen: View {
             notificationsSection
             reminderCadenceSection
             quietHoursSection
+            dietarySection
             exportSection
             privacySection
         }
@@ -323,6 +324,37 @@ struct SettingsScreen: View {
             )
         } catch {
             exportedFiles = []
+        }
+    }
+
+    /// Dietary rules (MEALS_AND_PREP.md §2).
+    ///
+    /// No eggs is on by default and stays available to turn off — it is
+    /// Vanessa's rule, not a setting the app imposes. The footer states exactly
+    /// what the filtering does and does not do, because the alternative is a
+    /// user assuming an allergen guarantee this app cannot give.
+    private var dietarySection: some View {
+        Section {
+            ForEach(DietaryExclusionCatalog.all) { exclusion in
+                Toggle(isOn: binding(
+                    get: { $0.dietaryRuleIDs.contains(exclusion.id) },
+                    set: { preferences, isOn in
+                        if isOn {
+                            if !preferences.dietaryRuleIDs.contains(exclusion.id) {
+                                preferences.dietaryRuleIDs.append(exclusion.id)
+                            }
+                        } else {
+                            preferences.dietaryRuleIDs.removeAll { $0 == exclusion.id }
+                        }
+                    }
+                )) {
+                    Text(LocalizedStringKey(exclusion.displayNameKey))
+                }
+            }
+        } header: {
+            Text("settings.section.food", bundle: .main)
+        } footer: {
+            Text("settings.food.footer", bundle: .main)
         }
     }
 

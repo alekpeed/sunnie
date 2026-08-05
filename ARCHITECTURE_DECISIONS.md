@@ -625,3 +625,86 @@ taps.
 
 `TRAVEL_AND_FLIGHT_ATTENDANT.md` §9, §10, §16. `Info.plist`,
 `SunnieDays.entitlements`.
+
+---
+
+## ADR-021: Dietary filtering is text matching, and the app says so
+
+**Status:** Accepted · **Date:** 2026-08-04 · **Phase:** 6
+
+### Context
+
+Vanessa's locked rule is no eggs (MASTER_SOURCE_OF_TRUTH.md). Phase 6 had to
+implement it, and the spec is unusually precise about the limit:
+
+> Ingredient matching should account for obvious egg forms and user-defined
+> exclusions. It must not claim allergen safety unless all ingredient data is
+> verified and the product is intentionally built for that purpose.
+> — MEALS_AND_PREP.md §2
+
+This app has no ingredient database, no product data, and no knowledge of
+manufacturing. It has the words someone typed into a recipe. Those two facts sit
+uncomfortably close together: a filter that reliably catches eggs *feels* like a
+guarantee, and a user who turns on "no eggs" and sees a filtered list will
+reasonably infer one unless told otherwise.
+
+The failure mode is not theoretical. Two strings written in earlier phases —
+*"Planning and prep, always egg-free"* and *"Everything will be egg-free"* —
+made exactly that claim, and were caught by a tone gate during this phase.
+
+### Decision
+
+**The filter is honest about being text matching, in the code and in the copy.**
+
+- `DietaryFilter.Verdict.isClear` means "the ingredient text did not contain
+  anything the rules look for". It is deliberately **not** called `isSafe` or
+  `isEggFree`. There is no property anywhere with a name that could be quoted as
+  a guarantee.
+- Every user-facing string says what was matched, never what is safe. The
+  Settings footer states outright: *"Sunnie matches the words you typed — it has
+  no ingredient database and can't tell you anything is safe to eat."*
+- Matched recipes are **set aside, not hidden**. They stay in the list behind a
+  disclosure, labelled with the ingredients that matched. A filter that silently
+  shrinks a list leaves the user hunting for a recipe they know they saved, and
+  it also hides the filter's own fallibility.
+- The term list covers the obvious forms — the word, its plurals, the named
+  preparations (mayonnaise, hollandaise, meringue), and the derivatives that
+  appear on labels (albumen, ovalbumin). It is not exhaustive and does not
+  pretend to be.
+- Whole-word matching plus an explicit allowance list, so "eggplant",
+  "aubergine", and "egg noodles" are not caught. These have to be enumerated;
+  there is no general rule that derives them.
+
+The no-eggs rule uses the same code path as any user-defined exclusion. It has
+no special case that could quietly diverge.
+
+### Consequences
+
+- The user gets a filter that works and a clear statement of what it is. Those
+  are compatible; pretending the second away to make the first feel stronger is
+  what would not be.
+- New egg forms can be added to the term list without touching logic, and the
+  tests name the categories they cover so a gap is visible.
+- The `attention` tone marks a flagged ingredient in the recipe editor — amber,
+  never red. It is information, not an alarm.
+- A tone gate now checks user-facing strings for food-safety and allergen claims
+  alongside the existing shame/urgency checks. It flags negations too, which is
+  a false positive worth keeping over a missed real one.
+
+### Alternatives considered
+
+**Hide matched recipes entirely.** Rejected: it makes the filter look
+infallible, and it makes recipes the user saved appear to have vanished.
+
+**Ship an ingredient database.** Rejected as scope, and it would not close the
+gap anyway — the app would still have no data on what is in a given branded
+product, which is where allergen risk actually lives.
+
+**Call the flag `isEggFree`.** Rejected. Names leak into UI, into logs, and into
+how the next person reasons about the code. A name that overstates is the same
+mistake as copy that overstates, one layer down.
+
+### Documents/tests affected
+
+`MEALS_AND_PREP.md` §2. `MealsTests` — the egg-rule suite, including the
+eggplant and whole-word cases. Two corrected strings in `Localizable.strings`.

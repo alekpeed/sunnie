@@ -50,6 +50,10 @@ enum AppRoute: Hashable {
     case wellness
     case checkIn
     case meals
+    case mealPlanner
+    case recipes
+    case grocery
+    case pantry
     case games
     case game(String)
     case journal
@@ -67,7 +71,8 @@ enum AppRoute: Hashable {
         case .travel, .trip, .packing, .tripChecklist, .itinerary,
              .plantCoverage, .worldMap: .travel
         case .wellness, .checkIn: .wellness
-        case .meals, .games, .game, .journal,
+        case .meals, .mealPlanner, .recipes, .grocery, .pantry,
+             .games, .game, .journal,
              .collections, .sunnieHome, .themes, .settings: .more
         }
     }
@@ -113,6 +118,9 @@ enum DeepLinkParser {
         case ("map", _): return .worldMap
         case ("wellness", "checkin"): return .checkIn
         case ("wellness", _): return .wellness
+        case ("meals", "grocery"): return .grocery
+        case ("meals", "pantry"): return .pantry
+        case ("meals", "recipes"): return .recipes
         case ("meals", _): return .meals
         case ("games", "daily"): return .games
         case ("games", let id?): return .game(id)
