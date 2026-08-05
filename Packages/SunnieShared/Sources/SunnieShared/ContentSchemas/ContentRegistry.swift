@@ -11,15 +11,18 @@ public final class ContentRegistry: Sendable {
     public let messagePack: SunnieMessagePack
     public let themePack: ThemePack
     public let wellnessPack: WellnessPack
+    public let gamePack: GamePack
 
     public init(
         messagePack: SunnieMessagePack,
         themePack: ThemePack,
-        wellnessPack: WellnessPack = FallbackContent.wellnessPack
+        wellnessPack: WellnessPack = FallbackContent.wellnessPack,
+        gamePack: GamePack = BuiltInGameContent.pack
     ) {
         self.messagePack = messagePack
         self.themePack = themePack
         self.wellnessPack = wellnessPack
+        self.gamePack = gamePack
     }
 
     /// Loads the packs that ship inside the shared package.
@@ -28,6 +31,10 @@ public final class ContentRegistry: Sendable {
         let messages = decode(SunnieMessagePack.self, resource: "sunnie.messages.v1")
         let themes = decode(ThemePack.self, resource: "themes.v1")
         let wellness = decode(WellnessPack.self, resource: "wellness.v1")
+        // Games ship as Swift rather than JSON (ADR-022), so this is an override
+        // point for an added pack rather than the primary source. A file that
+        // fails to decode leaves the built-in set in place.
+        let gamesOverride = decode(GamePack.self, resource: "games.v1")
 
         if messages == nil {
             log.error("Built-in message pack failed to decode; using fallback content.")
@@ -42,7 +49,8 @@ public final class ContentRegistry: Sendable {
         return ContentRegistry(
             messagePack: messages ?? FallbackContent.messagePack,
             themePack: themes ?? FallbackContent.themePack,
-            wellnessPack: wellness ?? FallbackContent.wellnessPack
+            wellnessPack: wellness ?? FallbackContent.wellnessPack,
+            gamePack: gamesOverride ?? BuiltInGameContent.pack
         )
     }
 
@@ -67,10 +75,25 @@ public final class ContentRegistry: Sendable {
         themePack.themes.first { $0.id == id }
     }
 
+    public func game(id: ContentID) -> GameDefinition? {
+        gamePack.game(id: id)
+    }
+
+    public func puzzle(id: ContentID) -> PuzzleDefinition? {
+        gamePack.puzzle(id: id)
+    }
+
     public var allIssues: [ContentIssue] {
         ContentValidator.validate(messagePack)
             + ContentValidator.validate(themePack)
             + ContentValidator.validate(wellnessPack)
+    }
+
+    /// Game-pack problems, reported separately because a game pack fails in ways
+    /// the other packs cannot — an unsolvable puzzle, a clue pointing at an index
+    /// that does not exist.
+    public var gameIssues: [GameContentIssue] {
+        GamePackValidator.validate(gamePack)
     }
 }
 

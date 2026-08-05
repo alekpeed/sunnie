@@ -194,6 +194,28 @@ public protocol MealRepository: Sendable {
     func deleteTimer(id: UUID) async throws
 }
 
+/// Saved sessions and finished results (GAMES_AND_FUTURE_MULTIPLAYER.md §2).
+///
+/// Sessions are stored by their move list, not by a snapshot of the board, so a
+/// build that changes how a board is laid out still resumes correctly.
+public protocol GameRepository: Sendable {
+    /// Sessions the player can pick back up, most recent first.
+    func resumableSessions() async throws -> [GameSessionState]
+    func session(id: UUID) async throws -> GameSessionState?
+    /// The session for a given day's puzzle, if one was started.
+    func session(dailyKey: String) async throws -> GameSessionState?
+    func save(_ session: GameSessionState) async throws
+    func deleteSession(id: UUID) async throws
+
+    func results(limit: Int) async throws -> [GameResult]
+    func results(gameID: ContentID, limit: Int) async throws -> [GameResult]
+    /// Stores the result unless one already exists for this session.
+    func save(_ result: GameResult) async throws -> SaveOutcome<GameResult>
+    /// Whether a puzzle has been finished before, at any difficulty. Drives the
+    /// "played" marker on the games home — never a lock.
+    func hasFinished(puzzleID: ContentID) async throws -> Bool
+}
+
 public protocol ProgressionRepository: Sendable {
     func profile() async throws -> ProgressionProfile
     func save(_ profile: ProgressionProfile) async throws

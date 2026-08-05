@@ -34,6 +34,11 @@ public enum ProgressionEventType: String, Hashable, Sendable, Codable, CaseItera
     case plantHealthIssueResolved
     case wellnessCheckInRecorded
     case puzzleCompleted
+    /// The day's puzzle finished. Separate from `puzzleCompleted` so the daily
+    /// can carry its own value without a played-anytime puzzle inheriting it —
+    /// and so that missing a day costs nothing, because nothing is stored to
+    /// break (GAMES_AND_FUTURE_MULTIPLAYER.md §4).
+    case dailyPuzzleCompleted
     /// A day's meals planned. Rewards the planning, never what was eaten —
     /// there is no reward here for restriction or for hitting a target
     /// (MEALS_AND_PREP.md §12).

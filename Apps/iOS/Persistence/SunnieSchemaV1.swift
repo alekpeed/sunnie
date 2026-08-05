@@ -411,12 +411,13 @@ enum SunnieMigrationPlan: SchemaMigrationPlan {
             SunnieSchemaV2.self,
             SunnieSchemaV3.self,
             SunnieSchemaV4.self,
-            SunnieSchemaV5.self
+            SunnieSchemaV5.self,
+            SunnieSchemaV6.self
         ]
     }
 
     static var stages: [MigrationStage] {
-        [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5]
+        [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5, migrateV5toV6]
     }
 
     /// Additive only: every V1 model keeps its exact shape, so no data moves.
@@ -449,10 +450,19 @@ enum SunnieMigrationPlan: SchemaMigrationPlan {
         fromVersion: SunnieSchemaV4.self,
         toVersion: SunnieSchemaV5.self
     )
+
+    /// Additive: saved game sessions and finished results are both new models.
+    /// Nothing about games needed a field on an existing one — a session refers
+    /// to its game and puzzle by content ID, which is a string this schema has
+    /// never had to know the shape of.
+    static let migrateV5toV6 = MigrationStage.lightweight(
+        fromVersion: SunnieSchemaV5.self,
+        toVersion: SunnieSchemaV6.self
+    )
 }
 
 /// The version the app currently opens stores at.
 ///
 /// Referenced in one place so bumping the schema is a single edit rather than a
 /// search for every `Schema(versionedSchema:)` call site.
-typealias SunnieCurrentSchema = SunnieSchemaV5
+typealias SunnieCurrentSchema = SunnieSchemaV6

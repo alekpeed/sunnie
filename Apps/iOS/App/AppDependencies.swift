@@ -40,6 +40,7 @@ final class AppDependencies {
     let plantHealthRepository: any PlantHealthRepository
     let travelRepository: any TravelRepository
     let mealRepository: any MealRepository
+    let gameRepository: any GameRepository
 
     let progressionEngine: ProgressionEngine
     let summaryProvider: PlantSummaryProvider
@@ -66,6 +67,7 @@ final class AppDependencies {
     let manageMeals: ManageMeals
     let manageGrocery: ManageGrocery
     let managePrep: ManagePrep
+    let playGame: PlayGame
     let recordWellnessCheckIn: RecordWellnessCheckIn
     let manageWellnessSession: ManageWellnessSession
     let manageJournalEntry: ManageJournalEntry
@@ -112,6 +114,7 @@ final class AppDependencies {
         let plantHealth = SwiftDataPlantHealthRepository(modelContainer: modelContainer)
         let travel = SwiftDataTravelRepository(modelContainer: modelContainer)
         let meals = SwiftDataMealRepository(modelContainer: modelContainer)
+        let gamesStore = SwiftDataGameRepository(modelContainer: modelContainer)
 
         self.plantRepository = plants
         self.careEventRepository = events
@@ -125,6 +128,7 @@ final class AppDependencies {
         self.plantHealthRepository = plantHealth
         self.travelRepository = travel
         self.mealRepository = meals
+        self.gameRepository = gamesStore
 
         self.progressionEngine = ProgressionEngine(repository: progression)
         self.summaryProvider = PlantSummaryProvider(
@@ -231,6 +235,14 @@ final class AppDependencies {
             repository: meals,
             notifications: notificationService,
             progressionEngine: progressionEngine,
+            clock: clock
+        )
+
+        self.playGame = PlayGame(
+            repository: gamesStore,
+            pack: registry.gamePack,
+            progressionEngine: progressionEngine,
+            eventPublisher: eventBus,
             clock: clock
         )
 

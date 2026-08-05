@@ -133,7 +133,16 @@ struct RootTabView: View {
         case .recipes: RecipeListScreen()
         case .grocery: GroceryScreen()
         case .pantry: PantryScreen()
-        case .games, .game: PlaceholderFeatureScreen(feature: .games)
+        case .games: GamesHomeScreen()
+        case .game(let id):
+            // The identifier comes from a route this app built, so a value that
+            // does not parse means a stale saved navigation path rather than user
+            // input. Falling back to the games home beats a blank screen.
+            if let sessionID = UUID(uuidString: id) {
+                GameSessionScreen(sessionID: sessionID)
+            } else {
+                GamesHomeScreen()
+            }
         case .journal: JournalScreen()
         case .collections: PlaceholderFeatureScreen(feature: .collections)
         case .sunnieHome: PlaceholderFeatureScreen(feature: .sunnieHome)

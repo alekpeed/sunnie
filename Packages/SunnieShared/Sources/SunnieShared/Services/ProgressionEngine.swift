@@ -43,12 +43,14 @@ public struct ProgressionEngine: Sendable {
                 .plantHealthIssueResolved: 30,
                 .wellnessCheckInRecorded: 10,
                 .puzzleCompleted: 15,
+                .dailyPuzzleCompleted: 25,
                 .mealsPlanned: 15,
                 .mealPrepCompleted: 20
             ],
             firstTimeRewards: [
                 .firstPlantAdded: "sunnie.reward.collectible.firstSprout",
-                .plantCareCompleted: "sunnie.reward.collectible.wateringCan"
+                .plantCareCompleted: "sunnie.reward.collectible.wateringCan",
+                .puzzleCompleted: "sunnie.reward.collectible.luggageTag"
             ],
             experiencePerLevel: 100
         )

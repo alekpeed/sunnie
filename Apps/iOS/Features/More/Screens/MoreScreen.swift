@@ -75,11 +75,12 @@ enum MoreDestination: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Journal, Themes, and Settings exist; the rest are stubs.
+    /// Which of these lead somewhere real. Collections and Sunnie's Home are
+    /// still stubs; everything else is built.
     var isImplemented: Bool {
         switch self {
-        case .journal, .themes, .settings: true
-        default: false
+        case .meals, .games, .journal, .themes, .settings: true
+        case .collections, .sunnieHome: false
         }
     }
 

@@ -708,3 +708,113 @@ mistake as copy that overstates, one layer down.
 
 `MEALS_AND_PREP.md` §2. `MealsTests` — the egg-rule suite, including the
 eggplant and whole-word cases. Two corrected strings in `Localizable.strings`.
+
+## ADR-022: Built-in game content is Swift, not JSON
+
+**Status:** accepted (Phase 7)
+
+### Context
+
+Messages, themes, and the wellness pack ship as JSON in the shared package's
+resources, decoded once at composition time with a Swift fallback if decoding
+fails. Games arrived expecting the same treatment.
+
+They are not the same kind of content. A message pack is a flat list of short
+strings. A game pack is a tree: clues that point at option indices, deduction
+constraints expressed as `(category, value)` pairs, answer keys that index into
+option arrays. Every one of those indices is a place where a typo produces a
+puzzle that tells a player their correct answer is wrong — silently, at runtime,
+with nothing to catch it but someone playing that exact puzzle.
+
+### Decision
+
+The built-in game pack is defined in Swift (`BuiltInGameContent`), not JSON.
+
+`ContentRegistry` still looks for `games.v1.json` first and falls back to the
+built-in pack, so an *added* pack is a JSON file exactly as the content-pack
+architecture describes. The change is only about where the initial set lives.
+
+Two things follow:
+
+- A game whose `kind` disagrees with its puzzle's payload is a type error, not a
+  validation finding.
+- `GamePackValidator` runs over the built-in pack in the tests like any other,
+  including the check that *solves* every deduction puzzle.
+
+### Consequences
+
+- Adding a puzzle to the built-in set requires a build. Adding one via a pack
+  does not, which is the case the pack architecture exists for.
+- The pack is still a `GamePack` value with a real manifest, so nothing
+  downstream knows or cares which way it arrived.
+- `GamePack` round-trips through JSON in the tests, so the built-in set is proof
+  that the on-disk format works rather than a way of avoiding it.
+
+### Alternatives considered
+
+**Author the JSON by hand.** Rejected: roughly fifteen hundred lines of nested
+arrays where an off-by-one in an `answerIndex` is invisible until someone plays
+that puzzle and is told they are wrong.
+
+**Generate the JSON from Swift at build time.** Rejected as a build step that
+buys nothing — the decoded value is identical either way, and the generator
+would be one more thing that can be out of date.
+
+### Documents/tests affected
+
+`CONTENT_PACK_AND_EXPANSION_ARCHITECTURE.md`. `GameContentTests` — pack
+validity, the JSON round trip, and the initial-set completeness check.
+
+## ADR-023: A saved game is its move log, not its board
+
+**Status:** accepted (Phase 7)
+
+### Context
+
+Save and resume is required for every game (GAMES_AND_FUTURE_MULTIPLAYER.md §2),
+and the obvious implementation is to serialize the board: which values are in
+which cells, which clues are open, which questions are answered.
+
+That works until the board changes. A later build that adds a column, reorders
+options, or splits a step has to migrate every saved board or discard it — and
+discarding a half-finished puzzle is exactly the small betrayal this app should
+not commit.
+
+### Decision
+
+A session stores its ordered `[GameMove]` and nothing about the board's layout.
+The board is recomputed by replaying those moves through the engine on every
+read.
+
+The seed is stored alongside, so the puzzle a session was drawn from is fixed at
+the moment it started rather than re-derived later.
+
+### Consequences
+
+- A build that changes how a board is laid out still resumes old sessions
+  correctly, because it replays the same moves through the same rules.
+- Moves from a mismatched save are ignored per-move rather than failing the
+  whole session, so a partial mismatch loses a move rather than an afternoon.
+- Replay is cheap: a session is tens of moves, and the engines are pure.
+- The move log is also the groundwork §9 asks for. `GameMove` is `Codable`,
+  carries its own ordinal, and contains no CloudKit or platform types, so two
+  devices applying the same ordinals reach the same board — which is what
+  asynchronous turn-based play needs and what a serialized board could not
+  provide.
+- One cost: a bug in an engine changes the meaning of every stored session
+  retroactively. That is the same trade a ledger makes against a balance, and
+  the engines are the most thoroughly tested part of the feature because of it.
+
+### Alternatives considered
+
+**Serialize the board.** Rejected for the migration problem above.
+
+**Store both, board as a cache.** Rejected: two representations that can
+disagree, and the one that gets trusted is whichever the next person happened
+to read first.
+
+### Documents/tests affected
+
+`GAMES_AND_FUTURE_MULTIPLAYER.md` §2 and §9. `GamesTests` — replay determinism,
+the reversed-array test, the foreign-move test, and the session round trip.
+`GameFlowTests` — resume through a real store.

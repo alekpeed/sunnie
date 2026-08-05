@@ -58,6 +58,28 @@ public enum ActionKeyFactory {
         ActionKey(rawValue: "wellnessSession.v1|\(sessionID.uuidString)")
     }
 
+    /// Key for finishing a puzzle.
+    ///
+    /// Derived from the puzzle and difficulty, deliberately **not** from the
+    /// session. That is the whole of the "no reward for repeatedly starting and
+    /// abandoning sessions" safeguard (GAMES_AND_FUTURE_MULTIPLAYER.md §7):
+    /// starting the same puzzle ten times and finishing it ten times earns what
+    /// finishing it once earns. Replaying stays free and stays fun; it just is
+    /// not a source of experience.
+    public static func gamePuzzle(
+        puzzleID: ContentID, difficulty: GameDifficulty
+    ) -> ActionKey {
+        ActionKey(rawValue: "gamePuzzle.v1|\(puzzleID.rawValue)|\(difficulty.rawValue)")
+    }
+
+    /// Key for the day's puzzle, keyed on the day rather than on what was played.
+    ///
+    /// One day, one award — and because the key is the local date, finishing the
+    /// daily puzzle on the phone and again on another device is still one award.
+    public static func dailyPuzzle(dayKey: String) -> ActionKey {
+        ActionKey(rawValue: "dailyPuzzle.v1|\(dayKey)")
+    }
+
     /// Progression keys are derived from the care event's own action key, so
     /// evaluating the same event twice cannot award experience twice.
     public static func progression(

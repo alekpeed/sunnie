@@ -958,3 +958,100 @@
 "settings.section.food" = "Food";
 "settings.food.footer" = "Recipes whose ingredients match a rule you've turned on are set aside rather than suggested. You can still see them and still cook them. Sunnie matches the words you typed — it has no ingredient database and can't tell you anything is safe to eat.";
 "diet.noEggs" = "No eggs";
+
+/* ===== Games (Phase 7) ===== */
+
+/* Games — categories */
+"game.category.wordplay" = "Wordplay";
+"game.category.language" = "Languages";
+"game.category.travel" = "Travel";
+"game.category.plants" = "Plants";
+"game.category.memory" = "Memory";
+"game.category.trivia" = "Trivia";
+"game.category.logic" = "Logic";
+
+/* Games — difficulty. Names describe the puzzle, never the player. */
+"game.difficulty.tutorial" = "Walk me through it";
+"game.difficulty.gentle" = "Gentle";
+"game.difficulty.steady" = "Steady";
+"game.difficulty.tricky" = "Tricky";
+
+/* Games — content languages */
+"game.language.english" = "In English";
+"game.language.spanish" = "In Spanish";
+"game.language.portuguese" = "In Portuguese";
+"game.language.french" = "In French";
+
+/* Games — postcard clue kinds */
+"game.clue.textFragment" = "Something written";
+"game.clue.stampMark" = "The postmark";
+"game.clue.weather" = "The weather";
+"game.clue.landmark" = "A landmark";
+"game.clue.localPhrase" = "Something said";
+
+/* Games — how a session ended. There is no "failed". */
+"game.completion.solvedUnaided" = "Solved on your own";
+"game.completion.solvedWithHints" = "Solved, with a nudge or two";
+"game.completion.finishedWithHelp" = "Finished";
+"game.completion.setAside" = "Set aside for later";
+
+/* Games — the initial set */
+"game.wordLayover.name" = "Word Layover";
+"game.wordLayover.summary" = "Hop between places by following what one word means in another language.";
+"game.wordLayover.rules" = "Each stop gives you a clue. Answer it, and the answer itself becomes the bridge to the next clue — sometimes a meaning, sometimes a translation, sometimes just how it sounds. Nudges are there whenever you want one; they cost points and nothing else.";
+
+"game.postcardCipher.name" = "Postcard Cipher";
+"game.postcardCipher.summary" = "Work out where a postcard came from, one clue at a time.";
+"game.postcardCipher.rules" = "Open as many clues as you like, in whatever order you like. Each one costs a few points, so the puzzle is choosing which clues you actually need. A wrong guess opens the cheapest clue you haven't seen and lets you keep going.";
+
+"game.jungleLogic.name" = "Jungle Logic";
+"game.jungleLogic.summary" = "Sort out which plant lives where, from a handful of clues.";
+"game.jungleLogic.rules" = "Every clue is true, and exactly one arrangement fits all of them. Tap a row to fill it in; nothing is dragged. When the whole board is filled, check it and see how it went.";
+
+"game.memoryAtlas.name" = "Memory Atlas";
+"game.memoryAtlas.summary" = "Study a scrapbook page, then answer questions about what was on it.";
+"game.memoryAtlas.rules" = "Look at the page for as long as you want — the timer can be taken away entirely, and doing that costs nothing. Then the page goes and the questions come.";
+
+"game.lostInTranslation.name" = "Lost in Translation";
+"game.lostInTranslation.summary" = "Follow a phrase through several languages, cognates and false friends alike.";
+"game.lostInTranslation.rules" = "Each step asks for one word. Some steps use a word that really is related to the last one; some use a word that only looks related. After each answer you'll see which it was.";
+
+"game.sunniesSuitcase.name" = "Sunnie's Suitcase";
+"game.sunniesSuitcase.summary" = "Pack for a trip where everything has to satisfy every rule at once.";
+"game.sunniesSuitcase.rules" = "Choose what goes in the bag. Every rule is listed, and each one shows whether it currently holds. Several combinations look right until you check the weight.";
+
+"game.triviaTrail.name" = "Trivia Trail";
+"game.triviaTrail.summary" = "A journey where each answer picks the route.";
+"game.triviaTrail.rules" = "Answer to choose where the trail goes next. A wrong answer takes the scenic way round rather than ending the journey, and every stop explains itself before you move on.";
+
+/* Games — home */
+"games.daily.none" = "There's no puzzle set for today. The games below are all still here.";
+"games.continue.hint" = "Opens this puzzle where you left it";
+"games.rules.title" = "How it works";
+"games.rules.open" = "Rules";
+"games.rules.hints" = "A nudge takes a few points off the score and nothing else. There is no limit that ends a game, and nothing to buy.";
+"games.difficulty.title" = "How would you like it?";
+"games.difficulty.tutorial.note" = "Explains itself as it goes, and doesn't count for anything.";
+
+/* Games — session */
+"games.hint.note" = "A nudge costs points. It never costs you the puzzle.";
+"games.answer.close" = "That's very close.";
+"games.identify.note" = "Open whichever clues you want, in any order.";
+"games.study.title" = "The page";
+"games.study.timeUp" = "The page has gone. The questions are all multiple choice, so there's nothing to recall from nothing.";
+"games.study.untimed.note" = "Taking the timer away doesn't affect your score.";
+"games.study.skipped" = "Moved past.";
+"games.trail.skipped" = "Travelled on without answering.";
+
+/* Games — result */
+"games.result.title" = "How it went";
+
+/* Games — rewards */
+"reward.sunnie.reward.collectible.firstSprout" = "A first sprout for the shelf";
+"reward.sunnie.reward.collectible.wateringCan" = "A little watering can";
+"reward.sunnie.reward.collectible.luggageTag" = "A luggage tag";
+"reward.sunnie.reward.collectible.inkStamp" = "An ink stamp";
+"reward.sunnie.reward.collectible.brassLabel" = "A small brass plant label";
+
+/* Games — content pack */
+"content.pack.games.core" = "Sunnie's games";
