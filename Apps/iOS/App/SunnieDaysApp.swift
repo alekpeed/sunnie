@@ -144,8 +144,8 @@ struct RootTabView: View {
                 GamesHomeScreen()
             }
         case .journal: JournalScreen()
-        case .collections: PlaceholderFeatureScreen(feature: .collections)
-        case .sunnieHome: PlaceholderFeatureScreen(feature: .sunnieHome)
+        case .collections: CollectionsScreen()
+        case .sunnieHome: SunnieHomeScreen()
         case .trip(let id): TripOverviewScreen(tripID: id)
         case .packing(let id): PackingScreen(tripID: id)
         case .tripChecklist(let id, let phase):

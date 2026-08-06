@@ -12,17 +12,20 @@ public final class ContentRegistry: Sendable {
     public let themePack: ThemePack
     public let wellnessPack: WellnessPack
     public let gamePack: GamePack
+    public let collectionPack: CollectionPack
 
     public init(
         messagePack: SunnieMessagePack,
         themePack: ThemePack,
         wellnessPack: WellnessPack = FallbackContent.wellnessPack,
-        gamePack: GamePack = BuiltInGameContent.pack
+        gamePack: GamePack = BuiltInGameContent.pack,
+        collectionPack: CollectionPack = BuiltInCollectionContent.pack
     ) {
         self.messagePack = messagePack
         self.themePack = themePack
         self.wellnessPack = wellnessPack
         self.gamePack = gamePack
+        self.collectionPack = collectionPack
     }
 
     /// Loads the packs that ship inside the shared package.
@@ -35,6 +38,7 @@ public final class ContentRegistry: Sendable {
         // point for an added pack rather than the primary source. A file that
         // fails to decode leaves the built-in set in place.
         let gamesOverride = decode(GamePack.self, resource: "games.v1")
+        let collectionOverride = decode(CollectionPack.self, resource: "collection.v1")
 
         if messages == nil {
             log.error("Built-in message pack failed to decode; using fallback content.")
@@ -50,7 +54,8 @@ public final class ContentRegistry: Sendable {
             messagePack: messages ?? FallbackContent.messagePack,
             themePack: themes ?? FallbackContent.themePack,
             wellnessPack: wellness ?? FallbackContent.wellnessPack,
-            gamePack: gamesOverride ?? BuiltInGameContent.pack
+            gamePack: gamesOverride ?? BuiltInGameContent.pack,
+            collectionPack: collectionOverride ?? BuiltInCollectionContent.pack
         )
     }
 
@@ -94,6 +99,17 @@ public final class ContentRegistry: Sendable {
     /// that does not exist.
     public var gameIssues: [GameContentIssue] {
         GamePackValidator.validate(gamePack)
+    }
+
+    /// Collection-pack problems. Separate for the same reason the game pack's
+    /// are: this pack fails in ways the others cannot — a reward with nowhere to
+    /// be placed, a slot that accepts nothing.
+    public var collectionIssues: [CollectionContentIssue] {
+        CollectionPackValidator.validate(collectionPack)
+    }
+
+    public func reward(id: ContentID) -> RewardDefinition? {
+        collectionPack.reward(id: id)
     }
 }
 

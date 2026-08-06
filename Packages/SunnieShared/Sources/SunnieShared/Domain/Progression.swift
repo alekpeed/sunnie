@@ -44,6 +44,11 @@ public enum ProgressionEventType: String, Hashable, Sendable, Codable, CaseItera
     /// (MEALS_AND_PREP.md §12).
     case mealsPlanned
     case mealPrepCompleted
+    /// A memory saved from a trip (PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md §3).
+    case tripMemorySaved
+    /// A place recorded as visited for the first time. Counted per destination,
+    /// so going back to Lisbon is a welcome return rather than a new discovery.
+    case destinationVisited
 }
 
 /// A recorded progression-relevant occurrence.

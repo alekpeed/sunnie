@@ -270,6 +270,56 @@ actor SwiftDataProgressionRepository: ProgressionRepository {
         }
     }
 
+    /// Every grant, newest first.
+    ///
+    /// Unbounded on purpose. The collection screen shows what someone owns, and
+    /// a limit here would silently drop the oldest things they earned — which
+    /// are usually the ones they earned first and remember best.
+    func allGrants() async throws -> [RewardGrant] {
+        do {
+            return try modelContext
+                .fetch(FetchDescriptor<SDRewardGrant>(
+                    sortBy: [SortDescriptor(\.grantedAt, order: .reverse)]
+                ))
+                .map { ModelMapping.domain($0) }
+        } catch {
+            throw DomainError.persistenceFailed(operation: "allRewardGrants")
+        }
+    }
+
+    /// How many times each kind of event has happened.
+    ///
+    /// Fetched as raw type strings and tallied here rather than with a grouped
+    /// query, which SwiftData does not offer. An unrecognised string — an event
+    /// type written by a newer build — is skipped rather than crashing, so an
+    /// older build opening a newer store still counts what it understands.
+    func eventCounts() async throws -> [ProgressionEventType: Int] {
+        do {
+            var counts: [ProgressionEventType: Int] = [:]
+            for model in try modelContext.fetch(FetchDescriptor<SDProgressionEvent>()) {
+                guard let type = ProgressionEventType(rawValue: model.typeRaw) else { continue }
+                counts[type, default: 0] += 1
+            }
+            return counts
+        } catch {
+            throw DomainError.persistenceFailed(operation: "progressionEventCounts")
+        }
+    }
+
+    /// When things happened, for the rhythm summary.
+    func eventDates(since: Date) async throws -> [Date] {
+        do {
+            return try modelContext
+                .fetch(FetchDescriptor<SDProgressionEvent>(
+                    predicate: #Predicate<SDProgressionEvent> { $0.occurredAt >= since },
+                    sortBy: [SortDescriptor(\.occurredAt, order: .forward)]
+                ))
+                .map(\.occurredAt)
+        } catch {
+            throw DomainError.persistenceFailed(operation: "progressionEventDates")
+        }
+    }
+
     private func fetchProfile() throws -> SDProgressionProfile? {
         var descriptor = FetchDescriptor<SDProgressionProfile>()
         descriptor.fetchLimit = 1

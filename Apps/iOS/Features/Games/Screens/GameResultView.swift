@@ -14,6 +14,7 @@ import SunnieShared
 /// Sunnie's reaction never depends on the score. There is no version of this
 /// screen where he is disappointed.
 struct GameResultView: View {
+    @Environment(AppDependencies.self) private var dependencies
     @Environment(\.sunnieTheme) private var theme
 
     let finish: PlayGame.Finish
@@ -176,11 +177,16 @@ struct GameResultView: View {
             .font(SunnieFont.body)
             .foregroundStyle(theme.color.textPrimary)
 
+            // Names come from the collection pack, which is the one place that
+            // describes a reward. A grant the pack does not describe is still
+            // shown — the player earned it (§12).
             let rewards = (finish.outcome?.rewards ?? []) + (finish.dailyOutcome?.rewards ?? [])
             ForEach(rewards) { grant in
-                Text(LocalizedStringKey("reward.\(grant.rewardID.rawValue)"))
-                    .font(SunnieFont.secondary)
-                    .foregroundStyle(theme.color.textSecondary)
+                Text(LocalizedStringKey(
+                    dependencies.manageCollection.displayNameKey(for: grant.rewardID)
+                ))
+                .font(SunnieFont.secondary)
+                .foregroundStyle(theme.color.textSecondary)
             }
         }
     }

@@ -1046,12 +1046,209 @@
 /* Games — result */
 "games.result.title" = "How it went";
 
-/* Games — rewards */
-"reward.sunnie.reward.collectible.firstSprout" = "A first sprout for the shelf";
-"reward.sunnie.reward.collectible.wateringCan" = "A little watering can";
-"reward.sunnie.reward.collectible.luggageTag" = "A luggage tag";
-"reward.sunnie.reward.collectible.inkStamp" = "An ink stamp";
-"reward.sunnie.reward.collectible.brassLabel" = "A small brass plant label";
-
 /* Games — content pack */
 "content.pack.games.core" = "Sunnie's games";
+
+/* ===== Collections and Sunnie Home (Phase 8) ===== */
+
+/* Rewards — categories */
+"reward.category.outfit" = "Outfits";
+"reward.category.decor" = "Decor";
+"reward.category.decorativePlant" = "Little plants";
+"reward.category.postcard" = "Postcards";
+"reward.category.passportStamp" = "Stamps";
+"reward.category.souvenir" = "Souvenirs";
+"reward.category.music" = "Music";
+"reward.category.ambience" = "Ambience";
+"reward.category.storyScene" = "Stories";
+"reward.category.themeVariant" = "Themes";
+"reward.category.destinationObject" = "From away";
+"reward.category.gameCosmetic" = "Game bits";
+
+/* Rewards — what you can do with one */
+"reward.action.equip" = "Wear";
+"reward.action.place" = "Place";
+"reward.action.play" = "Play";
+"reward.action.view" = "Look";
+"reward.action.apply" = "Use";
+
+/* Progression events, as things you did. Used inside "the first time you…". */
+"progression.event.plantCareCompleted" = "looked after a plant";
+"progression.event.firstPlantAdded" = "added a plant";
+"progression.event.plantCollectionMilestone" = "grew your jungle";
+"progression.event.growthPhotoMilestone" = "photographed something growing";
+"progression.event.travelCoverageCompleted" = "sorted the plants before a trip";
+"progression.event.plantHealthIssueResolved" = "helped a plant through something";
+"progression.event.wellnessCheckInRecorded" = "checked in with yourself";
+"progression.event.puzzleCompleted" = "finished a puzzle";
+"progression.event.dailyPuzzleCompleted" = "finished the day's puzzle";
+"progression.event.mealsPlanned" = "planned a day's meals";
+"progression.event.mealPrepCompleted" = "did some prep";
+"progression.event.tripMemorySaved" = "kept a memory from a trip";
+"progression.event.destinationVisited" = "came back from somewhere";
+
+/* Collection — screen */
+"collection.rewards.loading" = "Looking through the shelves…";
+"collection.new.title" = "Something new";
+"collection.detail.title" = "About this";
+"collection.detail.placeHint" = "You can put this out in Sunnie's home.";
+"collection.orphan.name" = "Something you found";
+"collection.orphan.description" = "You own this. Whatever described it isn't installed right now.";
+"collection.orphan.explanation" = "This is still yours. The pack that describes it isn't installed at the moment, so there's nothing to show — it'll come back with the pack, and it doesn't go away if the pack doesn't.";
+"collection.rhythm.title" = "Your rhythm";
+"collection.rhythm.best" = "That matches your busiest week so far.";
+"collection.rhythm.note" = "Days you did something. A quiet week doesn't undo anything.";
+"collection.ownership.all" = "Everything";
+"collection.ownership.owned" = "Found";
+"collection.ownership.locked" = "Not yet";
+
+/* Collection — where things come from */
+"unlock.source.fromTheStart" = "Yours from the beginning";
+"unlock.source.level" = "Reaching level %d";
+"unlock.source.firstTime" = "The first time you %@";
+"unlock.source.milestone" = "%1$@, %2$d times";
+"unlock.source.destination" = "Somewhere you've been";
+"unlock.source.travelMemory" = "Saving a memory from a trip";
+"unlock.source.game" = "Finishing a puzzle";
+
+/* Seasons */
+"season.spring" = "spring";
+"season.summer" = "summer";
+"season.autumn" = "autumn";
+"season.winter" = "winter";
+
+/* Sunnie Home — zones and slots */
+"home.zone.cozyRoom" = "The cozy room";
+"home.zone.indoorJungle" = "The indoor jungle";
+"home.zone.travelNook" = "The travel nook";
+"home.zone.musicCorner" = "The music corner";
+"home.zone.window" = "The window";
+
+"home.slot.cozy.shelf" = "The shelf";
+"home.slot.cozy.wall" = "The wall";
+"home.slot.cozy.rug" = "The floor";
+"home.slot.jungle.stand" = "The plant stand";
+"home.slot.jungle.hanger" = "The hanger";
+"home.slot.jungle.bench" = "The potting bench";
+"home.slot.travel.shelf" = "The travel shelf";
+"home.slot.travel.board" = "The pin board";
+"home.slot.music.stand" = "The music stand";
+
+/* Sunnie Home — screen */
+"home.loading" = "Tidying up…";
+"home.slot.empty" = "Empty";
+"home.slot.clear" = "Take it away";
+"home.slot.options" = "What fits here";
+"home.slot.nothingFits" = "Nothing you have fits here yet.";
+"home.slots.hint" = "Tap Arrange to move things around.";
+"home.window.title" = "The window";
+"home.window.note" = "The window follows the time of day on its own.";
+"home.nook.title" = "On the board";
+"home.nook.empty" = "Nothing pinned up yet. Memories you save from a trip can go here.";
+"home.plants.title" = "Your plants in here";
+"home.plants.empty" = "No favourites picked yet.";
+"home.outfit.none" = "Nothing in particular";
+"home.sound.none" = "Quiet";
+"home.sound.note" = "Only the generated sounds play for now. The recorded ones arrive with their audio.";
+"home.story.title" = "A short story";
+"home.refusal.title" = "That doesn't go there";
+"home.refusal.notOwned" = "You don't have this one yet.";
+"home.refusal.slotUnknown" = "I couldn't find that spot. Nothing has changed.";
+"home.refusal.wrongCategory" = "That spot doesn't take this kind of thing.";
+"home.refusal.zoneDoesNotSuit" = "This one belongs in a different part of the room.";
+
+/* Destinations */
+"destination.paris" = "Paris";
+"destination.tokyo" = "Tokyo";
+"destination.vietnam" = "Vietnam";
+"destination.spain" = "Spain";
+"destination.brazil" = "Brazil";
+
+/* Rewards — the shipped set */
+"reward.outfit.everyday.name" = "Everyday Sunnie";
+"reward.outfit.everyday.description" = "What he wears most days. Comfortable, a bit rumpled.";
+"reward.outfit.gardening.name" = "Gardening apron";
+"reward.outfit.gardening.description" = "Pockets full of things he might need. Mostly string.";
+"reward.outfit.cozyPajamas.name" = "Cozy pajamas";
+"reward.outfit.cozyPajamas.description" = "For evenings that are staying in.";
+"reward.outfit.travelUniform.name" = "Travel uniform";
+"reward.outfit.travelUniform.description" = "Neat, pressed, and very pleased with itself.";
+
+"reward.decor.woodenStool.name" = "Wooden stool";
+"reward.decor.woodenStool.description" = "Sturdy. Good for sitting on or standing on.";
+"reward.decor.readingLamp.name" = "Reading lamp";
+"reward.decor.readingLamp.description" = "Warm light, angled just so.";
+"reward.decor.wovenRug.name" = "Woven rug";
+"reward.decor.wovenRug.description" = "Soft underfoot, and it hides a lot of soil.";
+"reward.decor.recordPlayer.name" = "Record player";
+"reward.decor.recordPlayer.description" = "Old, and it still works.";
+"reward.decor.worldMapPrint.name" = "World map print";
+"reward.decor.worldMapPrint.description" = "For looking at and wondering about.";
+
+"reward.souvenir.brassBell.name" = "Little brass bell";
+"reward.souvenir.brassBell.description" = "It rings once and then thinks better of it.";
+
+"reward.plant.littleFern.name" = "Little fern";
+"reward.plant.littleFern.description" = "Small, green, entirely unbothered.";
+"reward.plant.trailingPothos.name" = "Trailing pothos";
+"reward.plant.trailingPothos.description" = "It has opinions about where it would like to go.";
+"reward.plant.paperFlower.name" = "Paper flower";
+"reward.plant.paperFlower.description" = "Someone folded this. It never needs watering.";
+
+"reward.ambience.roomTone.name" = "Room tone";
+"reward.ambience.roomTone.description" = "The low sound of a room with someone in it.";
+"reward.ambience.softRain.name" = "Soft rain";
+"reward.ambience.softRain.description" = "Steady and unhurried.";
+"reward.ambience.openWindow.name" = "Open window";
+"reward.ambience.openWindow.description" = "Air moving, and something happening a long way off.";
+
+"reward.collectible.firstSprout.name" = "First sprout";
+"reward.collectible.firstSprout.description" = "The very first green thing.";
+"reward.collectible.wateringCan.name" = "Little watering can";
+"reward.collectible.wateringCan.description" = "Dented on one side. It pours beautifully.";
+"reward.collectible.luggageTag.name" = "Luggage tag";
+"reward.collectible.luggageTag.description" = "Slightly worn at the corners.";
+"reward.collectible.inkStamp.name" = "Ink stamp";
+"reward.collectible.inkStamp.description" = "The date wheel is stuck on a Tuesday.";
+"reward.collectible.brassLabel.name" = "Brass plant label";
+"reward.collectible.brassLabel.description" = "Engraved, and pushed into the soil at a slight angle.";
+
+/* Rewards — stamps and postcards */
+"reward.stamp.paris.name" = "Paris stamp";
+"reward.stamp.paris.description" = "Pressed into the passport a little crooked.";
+"reward.postcard.paris.name" = "Paris postcard";
+"reward.postcard.paris.description" = "Room for a few lines on the back.";
+"reward.stamp.tokyo.name" = "Tokyo stamp";
+"reward.stamp.tokyo.description" = "Neat, and perfectly centred.";
+"reward.postcard.tokyo.name" = "Tokyo postcard";
+"reward.postcard.tokyo.description" = "Room for a few lines on the back.";
+"reward.stamp.vietnam.name" = "Vietnam stamp";
+"reward.stamp.vietnam.description" = "Still faintly damp when it went in.";
+"reward.postcard.vietnam.name" = "Vietnam postcard";
+"reward.postcard.vietnam.description" = "Room for a few lines on the back.";
+"reward.stamp.spain.name" = "Spain stamp";
+"reward.stamp.spain.description" = "Stamped hard enough to feel on the other page.";
+"reward.postcard.spain.name" = "Spain postcard";
+"reward.postcard.spain.description" = "Room for a few lines on the back.";
+"reward.stamp.brazil.name" = "Brazil stamp";
+"reward.stamp.brazil.description" = "Green ink, mostly.";
+"reward.postcard.brazil.name" = "Brazil postcard";
+"reward.postcard.brazil.description" = "Room for a few lines on the back.";
+
+/* Story scenes */
+"story.firstMorning.title" = "The first morning";
+"story.firstMorning.panel1" = "Sunnie woke up before the light did, which almost never happens.";
+"story.firstMorning.panel2" = "There was a new plant on the shelf. He looked at it for a while without touching it, in case it was still deciding.";
+"story.firstMorning.panel3" = "By the afternoon it had turned very slightly towards the window. He took that as a yes.";
+
+"story.packingNight.title" = "The night before";
+"story.packingNight.panel1" = "Everything was in the bag. Then it was all out of the bag again, on the floor, in a shape only Sunnie understood.";
+"story.packingNight.panel2" = "He wrote a note for the plants and propped it against the watering can, which felt like the sort of thing you do.";
+"story.packingNight.panel3" = "The bag closed on the second try. He left the note where it was.";
+
+/* Settings — rhythm */
+"settings.section.rhythm" = "Rhythm";
+"settings.rhythm.footer" = "The count of days you did something, shown on your collection. It only ever goes up within a week, and a quiet week doesn't take anything away.";
+
+/* Collection — content pack */
+"content.pack.collection.core" = "Sunnie's things";

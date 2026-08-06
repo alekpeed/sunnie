@@ -119,6 +119,11 @@ public struct UserPreferences: Hashable, Sendable, Codable {
     public var favoriteCalmSoundIDs: [ContentID]
     /// Minutes before calm sounds fade out on their own. Nil means play until stopped.
     public var calmSoundTimerMinutes: Int?
+    /// Whether to show the caring-days count at all
+    /// (PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md §5, "user may hide rhythm
+    /// metrics"). On by default because it is a warm number, and turn-off-able
+    /// because for some people any number becomes a target.
+    public var showsRhythm: Bool
 
     public static let `default` = UserPreferences(
         activeThemeID: ThemeCatalog.lushTropicalJungleID,
@@ -133,7 +138,8 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         useSolarTimes: false,
         reminderLevels: [:],
         favoriteCalmSoundIDs: [],
-        calmSoundTimerMinutes: nil
+        calmSoundTimerMinutes: nil,
+        showsRhythm: true
     )
 
     public init(
@@ -149,7 +155,8 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         useSolarTimes: Bool,
         reminderLevels: [String: Int] = [:],
         favoriteCalmSoundIDs: [ContentID] = [],
-        calmSoundTimerMinutes: Int? = nil
+        calmSoundTimerMinutes: Int? = nil,
+        showsRhythm: Bool = true
     ) {
         self.activeThemeID = activeThemeID
         self.automaticDayCycle = automaticDayCycle
@@ -164,6 +171,7 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         self.reminderLevels = reminderLevels
         self.favoriteCalmSoundIDs = favoriteCalmSoundIDs
         self.calmSoundTimerMinutes = calmSoundTimerMinutes
+        self.showsRhythm = showsRhythm
     }
 
     /// The cadence the user chose for a category. Disabled unless they said otherwise.
@@ -220,6 +228,7 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         calmSoundTimerMinutes = try? container.decodeIfPresent(
             Int.self, forKey: .calmSoundTimerMinutes
         )
+        showsRhythm = value(.showsRhythm, fallback.showsRhythm)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -235,6 +244,7 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         case useSolarTimes
         case reminderLevels
         case favoriteCalmSoundIDs
+        case showsRhythm
         case calmSoundTimerMinutes
     }
 }

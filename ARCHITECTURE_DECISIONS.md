@@ -818,3 +818,113 @@ to read first.
 `GAMES_AND_FUTURE_MULTIPLAYER.md` §2 and §9. `GamesTests` — replay determinism,
 the reversed-array test, the foreign-move test, and the session round trip.
 `GameFlowTests` — resume through a real store.
+
+## ADR-024: Ownership is a grant, not membership in an installed pack
+
+**Status:** accepted (Phase 8)
+
+### Context
+
+Collectibles are described by a content pack. The obvious model is that the
+collection *is* the pack: iterate the installed rewards, mark the earned ones.
+
+That model quietly makes ownership a function of what is installed. Uninstall a
+destination pack and the stamp someone earned by actually going there stops
+existing — not hidden, gone, with nothing left to restore it from.
+PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md §12 forbids exactly this, and the
+forbidding is not incidental: a collection is a record of things that happened
+to a person, and content management must not be able to edit their past.
+
+### Decision
+
+Ownership is an `SDRewardGrant` row, keyed by content ID and by a deterministic
+key derived from what earned it. It has existed since schema V1 and Phase 8
+added no model for it.
+
+Consequences that follow directly:
+
+- The collection is built by joining *definitions* against *grants*. A grant
+  with no matching definition still appears, as an orphan row that says plainly
+  that the pack describing it is not installed and that the item is still theirs.
+- No code path deletes a grant. There is no revoke, no expiry, and no
+  `deleteGrant` on the repository — the absence is the guarantee.
+- `RewardUnlockPlanner` only ever *adds*. It takes what is true now and returns
+  what is missing, so a corrupted profile that reports a lower level grants
+  nothing new and takes nothing away.
+- The unlock key derives from the reward and its unlock source, never from the
+  moment or the device. Two devices noticing the same level being reached
+  produce the same key, and the second collapses into the first.
+
+### Consequences
+
+- Renaming a reward's content ID orphans every grant already in a store. The
+  five identifiers Phases 1 and 7 already grant are therefore kept exactly as
+  written, in a section of the pack that says why.
+- The collection screen must handle an item it cannot describe. It does, and the
+  copy for that case is written rather than generic.
+
+### Alternatives considered
+
+**Store the pack version alongside the grant.** Rejected: it makes ownership
+look conditional on a pack, which invites exactly the cascade this avoids.
+
+**Hide orphaned grants.** Rejected. From the user's side that is
+indistinguishable from having lost the thing.
+
+### Documents/tests affected
+
+`PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md` §7, §12.
+`CollectionsTests.ownershipOutlivesTheContentPack`,
+`CollectionsTests.nothingIsEverRevoked`,
+`CollectionFlowTests.loweringALevelRevokesNothing`.
+
+## ADR-025: The home has named slots, not freeform placement
+
+**Status:** accepted (Phase 8)
+
+### Context
+
+§8 says the initial release "should use constrained placement rather than a full
+freeform physics editor". That reads as a scope decision. It is also an
+accessibility one, and the accessibility half is the reason it should stay true
+after the scope argument stops applying.
+
+A drag-and-drop scene needs a second, parallel interaction path for VoiceOver,
+Switch Control, and anyone who cannot hold a precise drag — and that second path
+is invariably built later, tested less, and drifts. The result is an app where
+the accessible way to decorate is worse than the real way.
+
+### Decision
+
+Every placement is a `DecorSlot` — a named, content-defined position that holds
+exactly one thing and declares which categories it accepts. Choosing what goes
+in one is a list and a tap.
+
+There is no drag path. Not "a drag path plus an accessible alternative" — one
+path, which happens to work with every input method because a list does.
+
+### Consequences
+
+- The scene stays composed whatever is in it, because the composition is
+  authored rather than emergent.
+- A destination pack can add a shelf as content, with no code change.
+- `CollectionPackValidator` can prove that every placeable reward has a slot
+  that accepts it. A freeform scene has no equivalent check, because "somewhere
+  on the canvas" is always true and never useful.
+- The scene will look less like a dollhouse than a freeform editor would. That
+  is the cost, and it is worth it.
+
+### Alternatives considered
+
+**Freeform drag with an accessible alternative.** Rejected for the reasons
+above: two paths, one of which is a second-class citizen by construction.
+
+**Freeform drag with snapping.** Rejected — it is the same two-path problem with
+extra geometry, and the snap targets are just slots that the user cannot see.
+
+### Documents/tests affected
+
+`PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md` §8. `SCREEN_SPECIFICATIONS.md`
+S-22. `CollectionsTests.placementRulesRefuseSpecifically`,
+`CollectionContentTests.everythingPlaceableHasASlot`,
+`CollectionFlowTests.slotsHoldOneThing`.

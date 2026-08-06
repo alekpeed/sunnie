@@ -12,6 +12,7 @@ struct ManageTrip: Sendable {
     private let repository: any TravelRepository
     private let progressionEngine: ProgressionEngine
     private let eventPublisher: any DomainEventPublishing
+    private let keepsakes: any TravelKeepsakeAwarding
     private let clock: any SunnieClock
 
     private var log: SunnieLog { SunnieLog(category: .persistence) }
@@ -20,11 +21,13 @@ struct ManageTrip: Sendable {
         repository: any TravelRepository,
         progressionEngine: ProgressionEngine,
         eventPublisher: any DomainEventPublishing,
+        keepsakes: any TravelKeepsakeAwarding = NoKeepsakes(),
         clock: any SunnieClock
     ) {
         self.repository = repository
         self.progressionEngine = progressionEngine
         self.eventPublisher = eventPublisher
+        self.keepsakes = keepsakes
         self.clock = clock
     }
 
@@ -229,7 +232,28 @@ struct ManageTrip: Sendable {
             throw DomainError.validationFailed(reason: .emptyName)
         }
 
+        let isNew = try await repository.memory(id: cleaned.id) == nil
         try await repository.save(cleaned)
+
+        // The stamp and postcard for wherever this was. Idempotent per
+        // destination, so a memory edited five times still earns one stamp.
+        await keepsakes.awardKeepsakes(for: cleaned)
+
+        // Progression only on the first save. Editing a memory is not a second
+        // memory, and rewarding it would make revision the way to farm
+        // experience (PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md §4).
+        if isNew {
+            _ = try? await progressionEngine.award(
+                type: .tripMemorySaved,
+                sourceEntityID: cleaned.id,
+                occurredAt: cleaned.modifiedAt,
+                deterministicKey: ActionKeyFactory.progression(
+                    type: .tripMemorySaved,
+                    sourceActionKey: ActionKey(rawValue: "travelMemory.v1|\(cleaned.id.uuidString)")
+                )
+            )
+        }
+
         return cleaned
     }
 

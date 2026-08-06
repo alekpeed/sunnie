@@ -24,6 +24,7 @@ struct SettingsScreen: View {
             reminderCadenceSection
             quietHoursSection
             dietarySection
+            rhythmSection
             exportSection
             privacySection
         }
@@ -355,6 +356,31 @@ struct SettingsScreen: View {
             Text("settings.section.food", bundle: .main)
         } footer: {
             Text("settings.food.footer", bundle: .main)
+        }
+    }
+
+    /// Rhythm visibility (PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md §5).
+    ///
+    /// On by default, because "three caring days this week" is a warm thing to
+    /// read. Turn-off-able because for some people any number on a screen
+    /// becomes a target, and the app should not insist.
+    private var rhythmSection: some View {
+        Section {
+            Toggle(
+                String(
+                    localized: "settings.rhythm.show",
+                    defaultValue: "Show caring days",
+                    comment: "Rhythm visibility toggle"
+                ),
+                isOn: binding(
+                    get: { $0.showsRhythm },
+                    set: { $0.showsRhythm = $1 }
+                )
+            )
+        } header: {
+            Text("settings.section.rhythm", bundle: .main)
+        } footer: {
+            Text("settings.rhythm.footer", bundle: .main)
         }
     }
 

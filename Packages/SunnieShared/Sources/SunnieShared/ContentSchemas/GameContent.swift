@@ -532,21 +532,22 @@ public struct GamePack: Hashable, Sendable, Codable {
     public let manifest: ContentPackManifest
     public let games: [GameDefinition]
     public let puzzles: [PuzzleDefinition]
-    /// Rewards a game may grant, keyed by game. Kept in the pack rather than in
-    /// the engine so a new pack ships its own reward table (§8).
-    public let rewardTable: [String: ContentID]
 
     public init(
         manifest: ContentPackManifest,
         games: [GameDefinition],
-        puzzles: [PuzzleDefinition],
-        rewardTable: [String: ContentID] = [:]
+        puzzles: [PuzzleDefinition]
     ) {
         self.manifest = manifest
         self.games = games
         self.puzzles = puzzles
-        self.rewardTable = rewardTable
     }
+
+    // A game pack carries no reward table. What a game unlocks is expressed the
+    // other way round — a `RewardDefinition` in the collection pack declares
+    // `UnlockSource.game(...)` — so there is exactly one place that answers
+    // "what does finishing this earn?" rather than two that can disagree
+    // (PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md §7).
 
     public func game(id: ContentID) -> GameDefinition? {
         games.first { $0.id == id }

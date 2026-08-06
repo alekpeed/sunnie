@@ -75,14 +75,8 @@ enum MoreDestination: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Which of these lead somewhere real. Collections and Sunnie's Home are
-    /// still stubs; everything else is built.
-    var isImplemented: Bool {
-        switch self {
-        case .meals, .games, .journal, .themes, .settings: true
-        case .collections, .sunnieHome: false
-        }
-    }
+    /// Every More destination now leads somewhere real.
+    var isImplemented: Bool { true }
 
     var titleKey: String.LocalizationValue {
         switch self {

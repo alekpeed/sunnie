@@ -226,6 +226,42 @@ public protocol ProgressionRepository: Sendable {
 
     func save(_ grant: RewardGrant) async throws -> SaveOutcome<RewardGrant>
     func grants(limit: Int) async throws -> [RewardGrant]
+
+    /// Every grant. The collection screen needs all of them, and a "recent"
+    /// window would quietly hide the oldest things someone owns.
+    func allGrants() async throws -> [RewardGrant]
+
+    /// How many times each kind of event has happened, for the milestone rules.
+    ///
+    /// Counted in the store rather than by fetching every event, because a
+    /// long-lived install has thousands of them and this runs on every launch.
+    func eventCounts() async throws -> [ProgressionEventType: Int]
+
+    /// The days on which anything at all happened, for the rhythm summary.
+    /// Bounded to a recent window, since older weeks cannot change.
+    func eventDates(since: Date) async throws -> [Date]
+}
+
+/// Sunnie's home: what is equipped, what is placed, what is playing
+/// (PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md §8).
+///
+/// Ownership deliberately lives elsewhere — it is a `RewardGrant` in the
+/// progression store, written once and never removed. This repository holds only
+/// what the user *arranged*, which is the part that changes often and the part
+/// that a second device can conflict on (§12).
+public protocol HomeRepository: Sendable {
+    func sceneState() async throws -> HomeSceneState
+    func save(_ state: HomeSceneState) async throws
+
+    func placements() async throws -> [HomePlacement]
+    /// Puts a reward in a slot, replacing whatever was there. One thing per
+    /// slot, which is what makes placement constrained rather than freeform.
+    func place(rewardID: ContentID, in slotID: ContentID, at date: Date) async throws
+    func clear(slotID: ContentID) async throws
+
+    /// Story scenes the user has already read, so a scene is announced once.
+    func seenStorySceneIDs() async throws -> Set<ContentID>
+    func markStorySceneSeen(_ id: ContentID, at date: Date) async throws
 }
 
 public protocol PreferencesRepository: Sendable {

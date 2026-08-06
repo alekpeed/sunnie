@@ -420,6 +420,30 @@ public struct SilentNoiseGenerator: NoiseGenerating {
     public func fadeOutAndStop(over seconds: Double) async {}
 }
 
+/// Grants the stamp and postcard a saved travel memory earns
+/// (TRAVEL_AND_FLIGHT_ATTENDANT.md §11, PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md §6).
+///
+/// A protocol rather than a direct call, because Travel and Collections are
+/// separate features and neither may import the other to mutate its state
+/// (TECHNICAL_ARCHITECTURE.md §6). The composition root supplies the
+/// implementation.
+///
+/// Deliberately *not* routed through the domain event bus: that bus is
+/// best-effort and unordered by design, and a stamp that sometimes does not
+/// arrive is worse than one that arrives synchronously with the save.
+public protocol TravelKeepsakeAwarding: Sendable {
+    /// Idempotent per destination — editing and re-saving the same memory adds
+    /// nothing.
+    func awardKeepsakes(for memory: TravelMemory) async
+}
+
+/// Awards nothing. The composition for previews and for tests that are not
+/// about collectibles.
+public struct NoKeepsakes: TravelKeepsakeAwarding {
+    public init() {}
+    public func awardKeepsakes(for memory: TravelMemory) async {}
+}
+
 /// Confirmation feedback. Separated from audio so haptics can be disabled
 /// independently (VISUAL_DESIGN_SYSTEM.md §11).
 public protocol HapticFeedback: Sendable {

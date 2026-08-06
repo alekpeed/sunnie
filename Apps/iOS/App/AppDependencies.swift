@@ -41,6 +41,7 @@ final class AppDependencies {
     let travelRepository: any TravelRepository
     let mealRepository: any MealRepository
     let gameRepository: any GameRepository
+    let homeRepository: any HomeRepository
 
     let progressionEngine: ProgressionEngine
     let summaryProvider: PlantSummaryProvider
@@ -68,6 +69,8 @@ final class AppDependencies {
     let manageGrocery: ManageGrocery
     let managePrep: ManagePrep
     let playGame: PlayGame
+    let manageCollection: ManageCollection
+    let manageHome: ManageHome
     let recordWellnessCheckIn: RecordWellnessCheckIn
     let manageWellnessSession: ManageWellnessSession
     let manageJournalEntry: ManageJournalEntry
@@ -115,6 +118,7 @@ final class AppDependencies {
         let travel = SwiftDataTravelRepository(modelContainer: modelContainer)
         let meals = SwiftDataMealRepository(modelContainer: modelContainer)
         let gamesStore = SwiftDataGameRepository(modelContainer: modelContainer)
+        let home = SwiftDataHomeRepository(modelContainer: modelContainer)
 
         self.plantRepository = plants
         self.careEventRepository = events
@@ -129,6 +133,7 @@ final class AppDependencies {
         self.travelRepository = travel
         self.mealRepository = meals
         self.gameRepository = gamesStore
+        self.homeRepository = home
 
         self.progressionEngine = ProgressionEngine(repository: progression)
         self.summaryProvider = PlantSummaryProvider(
@@ -212,10 +217,24 @@ final class AppDependencies {
             clock: clock
         )
 
+        // Built before `manageTrip`, which takes it as the keepsake awarder:
+        // saving a travel memory grants that place's stamp synchronously rather
+        // than through the best-effort event bus.
+        let manageCollection = ManageCollection(
+            progressionRepository: progression,
+            travelRepository: travel,
+            gameRepository: gamesStore,
+            preferencesRepository: preferences,
+            pack: registry.collectionPack,
+            clock: clock
+        )
+        self.manageCollection = manageCollection
+
         self.manageTrip = ManageTrip(
             repository: travel,
             progressionEngine: progressionEngine,
             eventPublisher: eventBus,
+            keepsakes: manageCollection,
             clock: clock
         )
 
@@ -243,6 +262,15 @@ final class AppDependencies {
             pack: registry.gamePack,
             progressionEngine: progressionEngine,
             eventPublisher: eventBus,
+            clock: clock
+        )
+
+        self.manageHome = ManageHome(
+            repository: home,
+            collection: manageCollection,
+            travelRepository: travel,
+            plantRepository: plants,
+            noise: noiseEngine,
             clock: clock
         )
 
@@ -349,6 +377,9 @@ final class AppDependencies {
     func performLaunchHousekeeping() async {
         _ = try? await manageJournalEntry.purgeExpired()
         _ = try? await mediaRepository.deleteOrphans()
+        // Idempotent, so running it on every launch costs nothing and missing it
+        // costs a reward that silently never arrives.
+        _ = await manageCollection.sweep()
     }
 
     /// Convenience initializer for previews and tests: a fresh in-memory store

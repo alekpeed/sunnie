@@ -412,12 +412,16 @@ enum SunnieMigrationPlan: SchemaMigrationPlan {
             SunnieSchemaV3.self,
             SunnieSchemaV4.self,
             SunnieSchemaV5.self,
-            SunnieSchemaV6.self
+            SunnieSchemaV6.self,
+            SunnieSchemaV7.self
         ]
     }
 
     static var stages: [MigrationStage] {
-        [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5, migrateV5toV6]
+        [
+            migrateV1toV2, migrateV2toV3, migrateV3toV4,
+            migrateV4toV5, migrateV5toV6, migrateV6toV7
+        ]
     }
 
     /// Additive only: every V1 model keeps its exact shape, so no data moves.
@@ -459,10 +463,19 @@ enum SunnieMigrationPlan: SchemaMigrationPlan {
         fromVersion: SunnieSchemaV5.self,
         toVersion: SunnieSchemaV6.self
     )
+
+    /// Additive: the home scene, its placements, and the story-scene record are
+    /// new models. Ownership needed nothing — a reward has been an
+    /// `SDRewardGrant` since V1, so Collections reads a table that has been
+    /// filling up since the first launch.
+    static let migrateV6toV7 = MigrationStage.lightweight(
+        fromVersion: SunnieSchemaV6.self,
+        toVersion: SunnieSchemaV7.self
+    )
 }
 
 /// The version the app currently opens stores at.
 ///
 /// Referenced in one place so bumping the schema is a single edit rather than a
 /// search for every `Schema(versionedSchema:)` call site.
-typealias SunnieCurrentSchema = SunnieSchemaV6
+typealias SunnieCurrentSchema = SunnieSchemaV7

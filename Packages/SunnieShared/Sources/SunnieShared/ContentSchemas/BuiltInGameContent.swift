@@ -31,12 +31,7 @@ public enum BuiltInGameContent {
     public static let pack = GamePack(
         manifest: manifest,
         games: games,
-        puzzles: puzzles,
-        rewardTable: [
-            "sunnie.game.wordLayover": "sunnie.reward.collectible.luggageTag",
-            "sunnie.game.postcardCipher": "sunnie.reward.collectible.inkStamp",
-            "sunnie.game.jungleLogic": "sunnie.reward.collectible.brassLabel"
-        ]
+        puzzles: puzzles
     )
 
     // MARK: - Games

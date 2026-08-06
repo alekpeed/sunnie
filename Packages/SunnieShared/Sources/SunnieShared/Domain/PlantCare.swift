@@ -127,15 +127,38 @@ public struct SeasonalModifier: Hashable, Sendable, Codable {
 public enum Season: String, Hashable, Sendable, Codable, CaseIterable {
     case spring, summer, autumn, winter
 
-    /// Northern-hemisphere meteorological seasons. Vanessa's home is northern;
-    /// a hemisphere preference belongs in `UserPreferences` when travel-aware
-    /// scheduling lands in Phase 5.
+    public var localizationKey: String { "season.\(rawValue)" }
+
+    /// Northern-hemisphere meteorological seasons.
     public static func from(month: Int) -> Season {
         switch month {
         case 3...5: .spring
         case 6...8: .summer
         case 9...11: .autumn
         default: .winter
+        }
+    }
+
+    /// The season at a date, in whichever hemisphere the user is in.
+    ///
+    /// Hemisphere matters for the home scene's window: a Brazilian December is
+    /// summer, and insisting otherwise would be wrong about the weather someone
+    /// is actually looking at. Care scheduling still uses `from(month:)`
+    /// directly, because a plant's watering rhythm follows the light it is
+    /// getting rather than the calendar's name for the season.
+    public static func current(
+        for date: Date, calendar: Calendar, isNorthernHemisphere: Bool
+    ) -> Season {
+        let northern = from(month: calendar.component(.month, from: date))
+        return isNorthernHemisphere ? northern : northern.opposite
+    }
+
+    public var opposite: Season {
+        switch self {
+        case .spring: .autumn
+        case .summer: .winter
+        case .autumn: .spring
+        case .winter: .summer
         }
     }
 }
