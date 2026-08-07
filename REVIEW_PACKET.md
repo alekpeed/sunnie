@@ -236,5 +236,7 @@ of the box. To run on a device, set `SUNNIE_DEVELOPMENT_TEAM` in
 | How it is meant to be built | `Documentation/05_Technical/TECHNICAL_ARCHITECTURE.md` |
 | Why a given piece of code is the way it is | `ARCHITECTURE_DECISIONS.md` |
 | What has and has not been verified | `Documentation/BUILD_AND_VERIFY.md` |
+| Where the first build is likely to break | `Documentation/COMPILE_RISK_REVIEW.md` |
+| Getting it onto a real iPhone | `Documentation/DEVICE_BRING_UP.md` |
 | What was planned per phase | `Documentation/06_Delivery/IMPLEMENTATION_ROADMAP.md` |
 | The rules the code was written under | `CLAUDE.md` |

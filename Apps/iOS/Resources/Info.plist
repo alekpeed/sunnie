@@ -89,6 +89,10 @@
 	<string>Sunnie can add photos from your library to a plant, trip, or journal entry. They stay on your devices.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Sunnie can add a trip to your calendar and notice if it moves. Your trips work fine without it.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Sunnie can read steps, sleep, and other figures you choose, one at a time, to show them alongside your day. Nothing is read until you turn it on, and everything works without it.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Sunnie can save your mindful minutes and the water you log to Health, so they appear alongside the rest of your day. Only what you record here is written.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Sunnie can record a short voice note for your journal. Recordings stay on your devices.</string>
 </dict>

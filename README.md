@@ -37,6 +37,11 @@ cd sunnie
 open SunnieDays.xcodeproj
 ```
 
+See [`Documentation/DEVICE_BRING_UP.md`](Documentation/DEVICE_BRING_UP.md) for the
+full path onto a real device, and
+[`Documentation/COMPILE_RISK_REVIEW.md`](Documentation/COMPILE_RISK_REVIEW.md) for
+where the first build is most likely to need attention.
+
 Select the **SunnieDays** scheme and run on an iPhone simulator. The app seeds a
 small sample jungle on first launch so the plant-care flow has something to act on.
 

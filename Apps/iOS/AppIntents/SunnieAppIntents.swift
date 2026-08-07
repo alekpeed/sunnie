@@ -69,7 +69,11 @@ enum IntentFailure: Error, CustomLocalizedStringResourceConvertible {
 /// One of the user's plants, as Shortcuts sees it.
 struct PlantEntity: AppEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation { "Plant" }
-    static var defaultQuery = PlantEntityQuery()
+    // `let`, not `var`. `AppEntity` only requires a getter, and a mutable
+    // non-isolated static is exactly the shape strict concurrency objects to —
+    // a warning in Swift 5 mode today and an error the moment this moves to
+    // Swift 6 (ADR-010 says that move is deliberate, not hypothetical).
+    static let defaultQuery = PlantEntityQuery()
 
     let id: UUID
     let name: String

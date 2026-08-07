@@ -207,10 +207,17 @@ actor SwiftDataJournalRepository: JournalRepository {
         guard !trimmed.isEmpty else { return [] }
 
         var descriptor = FetchDescriptor<SDJournalEntry>(
+            // `($0.title ?? "")` rather than `$0.title?.localizedStandardContains(…)
+            // ?? false`. Both read the same, but optional-chaining a *method call*
+            // inside `#Predicate` is one of the constructs the macro handles least
+            // reliably — it is a frequent source of "could not be converted to a
+            // predicate expression". Coalescing to a non-optional first keeps the
+            // method call on the well-trodden path, and the semantics are
+            // identical: no title means no match.
             predicate: #Predicate<SDJournalEntry> {
                 $0.deletedAt == nil
                     && ($0.body.localizedStandardContains(trimmed)
-                        || ($0.title?.localizedStandardContains(trimmed) ?? false))
+                        || ($0.title ?? "").localizedStandardContains(trimmed))
             },
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
