@@ -4,8 +4,8 @@
 
 **None of the Swift in this repository has ever been compiled.**
 
-Phases 0–2 were authored in a Linux container with no Swift toolchain and no
-Xcode. That means:
+Every phase — 0 through 10 — was authored in a Linux container with no Swift
+toolchain and no Xcode. That means:
 
 - The project has never been opened in Xcode.
 - No target has been built for any platform.
@@ -26,6 +26,18 @@ What *has* been verified, because it needs no Swift toolchain:
 - `Scripts/validate-content.sh` passes on the shipped content, and was confirmed
   to fail on deliberately introduced violations (a shaming phrase, a nickname
   placeholder in a privacy notice, and a forbidden day-cycle name).
+- Brace balance across every Swift file, `Localizable.strings` key coverage, a
+  tone gate over authored copy, duplicate top-level type detection, and a
+  protocol-conformance sweep.
+- Independent Python re-implementations of three pieces of logic the Swift is
+  supposed to match: the Jungle Logic solver (proving puzzle uniqueness and clue
+  minimality), the collection placement rules, and the whole procedural-audio
+  signal chain (which is where the ambience calibration figures came from). The
+  ports are not in the repository — only their conclusions are, so those numbers
+  are claims to re-derive rather than measurements to trust.
+
+None of that is a substitute for a compiler. It rules out whole classes of
+mistake and rules out nothing about the type system.
 
 ## Bring-up order
 
