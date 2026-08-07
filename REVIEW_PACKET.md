@@ -12,19 +12,31 @@ verified, and where the review time is best spent.
 
 ## 1. Read this before anything else
 
-**None of this Swift has ever been compiled.**
+**Most of this Swift has never been compiled — but no longer all of it.**
 
-Every phase was authored in a Linux container with no Swift toolchain and no
-Xcode. No target has been built. No test has been run. No screen has been
-rendered on a simulator or a device.
+**Verification status, precisely.**
+
+- **The shared package (`SunnieShared`) compiles and its 441 tests pass**, on
+  Linux with Swift 6.1.2. That is roughly a third of the codebase — all the
+  domain logic, content schemas, and pure algorithms — and it is genuinely
+  verified, not argued for.
+- **The iOS app, the Watch app, and the widget extension have still never been
+  compiled.** They need Xcode on a Mac, which no part of this project has had
+  access to. Nothing about their state has changed.
+
+Getting the shared package building found three real defects that no amount of
+static checking had caught: a `ColorValue` that encoded as an object while every
+content pack wrote a bare string (so the whole theme pack silently fell back to a
+one-theme stub), travel coverage that dropped tasks already overdue when a trip
+began, and a nickname helper that was uncallable by its only callers.
 
 That is not a caveat buried in a footnote — it is the single most important fact
 about the codebase, and it should shape how the review is scoped. Concretely:
 
 - Expect compile errors. They have not been ruled out; they have only been argued
   against.
-- Every test count in this repository is a count of tests *written*, never of
-  tests *passed*.
+- Test counts for the **app** targets are tests *written*, never *passed*. The
+  shared package's 441 are genuinely passing.
 - Anything that depends on runtime behaviour — SwiftData migration actually
   running, SwiftUI actually laying out, WatchConnectivity actually delivering — is
   unproven.

@@ -13,6 +13,27 @@ public struct ColorValue: Hashable, Sendable, Codable, ExpressibleByStringLitera
         self.hex = hex
     }
 
+    /// Encoded as a bare string, not as an object.
+    ///
+    /// The synthesized `Codable` produced `{"hex": "#FFF8ED"}` while every
+    /// content pack writes `"#FFF8ED"` — so `themes.v1.json` failed to decode,
+    /// `ContentRegistry` silently fell back to the one-theme `FallbackContent`,
+    /// and every phase variant, outfit, and alternate theme vanished at runtime.
+    /// It looked like "the theme feature does not work" rather than like a
+    /// decoding failure, which is what made it survive review.
+    ///
+    /// `ContentID` has always done this; `ColorValue` should have matched it
+    /// from the start. Any single-value wrapper added here needs the same
+    /// treatment — see `ContentTests.everySingleValueWrapperRoundTrips`.
+    public init(from decoder: any Decoder) throws {
+        hex = try decoder.singleValueContainer().decode(String.self)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(hex)
+    }
+
     /// Returns nil for malformed input rather than trapping. Content validation
     /// catches bad values at test time; at runtime the design system falls back
     /// to a safe token instead of crashing.

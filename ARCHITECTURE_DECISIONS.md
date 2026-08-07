@@ -1333,3 +1333,90 @@ needs its own ADR, and the whole machine is sixty lines.
 
 `AUDIO_MIDI_AND_SOUNDSCAPES.md` §6, §12.
 `AudioTests` — every event, and the multi-event sequences.
+
+## ADR-032: The shared package builds off Apple, and that is a feature
+
+**Status:** Accepted
+**Date:** Post-Phase-10 audit
+
+### Context
+
+`SunnieShared` ships only to iOS and watchOS, so nothing *required* it to compile
+anywhere else. It had two Apple-only touch points — `import os` in `SunnieLog`
+and `FileManager.containerURL(forSecurityApplicationGroupIdentifier:)` in
+`WidgetSnapshotStore` — and both were unguarded.
+
+The consequence was not a bug on Apple. It was that a third of the codebase could
+not be compiled by anyone without a Mac, which for this project meant it had
+never been compiled at all. Sixty-four thousand lines were written, reviewed
+statically, and shipped to a review packet without a type checker ever seeing
+them.
+
+### Decision
+
+Both touch points are guarded — `#if canImport(os)` and `#if canImport(Darwin)`
+— so the package builds and tests on Linux with an ordinary Swift toolchain. Off
+Apple, logging is a no-op and the App Group container is nil, which is the same
+path the entitlement-less build already takes (ADR-012).
+
+CI gains a Linux job that builds and tests the package on every push, alongside
+the existing macOS one. Linux proves the logic; macOS proves the guards did not
+change behaviour on the platform that ships.
+
+### Reason
+
+The first Linux compile found three defects that months of static analysis had
+not:
+
+1. **`ColorValue` encoded as `{"hex": …}`** while every content pack wrote
+   `"#FFF8ED"`. `themes.v1.json` therefore failed to decode, `ContentRegistry`
+   silently substituted the one-theme `FallbackContent`, and every phase variant,
+   outfit, and alternate theme vanished at runtime. Nothing crashed and nothing
+   logged; it simply looked like the theme feature did not work.
+2. **`CoveragePlanner` projected *past* tasks already overdue** when an absence
+   began, so a monthly watering two days late was reported as needing nothing
+   across a one-week trip — the one plant that actually needed water on day one.
+   The code's own comment described the correct behaviour; the loop did the
+   opposite.
+3. **`NicknameEligibility.shouldUseNickname` took `some RandomSource`** where
+   every caller stores `any RandomSource`, making it uncallable by the only code
+   that called it.
+
+None of those is exotic. All three are the kind of thing a compiler finds in
+seconds and a careful reader does not find at all. That is the argument.
+
+### Consequences
+
+- Anyone can run a third of the test suite on any machine:
+  `cd Packages/SunnieShared && swift test`.
+- New code in the shared package must stay platform-neutral. Reaching for an
+  Apple-only API there now breaks CI rather than passing unnoticed — which is the
+  point, and is why the guard is not merely defensive.
+- The app, Watch, and widget targets are unaffected and remain uncompiled. This
+  ADR makes no claim about them.
+- `SunnieLog` does nothing off Apple rather than printing to stdout. Printing
+  would be worse: the redaction rules exist so personal content never reaches a
+  log, and a test run that dumped journal text to a terminal would violate the
+  spirit of that while satisfying its letter.
+
+### Alternatives considered
+
+**Leave it Apple-only and wait for a Mac.** Rejected on evidence: that was the
+status quo, and it produced three real defects surviving to a review packet.
+
+**Extract the pure logic into a second, platform-free package.** Rejected as
+churn. Two guards achieve the same thing without splitting a package that is
+already coherent, and a split would need its own migration and ADR.
+
+**Print logs off Apple instead of no-op.** Rejected — see consequences above.
+
+### Documents/tests affected
+
+`README.md`, `START_HERE.md`, `REVIEW_PACKET.md`, `Documentation/BUILD_AND_VERIFY.md`
+— all previously said the code had never been compiled, which is now true only of
+the app targets.
+`.github/workflows/ci.yml` — the Linux job.
+`ContentValidationTests.ShippedContentLoadsTests` — asserts the shipped packs
+load rather than falling back, which is the check that would have caught the
+`ColorValue` defect.
+`JungleSupportTests` — overdue coverage, including the no-double-count case.

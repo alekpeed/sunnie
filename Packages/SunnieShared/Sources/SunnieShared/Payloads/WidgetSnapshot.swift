@@ -160,10 +160,26 @@ public struct WidgetSnapshotStore: Sendable {
     private let containerURL: URL?
 
     /// Resolves the shared container, or nil when no App Group is configured.
+    ///
+    /// `containerURL(forSecurityApplicationGroupIdentifier:)` exists only in
+    /// Apple's Foundation — App Groups are a sandbox concept and Linux has no
+    /// equivalent. Guarding it is what lets this package compile and test
+    /// off-Apple; off-Apple the container is simply nil, which is the same
+    /// "no App Group configured" path the entitlement-less build already takes
+    /// (ADR-012), and `isAvailable` reports it honestly.
+    ///
+    /// The read and write paths below are plain file I/O and are identical on
+    /// both platforms, so the tests that matter — round-tripping a snapshot,
+    /// ignoring one written by a newer build — run everywhere via
+    /// `init(directory:)`.
     public init(appGroupIdentifier: String = WidgetSnapshotStore.appGroupIdentifier) {
+        #if canImport(Darwin)
         self.containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: appGroupIdentifier
         )
+        #else
+        self.containerURL = nil
+        #endif
     }
 
     /// For tests: a store rooted at a directory of the caller's choosing.

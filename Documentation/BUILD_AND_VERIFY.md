@@ -2,15 +2,21 @@
 
 ## Read this first
 
-**None of the Swift in this repository has ever been compiled.**
+**The shared package is compiled and tested. The app targets are not.**
 
-Every phase — 0 through 10 — was authored in a Linux container with no Swift
-toolchain and no Xcode. That means:
-
-- The project has never been opened in Xcode.
-- No target has been built for any platform.
-- No test has been executed. Every test in this repository is unrun.
+- `Packages/SunnieShared` **builds and passes 441 tests** on Linux with Swift
+  6.1.2 (ADR-032). Run it anywhere: `cd Packages/SunnieShared && swift test`.
+- The iPhone app, the Watch app, and the widget extension have **never been
+  built**. They need Xcode, which this project has never had access to.
 - No screen has been rendered, on a simulator or a device.
+- The app-side tests — roughly 220 of them — have never been executed.
+
+Getting the shared package to compile found three defects that no amount of
+static checking had caught: `ColorValue` encoding as an object against content
+packs written as bare strings (which silently reduced the app to one theme),
+travel coverage dropping tasks already overdue at departure, and a nickname
+helper that was uncallable by its only callers. All three are fixed and have
+regression tests.
 
 `CLAUDE.md` says never to claim a feature is complete when it has only a
 placeholder or an untested happy path. This document is that disclosure. Treat

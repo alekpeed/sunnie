@@ -16,25 +16,53 @@ env:
   DEVELOPER_DIR: /Applications/Xcode_16.app/Contents/Developer
 
 jobs:
+  # Runs on Linux, deliberately. The shared package guards its two Apple-only
+  # touch points (`os`, the App Group container) behind `canImport`, so a third
+  # of the codebase is testable on an ordinary runner — no Mac, no minutes
+  # multiplier, and a fast signal that survives whatever is happening with Xcode.
+  #
+  # It is also the check that would have caught `ColorValue` encoding as an
+  # object while every content pack wrote a bare string: a defect no static
+  # analysis found, and one that silently reduced the app to a single theme.
+  shared-package-linux:
+    name: Shared package (Linux)
+    runs-on: ubuntu-24.04
+    container: swift:6.1.2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        working-directory: Packages/SunnieShared
+        run: swift build
+      - name: Test
+        working-directory: Packages/SunnieShared
+        run: swift test
+
   shared-package:
-    name: Shared package tests
+    name: Shared package (macOS)
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
-      # The shared package is platform-neutral and has no UI, so it tests fastest
-      # and fails first when a domain rule breaks.
+      # The same package on Apple, where `os` and the App Group call are real
+      # rather than compiled out. Linux proves the logic; this proves the guards
+      # did not change behaviour on the platform that ships.
       - name: Test SunnieShared
         working-directory: Packages/SunnieShared
         run: swift test
 
   content:
-    name: Content validation
-    runs-on: macos-15
+    name: Content and configuration validation
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Validate shipped content packs
         run: ./Scripts/validate-content.sh
+      # Catches a permission requested without its Info.plist purpose string,
+      # which iOS answers by terminating the process rather than by denying it.
+      - name: Validate permission purpose strings
+        run: python3 Tools/validate_permissions.py
+      - name: Validate the creator audio manifest
+        run: python3 Tools/validate_audio_manifest.py CreatorAudioSource/audio.manifest.json
 
   build-and-test:
     name: Build and test

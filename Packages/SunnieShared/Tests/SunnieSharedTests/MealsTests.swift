@@ -47,7 +47,7 @@ struct MealsTests {
     func catchesOrdinaryForms() {
         for ingredient in ["egg", "Eggs", "2 eggs", "EGG YOLK", "egg whites", "eggs,"] {
             let subject = recipe("Thing", ingredients: [ingredient])
-            #expect(!DietaryFilter.check(subject, against: noEggs).isClear, ingredient)
+            #expect(!DietaryFilter.check(subject, against: noEggs).isClear, "\(ingredient)")
         }
     }
 
@@ -57,7 +57,7 @@ struct MealsTests {
         // is then suggested a quiche would reasonably call that broken.
         for ingredient in ["mayonnaise", "aioli", "hollandaise", "meringue", "custard"] {
             let subject = recipe("Thing", ingredients: [ingredient])
-            #expect(!DietaryFilter.check(subject, against: noEggs).isClear, ingredient)
+            #expect(!DietaryFilter.check(subject, against: noEggs).isClear, "\(ingredient)")
         }
     }
 
@@ -65,7 +65,7 @@ struct MealsTests {
     func catchesDerivatives() {
         for ingredient in ["albumen", "ovalbumin", "dried egg", "egg powder"] {
             let subject = recipe("Thing", ingredients: [ingredient])
-            #expect(!DietaryFilter.check(subject, against: noEggs).isClear, ingredient)
+            #expect(!DietaryFilter.check(subject, against: noEggs).isClear, "\(ingredient)")
         }
     }
 
@@ -75,7 +75,7 @@ struct MealsTests {
         // for "egg noodles", so allowances handle those explicitly.
         for ingredient in ["eggplant", "2 eggplants", "aubergine", "egg noodles"] {
             let subject = recipe("Thing", ingredients: [ingredient])
-            #expect(DietaryFilter.check(subject, against: noEggs).isClear, ingredient)
+            #expect(DietaryFilter.check(subject, against: noEggs).isClear, "\(ingredient)")
         }
     }
 
@@ -83,7 +83,7 @@ struct MealsTests {
     func wholeWordMatchingHolds() {
         for ingredient in ["beggar's purse", "leggings", "nutmeg"] {
             let subject = recipe("Thing", ingredients: [ingredient])
-            #expect(DietaryFilter.check(subject, against: noEggs).isClear, ingredient)
+            #expect(DietaryFilter.check(subject, against: noEggs).isClear, "\(ingredient)")
         }
     }
 

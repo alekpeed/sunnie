@@ -1,7 +1,8 @@
 # Sunnie Days — start here
 
-This package contains a complete iPhone and Apple Watch app, written but never
-built. It needs a developer with a Mac to turn it into something that runs.
+This package contains a complete iPhone and Apple Watch app. Its shared logic
+builds and passes 441 tests; the screens and Apple integrations have never been
+built and need a developer with a Mac.
 
 There are two halves to this document. **Part 1 is for the app's owner** and
 assumes no technical knowledge. **Part 2 is for the developer** and assumes
@@ -22,25 +23,34 @@ of what the app is meant to do.
 
 ## The honest status
 
-**The code is written. It has never been run.**
+**About a third of it now builds and passes its tests. The rest has never been
+run.**
 
-Every line was written in an environment with no Apple software available, so no
-computer has ever checked it for mistakes, and no screen has ever been displayed.
+The project splits into two halves. The shared half — all the rules and logic,
+no screens — has now been compiled and tested properly: **441 tests, all
+passing.** Doing that turned up three real bugs, all since fixed, including one
+that silently broke every colour theme in the app.
 
-A fair comparison: imagine a 600-page manuscript, carefully written and
-self-edited, that has never been through a proofreader or a printing press. The
-writing is done. Whether it prints cleanly is genuinely unknown.
+The other half is the actual iPhone screens, the Watch app, and the home-screen
+widgets. Those need Apple's software on a Mac, which this project has never had,
+so they remain unbuilt and unproven.
+
+A fair comparison: a 600-page manuscript where a third has now been through a
+proofreader and came back with three real errors corrected, and two thirds have
+not been read by anyone but the author.
 
 ## What you are hiring someone to do
 
 In order:
 
-1. **Make it build.** Fix the mistakes a computer finds the first time it checks
-   the code. This is the bulk of the work.
+1. **Make the app half build.** Fix the mistakes a computer finds the first time
+   it checks the screens, the storage, and the Apple integrations. This is the
+   bulk of the work. (The shared half already builds — that part is done.)
 2. **Run it on a simulated iPhone** (a Mac can pretend to be an iPhone) and check
    the screens actually appear and work.
-3. **Run the automated tests.** There are 659 of them already written. None has
-   ever been run.
+3. **Run the app-side automated tests.** Around 220 of them, never run. The
+   shared package's 441 already pass and can be re-run on any machine, Mac or
+   not — `cd Packages/SunnieShared && swift test`.
 4. **Put it on a real iPhone** and test the things only real hardware can do —
    vibration, camera, the Apple Watch.
 
@@ -65,7 +75,9 @@ You don't need to read code to judge progress. Ask for these, in order:
    project that compiles on its own in seconds. It's the fastest early signal.
 2. **"Can I see a screenshot of the app running?"** Even one screen proves the
    whole thing starts.
-3. **"How many of the 659 tests pass?"** A number that climbs is real progress.
+3. **"How many of the app-side tests pass?"** A number that climbs is real
+   progress. (The 441 shared ones already pass — ask them to confirm that still
+   holds, which takes one command and no Mac.).
 4. **"Is it on a real iPhone yet?"**
 
 If someone can't produce the first of those after a solid day, ask why.
@@ -114,7 +126,19 @@ Modular monolith, one local SPM package, no third-party dependencies. iOS 18 /
 watchOS 11 deployment targets, Swift 5 language mode with
 `SWIFT_STRICT_CONCURRENCY = complete`.
 
-**It has never been compiled.** Not once. Budget accordingly.
+**The app targets have never been compiled.** Not once. Budget accordingly.
+
+**The shared package has**, on Linux with Swift 6.1.2 — `swift build && swift
+test`, 441 passing. Doing that found three real defects, now fixed: `ColorValue`
+encoded as an object against content packs written as bare strings (which made
+the entire theme pack fall back to a one-theme stub, silently); `CoveragePlanner`
+projecting *past* tasks already overdue when an absence began, dropping them
+entirely; and `NicknameEligibility.shouldUseNickname` taking `some RandomSource`
+where every caller holds `any RandomSource`, making it uncallable.
+
+`os` and the App Group container call are now `canImport`-guarded, which is what
+makes the package build off-Apple. That is worth keeping: it means a third of the
+codebase is testable in ordinary CI, on any machine.
 
 ## Where to start
 
@@ -123,8 +147,10 @@ cd Packages/SunnieShared && swift build
 ```
 
 That's a third of the codebase, platform-neutral, no UI, no SwiftData — it builds
-in seconds and fails on domain logic rather than on a view hierarchy. Get it
-green, then `swift test` (659 tests, first run ever), then open the Xcode project.
+in seconds on Linux or macOS and fails on domain logic rather than on a view
+hierarchy. Get it
+green (it already is), then `swift test` — 441 passing — then open the Xcode
+project, which is where the unproven work starts.
 
 Signing is deliberately unconfigured and entitlements ship commented out, so the
 Simulator build needs no developer account. `Config/Shared.xcconfig` is where

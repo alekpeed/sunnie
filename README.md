@@ -17,12 +17,25 @@ meals, games, collections and Sunnie's Home, the Health/Watch/widget/intent
 integrations, and the audio layer. Phase 11 — accessibility, CloudKit, export,
 and release — is not started.
 
-> **This code has never been compiled.** It was authored in a Linux environment
-> with no Swift toolchain and no Xcode, so nothing here has been built, run, or
-> tested on a device or simulator. Every test count in this repository counts
-> tests *written*, never tests *passed*. Read
-> [`Documentation/BUILD_AND_VERIFY.md`](Documentation/BUILD_AND_VERIFY.md) before
-> assuming any of it works.
+> **Most of this code has never been compiled.** It was authored in a Linux
+> environment with no Xcode, so the iPhone app, Watch app, and widget extension
+> have never been built or run. The shared package is the exception — see below.
+
+**Verification status, precisely.**
+
+- **The shared package (`SunnieShared`) compiles and its 441 tests pass**, on
+  Linux with Swift 6.1.2. That is roughly a third of the codebase — all the
+  domain logic, content schemas, and pure algorithms — and it is genuinely
+  verified, not argued for.
+- **The iOS app, the Watch app, and the widget extension have still never been
+  compiled.** They need Xcode on a Mac, which no part of this project has had
+  access to. Nothing about their state has changed.
+
+Getting the shared package building found three real defects that no amount of
+static checking had caught: a `ColorValue` that encoded as an object while every
+content pack wrote a bare string (so the whole theme pack silently fell back to a
+one-theme stub), travel coverage that dropped tasks already overdue when a trip
+began, and a nickname helper that was uncallable by its only callers.
 
 Reviewing this from outside? [`REVIEW_PACKET.md`](REVIEW_PACKET.md) is the
 orientation document: what is real, what is verified, and where the risk is.

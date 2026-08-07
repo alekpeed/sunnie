@@ -34,12 +34,21 @@ public enum NicknameEligibility {
     /// Whether this particular message should use it.
     ///
     /// `random` is injected so tests can assert both branches without flaking.
+    ///
+    /// `any RandomSource`, not `some RandomSource`. Every caller stores its
+    /// randomness as an existential — `SunnieMessageService` and
+    /// `AffirmationService` both hold `any RandomSource` so the source can be
+    /// swapped per instance — and an existential cannot satisfy a generic
+    /// constraint here. Written as `some`, this function was uncallable by the
+    /// only code that calls it. The protocol has no associated types and no
+    /// `Self` requirements, so the existential costs nothing but a dynamic
+    /// dispatch on one call per message.
     public static func shouldUseNickname(
         category: SunnieMessageCategory,
         nickname: String?,
         probability: Double,
         isSensitiveMoment: Bool = false,
-        random: some RandomSource
+        random: any RandomSource
     ) -> Bool {
         guard isEligible(
             category: category,

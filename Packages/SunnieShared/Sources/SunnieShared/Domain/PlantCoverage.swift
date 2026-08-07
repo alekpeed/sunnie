@@ -171,15 +171,43 @@ public enum CoveragePlanner {
         var result: [CoverageNeed.DueDuringAbsence] = []
         var cursor = firstDue
 
-        // A schedule already overdue when the trip starts still needs doing while
-        // the user is away, so the window starts at the trip, not at the due date.
+        /// One entry dated to the first day of the absence.
+        func outstandingAtDeparture() -> CoverageNeed.DueDuringAbsence {
+            CoverageNeed.DueDuringAbsence(
+                scheduleID: schedule.id,
+                careType: schedule.careType,
+                dueDate: start
+            )
+        }
+
+        // A task already overdue when the trip starts still needs doing while the
+        // user is away — so it is surfaced once, dated to the first day.
+        //
+        // Advancing past it instead, which is what this used to do, dropped it
+        // entirely: a monthly watering two days late next falls due four weeks
+        // out, long after a one-week trip has ended, so the caretaker was never
+        // told about the one plant that actually needed water on day one. The
+        // comment here already claimed the correct behaviour; the code did the
+        // opposite.
+        let wasOutstanding = cursor < start
         while cursor < start {
-            guard let next = advance(cursor, schedule: schedule, calendar: working) else {
+            guard let next = advance(cursor, schedule: schedule, calendar: working),
+                  // A non-advancing recurrence would spin here forever.
+                  next > cursor
+            else {
+                // The recurrence cannot move forward, but the task is still
+                // outstanding. Report it rather than losing it.
+                if wasOutstanding { result.append(outstandingAtDeparture()) }
                 return result
             }
-            // A non-advancing recurrence would spin here forever.
-            guard next > cursor else { return result }
             cursor = next
+        }
+
+        // Skipped when the cadence lands exactly on the first day, because the
+        // projection below produces that occurrence itself and two entries for
+        // one task would read as twice the work.
+        if wasOutstanding, cursor != start {
+            result.append(outstandingAtDeparture())
         }
 
         while cursor <= end, result.count < maximumProjectedOccurrences {

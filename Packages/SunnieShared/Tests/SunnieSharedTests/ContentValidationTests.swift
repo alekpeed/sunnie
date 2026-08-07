@@ -234,3 +234,91 @@ struct ContentValidationTests {
         #expect(ColorValue(hex: "").components == nil)
     }
 }
+
+/// Regression cover for a class of bug that is silent by construction: a content
+/// pack that fails to decode does not crash and does not log anything a user
+/// would see — `ContentRegistry` quietly substitutes `FallbackContent` and the
+/// app runs on a stripped-down single theme.
+///
+/// That is exactly what a `ColorValue` encoded as `{"hex": …}` against JSON
+/// written as `"#FFF8ED"` did for the entire life of the project until the first
+/// real compile. Every symptom pointed at the theme feature; the cause was one
+/// missing `singleValueContainer`.
+@Suite("Shipped content actually loads")
+struct ShippedContentLoadsTests {
+
+    private var registry: ContentRegistry { ContentRegistry.builtIn() }
+
+    @Test("The theme pack is the shipped one, not the fallback")
+    func themePackIsNotTheFallback() {
+        let themes = registry.themePack.themes
+        // The fallback carries exactly one theme with no variants. Anything that
+        // makes the real pack undecodable collapses to it.
+        #expect(themes.count > 1, "fell back to \(themes.count) theme(s)")
+        #expect(themes.contains { $0.id == "sunnie.theme.dayCycle" })
+        #expect(
+            themes.contains { !$0.phaseVariants.isEmpty },
+            "no theme carries phase variants — the pack decoded but lost its variants"
+        )
+    }
+
+    @Test("The message and wellness packs are the shipped ones")
+    func otherPacksAreNotFallbacks() {
+        #expect(registry.messagePack.messages.count > 10)
+        #expect(registry.wellnessPack.calmSounds.count > 3)
+        #expect(registry.wellnessPack.meditations.count > 1)
+    }
+
+    @Test("Every shipped pack passes its own validator")
+    func shippedContentValidates() {
+        #expect(registry.allIssues.isEmpty, "\(registry.allIssues)")
+        #expect(registry.gameIssues.isEmpty, "\(registry.gameIssues)")
+        #expect(registry.collectionIssues.isEmpty, "\(registry.collectionIssues)")
+        #expect(registry.audioIssues.isEmpty, "\(registry.audioIssues)")
+    }
+
+    /// A wrapper around one value must encode as that value, or the JSON the
+    /// content packs are written in stops matching the types that read it.
+    @Test("Single-value wrappers round-trip as bare JSON values")
+    func everySingleValueWrapperRoundTrips() throws {
+        // ColorValue
+        let colour = try JSONDecoder().decode(
+            ColorValue.self, from: Data("\"#FFF8ED\"".utf8)
+        )
+        #expect(colour.hex == "#FFF8ED")
+        #expect(String(data: try JSONEncoder().encode(colour), encoding: .utf8) == "\"#FFF8ED\"")
+
+        // ContentID, which has always been correct — kept here so the two stay
+        // consistent if either is ever touched.
+        let id = try JSONDecoder().decode(
+            ContentID.self, from: Data("\"sunnie.theme.dayCycle\"".utf8)
+        )
+        #expect(id.rawValue == "sunnie.theme.dayCycle")
+        #expect(
+            String(data: try JSONEncoder().encode(id), encoding: .utf8)
+                == "\"sunnie.theme.dayCycle\""
+        )
+    }
+
+    /// The palette is a struct of wrappers, so it is the first place a wrapper
+    /// regression shows up in real content.
+    ///
+    /// Round-tripped through the shipped palette rather than a hand-written
+    /// literal: the literal would have to be updated every time a colour role is
+    /// added, and a stale one fails for the wrong reason.
+    @Test("A real palette round-trips, and its colours encode as bare strings")
+    func paletteRoundTripsAsBareStrings() throws {
+        let original = try #require(
+            ContentRegistry.builtIn().themePack.themes.first
+        ).basePalette
+
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(SemanticPalette.self, from: data)
+        #expect(decoded == original)
+
+        // Every colour must appear as "#RRGGBB", never as {"hex": "#RRGGBB"}.
+        let text = try #require(String(data: data, encoding: .utf8))
+        #expect(!text.contains("{\"hex\""), "a colour encoded as an object: \(text)")
+        #expect(text.contains("\"\(original.canvas.hex)\""))
+    }
+}

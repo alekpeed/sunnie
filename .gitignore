@@ -36,3 +36,6 @@ CreatorAudioSource/**/*.midi
 CreatorAudioSource/**/*.logicx
 CreatorAudioSource/**/*.wav
 CreatorAudioSource/**/*.aiff
+
+# SwiftPM build products from running the shared package's tests.
+.build/

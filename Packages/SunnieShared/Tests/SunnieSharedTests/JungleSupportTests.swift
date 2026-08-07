@@ -108,15 +108,64 @@ struct JungleSupportTests {
 
     @Test("A task already waiting when the trip starts is still covered")
     func alreadyWaitingTasksAreCovered() {
+        // Monthly watering, two days overdue, on a one-week trip. Projecting
+        // forward from the overdue date lands four weeks out — long after the
+        // trip ends — so this plant used to be reported as needing nothing at
+        // all, which is the single worst thing a caretaker list can get wrong.
+        let start = now
         let need = CoveragePlanner.need(
             plant: plant(),
             schedules: [schedule(everyDays: 30, nextDue: now.addingTimeInterval(-86_400 * 2))],
+            absenceStart: start,
+            absenceEnd: now.addingTimeInterval(86_400 * 7),
+            calendar: calendar,
+            timeZone: timeZone
+        )
+
+        #expect(need.needsAnything)
+        #expect(need.dueDuringAbsence.count == 1)
+        // Surfaced on the first day rather than at its original overdue date, so
+        // the caretaker sees it at the top of the list on day one.
+        #expect(need.dueDuringAbsence.first?.dueDate == start)
+    }
+
+    @Test("An overdue task is reported once, not twice")
+    func overdueTaskIsNotDoubleCounted() {
+        // Daily watering, one day overdue. The cadence lands on the first day of
+        // the absence *and* the task is outstanding — the two must not produce
+        // two entries for the same watering.
+        let start = now
+        let need = CoveragePlanner.need(
+            plant: plant(),
+            schedules: [schedule(everyDays: 1, nextDue: now.addingTimeInterval(-86_400))],
+            absenceStart: start,
+            absenceEnd: now.addingTimeInterval(86_400 * 3),
+            calendar: calendar,
+            timeZone: timeZone
+        )
+
+        let onFirstDay = need.dueDuringAbsence.filter { $0.dueDate == start }
+        #expect(onFirstDay.count == 1, "\(onFirstDay.count) entries for one watering")
+        // And the rest of the week is still projected normally.
+        #expect(need.dueDuringAbsence.count > 1)
+        let dates = need.dueDuringAbsence.map(\.dueDate)
+        #expect(dates == dates.sorted())
+    }
+
+    @Test("A task due after the trip ends is not brought forward")
+    func futureTasksAreNotPulledIn() {
+        // The mirror of the overdue case: nothing outstanding, next due well
+        // after the trip. Reporting it would overstate the ask.
+        let need = CoveragePlanner.need(
+            plant: plant(),
+            schedules: [schedule(everyDays: 30, nextDue: now.addingTimeInterval(86_400 * 20))],
             absenceStart: now,
             absenceEnd: now.addingTimeInterval(86_400 * 7),
             calendar: calendar,
             timeZone: timeZone
         )
-        #expect(need.needsAnything)
+        #expect(!need.needsAnything)
+        #expect(need.dueDuringAbsence.isEmpty)
     }
 
     @Test("Disabled schedules and plants that need nothing are reported as such")

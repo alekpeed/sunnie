@@ -3,6 +3,15 @@
 A pass over the places most likely to need attention the first time this
 codebase meets a compiler, ordered so the ones that cascade come first.
 
+> **Update after the first real compile.** The shared package now builds and
+> passes 441 tests on Linux (ADR-032). That run found three genuine defects —
+> `ColorValue` JSON encoding, travel coverage for already-overdue tasks, and a
+> `some`/`any RandomSource` mismatch — all now fixed with regression tests. It
+> also confirmed the biggest claim below: strict concurrency produced warnings,
+> not errors. **The §1 risk about runtime-key localization is still unverified**,
+> because those 34 call sites live in the app target, which remains uncompiled.
+> Everything below applies to the app targets unless it says otherwise.
+
 **This is not a list of known bugs.** It is a list of places where the code makes
 an assumption a type checker has never confirmed. Most will be fine. The point is
 to shorten the first build day by saying where to look when something breaks,
@@ -21,7 +30,7 @@ Some whole categories of problem were checked and came back clean.
 |---|---|
 | `@Model` property types across all 8 schema versions | All 366 are SwiftData-native — `String`, `Int`, `Double`, `Bool`, `Date`, `UUID`, `Data`, `[String]`, `[UUID]`. No custom types, no relationships, nothing needing a transformer. |
 | All 119 `#Predicate` bodies | Simple comparisons and boolean logic. One risky construct, now fixed (§2). |
-| Shared package imports | `Foundation` and `os`, nothing else. No SwiftUI, no SwiftData, no `Bundle.main`. It genuinely is platform-neutral, so it will build on its own. |
+| Shared package imports | `Foundation` and `os`, nothing else. No SwiftUI, no SwiftData, no `Bundle.main`. **This row was wrong** — it read "genuinely platform-neutral" while `os` is Apple-only, so the package could not build off Apple at all. Both Apple-only touch points are now `canImport`-guarded (ADR-032), and it is neutral in fact rather than in claim. |
 | `.onChange(of:)` | All three use the two-parameter iOS 17+ form. Correct for an iOS 18 target. |
 | `try!`, `as!` | Zero of each. |
 | `fatalError` | Two, both genuinely unrecoverable (§6). |

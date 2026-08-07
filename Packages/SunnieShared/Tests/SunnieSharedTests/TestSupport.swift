@@ -130,6 +130,36 @@ actor InMemoryProgressionRepository: ProgressionRepository {
         Array(rewards.values.sorted { $0.grantedAt < $1.grantedAt }.prefix(limit))
     }
 
+    /// Every grant, oldest first.
+    ///
+    /// Deliberately not `grants(limit:)` with a large number: the collection
+    /// screen's whole point is that nothing owned is ever hidden, so a mock that
+    /// silently capped would let a truncation bug pass.
+    func allGrants() async throws -> [RewardGrant] {
+        rewards.values.sorted { $0.grantedAt < $1.grantedAt }
+    }
+
+    func eventCounts() async throws -> [ProgressionEventType: Int] {
+        events.values.reduce(into: [:]) { counts, event in
+            counts[event.type, default: 0] += 1
+        }
+    }
+
+    /// Distinct days on which anything happened, at or after `since`.
+    ///
+    /// Days rather than timestamps, and de-duplicated, because that is what the
+    /// rhythm summary counts — two waterings on one afternoon are one day of
+    /// caring, not two.
+    func eventDates(since: Date) async throws -> [Date] {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC") ?? .gmt
+        let days = events.values
+            .map(\.occurredAt)
+            .filter { $0 >= since }
+            .map { calendar.startOfDay(for: $0) }
+        return Set(days).sorted()
+    }
+
     var eventCount: Int { events.count }
     var rewardCount: Int { rewards.count }
 }

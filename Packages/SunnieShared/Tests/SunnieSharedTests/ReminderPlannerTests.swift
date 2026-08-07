@@ -60,7 +60,7 @@ struct ReminderPlannerTests {
     func completionFromWatchAlsoStops() {
         // Both devices write the same task state, so the planner needs no idea
         // which one finished it.
-        #expect(plan(context(complete: true, level: .regular)) == .suppress(.taskAlreadyComplete))
+        #expect(plan(context(level: .regular, complete: true)) == .suppress(.taskAlreadyComplete))
     }
 
     @Test("Skip today lasts until tomorrow, not for a rolling day")
