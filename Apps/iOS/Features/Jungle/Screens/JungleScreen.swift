@@ -55,6 +55,7 @@ struct JungleScreen: View {
         }
         .background(theme.color.canvas.ignoresSafeArea())
         .navigationTitle(Text(showsDueOnly ? "jungle.title.due" : "jungle.title", bundle: .main))
+        .audioContext(.plantCare)
         .refreshable { await model?.load() }
         .task {
             if model == nil {

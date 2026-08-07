@@ -178,6 +178,7 @@ struct SunnieHomeScreen: View {
         }
         .background(theme.color.canvas.ignoresSafeArea())
         .navigationTitle(Text("more.sunnieHome", bundle: .main))
+        .audioContext(.sunnieHome)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(

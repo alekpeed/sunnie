@@ -235,11 +235,69 @@ public enum NotificationPayloadKeys {
     public static let scheduleID = "scheduleID"
 }
 
+/// Everything the app's sound goes through except generated noise, which has its
+/// own protocol for the reason `NoiseGenerating` documents (ADR-018).
+///
+/// Deliberately small and named for intent rather than mechanism: a caller asks
+/// for a cue or a context, and the manifest and the director decide whether that
+/// resolves to a file, a synthesised bed, or silence
+/// (AUDIO_MIDI_AND_SOUNDSCAPES.md §5). No feature ever names an asset.
 public protocol AudioPlaying: Sendable {
     func playCue(_ cueID: ContentID) async
     func startAmbience(_ cueID: ContentID) async
     func stopAmbience() async
     func apply(preferences: AudioPreferences) async
+
+    /// A meditation bell (§10). Separate from `playCue` because a bell is the
+    /// one effect that must be heard even when a bed is already playing, and
+    /// because its layer has its own gain.
+    func playBell(_ preset: BellPreset) async
+
+    /// Tells the audio layer where the user is, so the director can resolve a
+    /// plan (§5). Crossfades to whatever the new contexts select, or to silence.
+    ///
+    /// Never starts anything by itself unless the user turned autoplay on: with
+    /// it off this only ever stops what a previous context started.
+    func setContexts(_ contexts: [AudioContextTag]) async
+
+    /// Feeds a platform event to the interruption policy (§6, §12). Called by
+    /// the app target's notification observers; exposed on the protocol so the
+    /// flow can be driven in tests without an audio session.
+    func handle(_ event: AudioEvent) async
+}
+
+/// Plays the synthesised beds and bells (ADR-029).
+///
+/// Separate from `AudioPlaying` for the same reason `NoiseGenerating` is: nothing
+/// is loaded, decoded, or seeked — samples are computed as they are needed, and a
+/// caller that reached for the wrong one would get a file API for a thing with no
+/// file. `AudioService` owns one of these and routes to it; features do not see
+/// it.
+public protocol ProceduralAudioPlaying: Sendable {
+    var currentVoice: AmbienceVoice? { get async }
+    func start(_ voice: AmbienceVoice, gain: Double) async
+    /// Equal-power fade from whatever is playing to `voice` (§6).
+    func crossfade(to voice: AmbienceVoice, gain: Double, over seconds: TimeInterval) async
+    func setGain(_ gain: Double) async
+    func stop(fadeOver seconds: TimeInterval) async
+    func strike(_ bell: BellPreset, gain: Double) async
+    func apply(sessionPlan: AudioSessionPlan) async
+    func handle(_ action: AudioAction) async
+}
+
+/// Silent stand-in for previews and tests.
+public struct SilentProceduralAudio: ProceduralAudioPlaying {
+    public init() {}
+    public var currentVoice: AmbienceVoice? { get async { nil } }
+    public func start(_ voice: AmbienceVoice, gain: Double) async {}
+    public func crossfade(
+        to voice: AmbienceVoice, gain: Double, over seconds: TimeInterval
+    ) async {}
+    public func setGain(_ gain: Double) async {}
+    public func stop(fadeOver seconds: TimeInterval) async {}
+    public func strike(_ bell: BellPreset, gain: Double) async {}
+    public func apply(sessionPlan: AudioSessionPlan) async {}
+    public func handle(_ action: AudioAction) async {}
 }
 
 /// A weather summary for a place (TRAVEL_AND_FLIGHT_ATTENDANT.md §9).

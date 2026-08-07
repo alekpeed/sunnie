@@ -39,6 +39,7 @@ struct TodayScreen: View {
         }
         .background(theme.color.canvas.ignoresSafeArea())
         .navigationTitle(Text("app.name", bundle: .main))
+        .audioContext(.today)
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await model?.load() }
         .task {

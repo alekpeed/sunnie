@@ -47,6 +47,7 @@ struct TravelScreen: View {
         }
         .background(theme.color.canvas.ignoresSafeArea())
         .navigationTitle(Text("tab.travel", bundle: .main))
+        .audioContext(.travelScrapbook)
         .refreshable { await model?.load() }
         .toolbar { toolbarContent }
         .task {

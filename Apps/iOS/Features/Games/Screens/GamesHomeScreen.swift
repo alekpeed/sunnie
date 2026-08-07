@@ -178,6 +178,7 @@ struct GamesHomeScreen: View {
         }
         .background(theme.color.canvas.ignoresSafeArea())
         .navigationTitle(Text("more.games", bundle: .main))
+        .audioContext(.game)
         .task {
             if model == nil { model = GamesModel(dependencies: dependencies) }
             await model?.load()

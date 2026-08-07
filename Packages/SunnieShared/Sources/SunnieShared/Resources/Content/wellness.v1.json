@@ -211,8 +211,8 @@
         900
       ],
       "guidanceKeys": [],
-      "startCueID": "sunnie.audio.cue.chimeStart",
-      "endCueID": "sunnie.audio.cue.chimeEnd",
+      "startCueID": "sunnie.audio.bell.start",
+      "endCueID": "sunnie.audio.bell.end",
       "ambienceCueID": null
     },
     {
@@ -231,8 +231,8 @@
         "meditation.grounding.step.3",
         "meditation.grounding.step.4"
       ],
-      "startCueID": "sunnie.audio.cue.chimeStart",
-      "endCueID": "sunnie.audio.cue.chimeEnd",
+      "startCueID": "sunnie.audio.bell.start",
+      "endCueID": "sunnie.audio.bell.end",
       "ambienceCueID": null
     },
     {
@@ -253,7 +253,7 @@
       ],
       "startCueID": null,
       "endCueID": null,
-      "ambienceCueID": "sunnie.audio.ambience.night"
+      "ambienceCueID": "sunnie.audio.ambience.nightCrickets"
     },
     {
       "id": "sunnie.meditation.travelReset",
@@ -270,8 +270,8 @@
         "meditation.travelReset.step.2",
         "meditation.travelReset.step.3"
       ],
-      "startCueID": "sunnie.audio.cue.chimeStart",
-      "endCueID": "sunnie.audio.cue.chimeEnd",
+      "startCueID": "sunnie.audio.bell.start",
+      "endCueID": "sunnie.audio.bell.end",
       "ambienceCueID": null
     }
   ],

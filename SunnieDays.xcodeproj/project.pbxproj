@@ -94,6 +94,7 @@
 		5D0000000000000000000121 /* Exceptions for "iOS" folder in "SunnieDays" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				README-Audio.md,
 				Resources/Info.plist,
 				Resources/SunnieDays.entitlements,
 			);
@@ -102,6 +103,7 @@
 		5D0000000000000000000122 /* Exceptions for "Watch" folder in "SunnieDaysWatch" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				README.md,
 				Resources/Info.plist,
 			);
 			target = 5D0000000000000000000102 /* SunnieDaysWatch */;

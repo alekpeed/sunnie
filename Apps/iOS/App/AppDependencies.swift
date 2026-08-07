@@ -53,6 +53,9 @@ final class AppDependencies {
     let notificationService: NotificationService
     let audioService: AudioService
     let noiseEngine: any NoiseGenerating
+    /// Owned by `audioService` rather than used directly. Held here only so a
+    /// preview or a test can substitute a silent one (ADR-029).
+    let proceduralAudio: any ProceduralAudioPlaying
     let weatherProvider: any WeatherProviding
     let calendarProvider: any CalendarProviding
     let haptics: HapticService
@@ -151,7 +154,14 @@ final class AppDependencies {
         self.eventBus = DomainEventBus()
 
         self.notificationService = NotificationService()
-        self.audioService = AudioService()
+        let procedural = ProceduralAudioEngine()
+        self.proceduralAudio = procedural
+        // The manifest arrives from the registry rather than being read here, so
+        // an added content pack's tracks are visible to the director
+        // (AUDIO_MIDI_AND_SOUNDSCAPES.md §2 step 5).
+        self.audioService = AudioService(
+            manifest: registry.audioManifest, procedural: procedural
+        )
         self.noiseEngine = NoiseEngine()
         self.weatherProvider = SunnieWeatherService()
         self.calendarProvider = SunnieCalendarService()

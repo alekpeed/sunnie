@@ -20,6 +20,8 @@ struct SettingsScreen: View {
         Form {
             dayCycleSection
             audioSection
+            audioBehaviourSection
+            hapticsSection
             accessibilitySection
             notificationsSection
             reminderCadenceSection
@@ -79,16 +81,176 @@ struct SettingsScreen: View {
         }
     }
 
+    /// The sound controls (AUDIO_MIDI_AND_SOUNDSCAPES.md §9).
+    ///
+    /// One row per layer, each with its own switch and its own level, because §4
+    /// gives every layer independent gain and enable state — and because someone
+    /// who wants the meditation bell but no bed underneath it needs two controls
+    /// rather than one.
+    ///
+    /// The layer levels sit under their switch and disappear when it is off,
+    /// which keeps the section short in the state it is usually in: everything on
+    /// and nothing adjusted.
     private var audioSection: some View {
         Section {
+            HStack {
+                Image(systemName: "speaker.wave.2")
+                    .foregroundStyle(theme.color.textSecondary)
+                    .accessibilityHidden(true)
+                Slider(
+                    value: binding(
+                        get: { $0.audio.masterGain },
+                        set: { $0.audio.masterGain = $1 }
+                    ),
+                    in: 0...1
+                )
+                .accessibilityLabel(Text("settings.audio.master", bundle: .main))
+            }
+
+            layerRow(
+                .music,
+                title: String(
+                    localized: "settings.audio.music",
+                    defaultValue: "Music",
+                    comment: "Music toggle"
+                ),
+                isOn: binding(
+                    get: { $0.audio.musicEnabled },
+                    set: { $0.audio.musicEnabled = $1 }
+                )
+            )
+            layerRow(
+                .ambience,
+                title: String(
+                    localized: "settings.audio.ambience",
+                    defaultValue: "Ambience",
+                    comment: "Ambience toggle"
+                ),
+                isOn: binding(
+                    get: { $0.audio.ambienceEnabled },
+                    set: { $0.audio.ambienceEnabled = $1 }
+                )
+            )
+            layerRow(
+                .effects,
+                title: String(
+                    localized: "settings.audio.effects",
+                    defaultValue: "Sounds and bells",
+                    comment: "Effects toggle"
+                ),
+                isOn: binding(
+                    get: { $0.audio.effectsEnabled },
+                    set: { $0.audio.effectsEnabled = $1 }
+                )
+            )
+        } header: {
+            Text("settings.section.sound", bundle: .main)
+        } footer: {
+            Text("settings.sound.footer", bundle: .main)
+        }
+    }
+
+    /// Autoplay and background playback.
+    ///
+    /// Their own section because both change *when* sound happens rather than
+    /// how loud it is, and both are off by default: nothing may make a noise the
+    /// user did not ask for (§6), and background playback changes the audio
+    /// session category, which is a choice to offer rather than assume (§7).
+    private var audioBehaviourSection: some View {
+        Section {
             Toggle(
-                String(localized: "settings.audio.music", defaultValue: "Music", comment: "Music toggle"),
-                isOn: binding(get: { $0.audio.musicEnabled }, set: { $0.audio.musicEnabled = $1 })
+                String(
+                    localized: "settings.audio.autoplay",
+                    defaultValue: "Play sound automatically",
+                    comment: "Autoplay toggle"
+                ),
+                isOn: binding(
+                    get: { $0.audio.autoPlayAmbience },
+                    set: { $0.audio.autoPlayAmbience = $1 }
+                )
             )
             Toggle(
-                String(localized: "settings.audio.ambience", defaultValue: "Ambience", comment: "Ambience toggle"),
-                isOn: binding(get: { $0.audio.ambienceEnabled }, set: { $0.audio.ambienceEnabled = $1 })
+                String(
+                    localized: "settings.audio.background",
+                    defaultValue: "Keep playing when the screen locks",
+                    comment: "Background playback toggle"
+                ),
+                isOn: binding(
+                    get: { $0.audio.backgroundPlaybackEnabled },
+                    set: { $0.audio.backgroundPlaybackEnabled = $1 }
+                )
             )
+
+            themeAmbiencePicker
+        } header: {
+            Text("settings.section.soundBehaviour", bundle: .main)
+        } footer: {
+            Text("settings.audio.autoplay.footer", bundle: .main)
+        }
+    }
+
+    /// The ambience this theme uses when sound starts on its own (§9,
+    /// "per-theme ambience setting").
+    ///
+    /// "Let Sunnie choose" is the default and a real choice, not an off switch:
+    /// the manifest already knows which beds suit which screens and cycles, and
+    /// most people would rather not decide.
+    private var themeAmbiencePicker: some View {
+        Picker(
+            String(
+                localized: "settings.audio.themeAmbience",
+                defaultValue: "Ambience for this theme",
+                comment: "Per-theme ambience picker"
+            ),
+            selection: themeAmbienceBinding
+        ) {
+            Text("settings.audio.themeAmbience.automatic", bundle: .main)
+                .tag(ContentID?.none)
+            ForEach(AmbienceVoice.allCases, id: \.self) { voice in
+                Text(LocalizedStringKey(ambienceTitleKey(voice)))
+                    .tag(ContentID?.some(voice.cueID))
+            }
+        }
+    }
+
+    private var themeAmbienceBinding: Binding<ContentID?> {
+        binding(
+            get: { $0.audio.ambienceID(forTheme: $0.activeThemeID) },
+            set: { preferences, newValue in
+                preferences.audio.setAmbienceID(newValue, forTheme: preferences.activeThemeID)
+            }
+        )
+    }
+
+    /// The display name comes from the manifest rather than being spelled here,
+    /// so a renamed track needs one edit rather than two.
+    private func ambienceTitleKey(_ voice: AmbienceVoice) -> String {
+        dependencies.contentRegistry.audioTrack(id: voice.cueID)?.titleKey
+            ?? "calm.category.\(voice.rawValue)"
+    }
+
+    private func layerRow(
+        _ layer: AudioLayer,
+        title: String,
+        isOn: Binding<Bool>
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle(title, isOn: isOn)
+            if isOn.wrappedValue {
+                Slider(
+                    value: binding(
+                        get: { $0.audio.gain(for: layer) },
+                        set: { $0.audio.setGain($1, for: layer) }
+                    ),
+                    in: 0...1
+                )
+                .accessibilityLabel(Text(verbatim: title))
+            }
+        }
+    }
+
+    private var hapticsSection: some View {
+        Section {
             Toggle(
                 String(localized: "settings.haptics", defaultValue: "Haptics", comment: "Haptics toggle"),
                 isOn: binding(get: { $0.hapticsEnabled }, set: { $0.hapticsEnabled = $1 })
@@ -106,9 +268,9 @@ struct SettingsScreen: View {
                 )
             )
         } header: {
-            Text("settings.section.sound", bundle: .main)
+            Text("settings.section.feel", bundle: .main)
         } footer: {
-            Text("settings.sound.footer", bundle: .main)
+            Text("settings.feel.footer", bundle: .main)
         }
     }
 

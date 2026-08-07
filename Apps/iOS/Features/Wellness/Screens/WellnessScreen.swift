@@ -35,6 +35,7 @@ struct WellnessScreen: View {
         }
         .background(theme.color.canvas.ignoresSafeArea())
         .navigationTitle(Text("tab.wellness", bundle: .main))
+        .audioContext(.wellness)
         .refreshable { await model?.load() }
         .task {
             if model == nil {

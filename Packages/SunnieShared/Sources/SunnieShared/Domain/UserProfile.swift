@@ -56,22 +56,144 @@ public struct QuietHours: Hashable, Sendable, Codable {
     }
 }
 
+/// The user's sound controls (AUDIO_MIDI_AND_SOUNDSCAPES.md §9).
+///
+/// Every layer in §4 has an enable state and a gain here, because that is what
+/// §4 asks for and because one master volume is not enough: someone who wants
+/// the meditation bell but no bed needs two controls, not one.
+///
+/// Two of these default to *off* on purpose. `autoPlayAmbience` is off because
+/// §6 says so — nothing may make a sound on launch that the user did not ask
+/// for. `backgroundPlaybackEnabled` is off because turning it on changes the
+/// audio session category, and with it whether the ring/silent switch still
+/// works; that is a decision to be offered, not assumed.
 public struct AudioPreferences: Hashable, Sendable, Codable {
     public var musicEnabled: Bool
     public var ambienceEnabled: Bool
     public var effectsEnabled: Bool
+    /// Reserved for voice. Off until there is something to narrate (§4).
+    public var narrationEnabled: Bool
     public var masterGain: Double
+    /// Per-layer gain, 0…1, keyed by `AudioLayer.rawValue`.
+    ///
+    /// A dictionary rather than four fields so a new layer needs no migration —
+    /// the same reasoning `reminderLevels` uses. An absent key means 1, which is
+    /// "this layer does not attenuate", not "this layer is silent".
+    public var layerGains: [String: Double]
+    /// Whether music and ambience may start on their own when a screen appears.
+    /// Off by default (§6). A sound the user taps always plays regardless.
+    public var autoPlayAmbience: Bool
+    /// Whether a practice keeps sounding once the screen locks (§7, §10).
+    public var backgroundPlaybackEnabled: Bool
+    /// The ambience chosen for a given theme, keyed by theme id raw value (§9,
+    /// "per-theme ambience setting"). Absent means "let the context decide".
+    public var themeAmbienceIDs: [String: String]
 
     public init(
         musicEnabled: Bool = true,
         ambienceEnabled: Bool = true,
         effectsEnabled: Bool = true,
-        masterGain: Double = 0.8
+        narrationEnabled: Bool = false,
+        masterGain: Double = 0.8,
+        layerGains: [String: Double] = [:],
+        autoPlayAmbience: Bool = false,
+        backgroundPlaybackEnabled: Bool = false,
+        themeAmbienceIDs: [String: String] = [:]
     ) {
         self.musicEnabled = musicEnabled
         self.ambienceEnabled = ambienceEnabled
         self.effectsEnabled = effectsEnabled
+        self.narrationEnabled = narrationEnabled
         self.masterGain = masterGain
+        self.layerGains = layerGains
+        self.autoPlayAmbience = autoPlayAmbience
+        self.backgroundPlaybackEnabled = backgroundPlaybackEnabled
+        self.themeAmbienceIDs = themeAmbienceIDs
+    }
+
+    /// Whether anything on this layer may sound.
+    public func isEnabled(_ layer: AudioLayer) -> Bool {
+        switch layer {
+        case .music: musicEnabled
+        case .ambience: ambienceEnabled
+        case .effects: effectsEnabled
+        case .narration: narrationEnabled
+        // Bells follow the effects switch rather than having their own toggle.
+        // A "meditation bells" control on the settings screen beside "effects"
+        // is a distinction only the mixer cares about.
+        case .meditationBell: effectsEnabled
+        }
+    }
+
+    public func gain(for layer: AudioLayer) -> Double {
+        min(max(layerGains[layer.rawValue] ?? 1, 0), 1)
+    }
+
+    public mutating func setGain(_ gain: Double, for layer: AudioLayer) {
+        layerGains[layer.rawValue] = min(max(gain, 0), 1)
+    }
+
+    /// Track gain × layer gain × master gain, clamped.
+    ///
+    /// One multiplication chain in one place, so a level can never be computed
+    /// two different ways in two features.
+    public func effectiveGain(for layer: AudioLayer, trackGain: Double) -> Double {
+        guard isEnabled(layer) else { return 0 }
+        let combined = min(max(trackGain, 0), 1) * gain(for: layer) * min(max(masterGain, 0), 1)
+        return min(max(combined, 0), 1)
+    }
+
+    public func ambienceID(forTheme themeID: ContentID) -> ContentID? {
+        themeAmbienceIDs[themeID.rawValue].map(ContentID.init(rawValue:))
+    }
+
+    public mutating func setAmbienceID(_ id: ContentID?, forTheme themeID: ContentID) {
+        if let id {
+            themeAmbienceIDs[themeID.rawValue] = id.rawValue
+        } else {
+            themeAmbienceIDs.removeValue(forKey: themeID.rawValue)
+        }
+    }
+
+    /// Decodes field by field, for the reason `UserPreferences` documents at
+    /// length: this is stored inside that one encoded blob, so a synthesized
+    /// initializer would throw on the whole record the first time a field was
+    /// added here — and the enclosing lenient decoder would then quietly hand
+    /// back default audio settings, resetting a volume the user had chosen.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let fallback = AudioPreferences()
+
+        func value<T: Decodable>(_ key: CodingKeys, _ fallbackValue: T) -> T {
+            guard let decoded = try? container.decodeIfPresent(T.self, forKey: key) else {
+                return fallbackValue
+            }
+            return decoded
+        }
+
+        musicEnabled = value(.musicEnabled, fallback.musicEnabled)
+        ambienceEnabled = value(.ambienceEnabled, fallback.ambienceEnabled)
+        effectsEnabled = value(.effectsEnabled, fallback.effectsEnabled)
+        narrationEnabled = value(.narrationEnabled, fallback.narrationEnabled)
+        masterGain = value(.masterGain, fallback.masterGain)
+        layerGains = value(.layerGains, fallback.layerGains)
+        autoPlayAmbience = value(.autoPlayAmbience, fallback.autoPlayAmbience)
+        backgroundPlaybackEnabled = value(
+            .backgroundPlaybackEnabled, fallback.backgroundPlaybackEnabled
+        )
+        themeAmbienceIDs = value(.themeAmbienceIDs, fallback.themeAmbienceIDs)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case musicEnabled
+        case ambienceEnabled
+        case effectsEnabled
+        case narrationEnabled
+        case masterGain
+        case layerGains
+        case autoPlayAmbience
+        case backgroundPlaybackEnabled
+        case themeAmbienceIDs
     }
 }
 

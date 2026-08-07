@@ -13,19 +13,22 @@ public final class ContentRegistry: Sendable {
     public let wellnessPack: WellnessPack
     public let gamePack: GamePack
     public let collectionPack: CollectionPack
+    public let audioManifest: AudioManifest
 
     public init(
         messagePack: SunnieMessagePack,
         themePack: ThemePack,
         wellnessPack: WellnessPack = FallbackContent.wellnessPack,
         gamePack: GamePack = BuiltInGameContent.pack,
-        collectionPack: CollectionPack = BuiltInCollectionContent.pack
+        collectionPack: CollectionPack = BuiltInCollectionContent.pack,
+        audioManifest: AudioManifest = BuiltInAudioContent.manifest
     ) {
         self.messagePack = messagePack
         self.themePack = themePack
         self.wellnessPack = wellnessPack
         self.gamePack = gamePack
         self.collectionPack = collectionPack
+        self.audioManifest = audioManifest
     }
 
     /// Loads the packs that ship inside the shared package.
@@ -39,6 +42,10 @@ public final class ContentRegistry: Sendable {
         // fails to decode leaves the built-in set in place.
         let gamesOverride = decode(GamePack.self, resource: "games.v1")
         let collectionOverride = decode(CollectionPack.self, resource: "collection.v1")
+        // Same override point, same reasoning: the built-in manifest references
+        // synthesised voices, which are code, so it ships as Swift. A JSON file
+        // is how a creator's rendered tracks are added on top.
+        let audioOverride = decode(AudioManifest.self, resource: "audio.v1")
 
         if messages == nil {
             log.error("Built-in message pack failed to decode; using fallback content.")
@@ -55,7 +62,8 @@ public final class ContentRegistry: Sendable {
             themePack: themes ?? FallbackContent.themePack,
             wellnessPack: wellness ?? FallbackContent.wellnessPack,
             gamePack: gamesOverride ?? BuiltInGameContent.pack,
-            collectionPack: collectionOverride ?? BuiltInCollectionContent.pack
+            collectionPack: collectionOverride ?? BuiltInCollectionContent.pack,
+            audioManifest: audioOverride ?? BuiltInAudioContent.manifest
         )
     }
 
@@ -110,6 +118,18 @@ public final class ContentRegistry: Sendable {
 
     public func reward(id: ContentID) -> RewardDefinition? {
         collectionPack.reward(id: id)
+    }
+
+    /// Audio-manifest problems, reported separately for the same reason the game
+    /// and collection packs are: a manifest fails in ways the others cannot — a
+    /// gain that would clip, a rendered track naming no file, a context nothing
+    /// is registered against.
+    public var audioIssues: [AudioContentIssue] {
+        AudioManifestValidator.validate(audioManifest)
+    }
+
+    public func audioTrack(id: ContentID) -> AudioTrackDefinition? {
+        audioManifest.track(id: id)
     }
 }
 

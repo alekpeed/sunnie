@@ -1106,3 +1106,230 @@ envelope exists to survive.
 `HealthAndIntegrationTests` — the envelope round trip, the unknown-kind case, and
 the lenient context decode. `IntegrationFlowTests` — idempotency for all four
 new actions through a real store.
+
+## ADR-029: Ambience is synthesised, and rendered audio stays the preferred path
+
+**Status:** Accepted
+**Date:** Phase 10
+
+### Context
+
+`AUDIO_MIDI_AND_SOUNDSCAPES.md` §3 is unambiguous about which runtime strategy
+wins: rendered audio is preferred, runtime MIDI is optional and only for adaptive
+arrangement, and "do not use runtime MIDI merely because source music was composed
+as MIDI."
+
+But the app had been shipping a sound library that listed eleven ambiences and
+played three of them. The eight recorded ones had definitions, localized names,
+and cue ids since Phase 3, and no files — the screen said so, in as kind a way as
+possible, and that did not stop it being a list of things that do nothing. Rendered
+assets need a creator with a microphone and time, and Phase 10's job was to finish
+the audio layer, not to wait on one.
+
+### Decision
+
+Ambience and meditation bells are **synthesised at runtime** from a tuning table
+in `SunnieShared/Audio/ProceduralAmbience.swift`: a coloured noise bed, one slow
+amplitude swell, and sparse decaying events (droplets, calls, chirps, clinks).
+Bells are inharmonic partial stacks with per-partial decay.
+
+This does **not** displace §3's preference. Rendered audio remains the preferred
+form and the manifest is where the switch happens: a rendered ambience taking the
+same content id, with a `runtimeAsset`, replaces the synthesised one with no code
+change and no caller edit. The seven music tracks are already declared against the
+filenames the creator will render — the entry, the contexts, and the level are
+written, and dropping the file into the bundle is the whole remaining step.
+
+Runtime MIDI stays unused, and the manifest validator rejects a track that claims
+it. That is not a rule against MIDI; it is a rule against arriving at MIDI by
+accident, which is exactly what §3 warns about.
+
+### Reason
+
+- **It works on a clean clone.** Nothing to license, nothing to download, nothing
+  that can ship out of sync with a manifest entry.
+- **It is verifiable offline.** The whole chain is `Foundation` arithmetic, so
+  level, headroom, spectral balance, and determinism are unit tests rather than a
+  listening session — the same argument `NoiseDSP.swift` already makes, and the
+  same reason there is no Swift toolchain in this environment yet the DSP is
+  still checked.
+- **It never repeats.** A four-minute loop is recognisable by the third pass; an
+  event stream with exponential spacing has no period to notice.
+- **It costs nothing in the bundle.** Eight ambiences at file quality would be
+  tens of megabytes.
+
+### Consequences
+
+- These are impressions, not recordings, and the code says so. `cafeQuiet` is a
+  murmur and some crockery, not a room with conversations in it — synthesised
+  speech babble would be uncanny, and the alternative is honest abstraction.
+- Every recipe constant is taste, so they live in one table rather than scattered
+  through the synth. Retuning is editing a literal.
+- The render block must not allocate or lock, which shapes the whole design:
+  event voices are a fixed-size array sized in `init`, the oscillators are
+  two-multiply recurrences rather than `sin` calls, and an event that finds no
+  free voice is dropped rather than stealing one mid-decay.
+- `CalmSoundCategory.isGenerated` now means "played by the *noise* engine",
+  not "is synthesised". Almost everything is synthesised; the distinction that
+  still matters is which engine and which session policy (ADR-018).
+
+### Alternatives considered
+
+**Ship silence until the creator delivers.** Rejected: it leaves a list of dead
+rows on a screen whose whole purpose is to make a sound, and it makes the
+crossfade, session, and interruption work untestable end to end.
+
+**Licence a sample pack.** Rejected: a third-party dependency needs its own ADR
+and explicit approval (CLAUDE.md), it costs bundle size, and it puts a licence
+obligation on a private app for one person.
+
+**Runtime MIDI with a soft synth.** Rejected on §3's own terms. Nothing here
+needs adaptive arrangement or tempo change, and choosing MIDI because the beds
+are generated is the substitution §3 explicitly warns against.
+
+### Documents/tests affected
+
+`AUDIO_MIDI_AND_SOUNDSCAPES.md` §2, §3, §4, §8, §10.
+`CreatorAudioSource/README.md` — the workflow, and what replacing a synthesised
+track with a rendered one takes.
+`AudioTests` — determinism, channel decorrelation, headroom, bell decay, spectral
+sanity per voice, and manifest validation.
+
+## ADR-030: One owner for the audio session, and it is a table
+
+**Status:** Accepted
+**Date:** Phase 10
+
+### Context
+
+§7 asks for exactly this — "centralize category changes in one service rather
+than feature code" — and by Phase 9 the app had three places setting a category:
+`AudioService` (`.ambient`), `NoiseEngine` (`.playback` with `.mixWithOthers`,
+per ADR-018), and `VoiceNoteRecorder` (`.playAndRecord`, then `.ambient` again
+on stop). Each was individually correct. Together they were a race: whichever
+feature touched audio last decided whether the ring/silent switch still worked.
+
+### Decision
+
+`AudioSessionPolicy.plan(for:backgroundPlaybackEnabled:)` is the only thing that
+decides a category, and it returns plain values — `AudioSessionCategory`,
+`AudioSessionMode`, `AudioSessionOptions` — rather than AVFAudio types. Every
+engine translates that plan into AVFAudio and does nothing else.
+
+The table:
+
+| Use case | Category | Options | Survives lock |
+|---|---|---|---|
+| cue, ambience, music | ambient | — | no |
+| generated noise | playback | mixWithOthers | yes |
+| meditation | playback *if the user enabled background playback*, else ambient | mixWithOthers | if enabled |
+| voice note | playAndRecord (spoken audio) | duckOthers | no |
+
+### Reason
+
+Plain values mean the table is a thing that can be asserted on. The category is
+the setting most likely to be wrong in a way nobody notices until someone is on a
+plane with headphones in, and the only way to catch that without a device is to
+make the decision a value and test the value.
+
+`.duckOthers` appears on exactly one row, and it is the recording one. Quietening
+someone's own music so Sunnie can be heard over it is a small hostility and no cue
+here earns it — but a voice note with a playlist bleeding into it is a recording
+that cannot be used, so the microphone gets the exception.
+
+Meditation is the only conditional row. A practice with a timer should survive the
+screen locking, but making that unconditional means the ring switch silently stops
+working for someone who never asked — which is why it follows an explicit setting
+that defaults to off.
+
+### Consequences
+
+- ADR-018 is unchanged and now lives in the table rather than in one engine's
+  comments.
+- `requiresReconfiguration(from:to:)` exists so an engine holds the last plan
+  rather than an `isConfigured` flag: setting the category is not free and can
+  glitch playback, so it happens only when the plan actually differs.
+- A new use case is a new row, not a new `setCategory` call site.
+
+### Alternatives considered
+
+**Return `AVAudioSession.Category` directly.** Rejected: it drags AVFAudio into
+the shared package, which is what stops the Watch and the tests from compiling it.
+
+**One session for everything.** Rejected: a sleep sound and a decorative bed
+genuinely need different answers about the ring switch, and collapsing them would
+break one of the two.
+
+### Documents/tests affected
+
+`AUDIO_MIDI_AND_SOUNDSCAPES.md` §7.
+`AudioTests` — the full table, and the reconfiguration check.
+
+## ADR-031: Interruption handling is a state machine, not a notification handler
+
+**Status:** Accepted
+**Date:** Phase 10
+
+### Context
+
+§12's test list is: phone call, Siri, Bluetooth disconnect, headphone
+insertion and removal, route change, background and foreground, simultaneous
+timer and audio, loop gap, volume persistence, and other audio playing.
+
+Written as branches inside `NotificationCenter` observers, none of that is
+reachable from a test. It needs a device, two pairs of headphones, and someone
+willing to ring you at the right moment — which in practice means it is verified
+once, by hand, and then never again.
+
+### Decision
+
+`AudioInterruptionMachine` in `SunnieShared` holds the playback state and maps an
+`AudioEvent` to an `AudioAction`. The app target's observers do one thing each:
+turn an `AVAudioSession` notification into an event. No decisions live in a
+handler.
+
+The rules it encodes:
+
+- Pause on interruption; resume **only** when the system's `shouldResume` says so.
+- A private route disappearing stops playback — headphones out means the sound
+  stops, not that it moves to the speaker.
+- A route appearing starts nothing. Plugging headphones in is not consent.
+- Backgrounding pauses only what was never meant to survive it; a sleep sound or
+  a running practice keeps going.
+- Media services resetting invalidates every player, so the only correct response
+  is to rebuild — and to resume only what was genuinely sounding.
+- Other audio starting ducks *ours*, never theirs.
+
+### Reason
+
+Every one of §12's scenarios becomes a unit test, including the sequences that
+matter most and are hardest to stage by hand: a phone call that arrives while
+backgrounded and ends after returning, headphones pulled during an interruption,
+a reset in the middle of a fade. The part that genuinely needs a device — that
+iOS posts the notification we think it does — is reduced to a handful of lines
+per observer.
+
+### Consequences
+
+- The machine is a `struct` with a `mutating` handler rather than a static
+  function, because half the rules depend on *how* playback stopped. "Resume"
+  means different things after a phone call and after a trip to the home screen,
+  and an implementation that cannot tell them apart resumes at the wrong times in
+  both directions.
+- `isInterrupted` and `isPausedForBackground` are separate flags for exactly that
+  reason, and both can be set at once.
+- Device verification is still owed for the notification mapping itself; it is
+  recorded in `Apps/iOS/README-Audio.md` alongside the Watch's own device plan.
+
+### Alternatives considered
+
+**Handle each notification where the player lives.** Rejected — that is the
+status quo this replaces, and it is why the rules had never been tested.
+
+**A general-purpose reactive state library.** Rejected: a third-party dependency
+needs its own ADR, and the whole machine is sixty lines.
+
+### Documents/tests affected
+
+`AUDIO_MIDI_AND_SOUNDSCAPES.md` §6, §12.
+`AudioTests` — every event, and the multi-event sequences.

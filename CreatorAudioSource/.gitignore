@@ -1,0 +1,17 @@
+# Source material is large and binary. The manifest and this folder's structure
+# are tracked; the audio itself is not, and none of it ships in any case.
+*.mid
+*.midi
+*.wav
+*.aiff
+*.aif
+*.logicx/
+*.band/
+*.als
+*.flp
+*.ptx
+
+# Renders are staged here on the way to the bundle. The copy that ships lives in
+# Apps/iOS/Resources and is tracked there.
+Renders/*.m4a
+Renders/*.caf

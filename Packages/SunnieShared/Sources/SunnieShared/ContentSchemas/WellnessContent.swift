@@ -151,10 +151,10 @@ public struct MeditationDefinition: Identifiable, Hashable, Sendable, Codable {
 }
 
 public enum CalmSoundCategory: String, Hashable, Sendable, Codable, CaseIterable {
-    /// Generated rather than recorded — white, pink, and brown noise, computed
-    /// sample by sample (NOISE_IMPLEMENTATION.md). First in the list because it
-    /// is the only category that makes sound today; the recorded ambiences wait
-    /// on Phase 10.
+    /// White, pink, and brown noise, computed sample by sample
+    /// (NOISE_IMPLEMENTATION.md). First in the list because it is the plainest
+    /// thing here, not because it is the only one that works: since Phase 10
+    /// every category below is synthesised too (ADR-029).
     case noise
     case rain
     case jungle
@@ -164,15 +164,20 @@ public enum CalmSoundCategory: String, Hashable, Sendable, Codable, CaseIterable
     case roomTone
     case creatorMusic
 
-    /// Whether these sounds are computed rather than played from a file.
+    /// Whether this category is played by the *noise* engine specifically.
     ///
-    /// The sound library needs this to know which player to hand a selection to,
-    /// and to avoid promising an asset that will never exist for these.
+    /// Not "is it synthesised" — since Phase 10 almost everything here is
+    /// (ADR-029). This is the routing question: noise has its own engine and its
+    /// own audio-session policy (ADR-018), so the sound library needs to know
+    /// which of the two players a selection belongs to.
     public var isGenerated: Bool { self == .noise }
 }
 
-/// A loopable ambience track. The asset arrives in Phase 10; the definition
-/// exists now so the sound library can be built and tested against real data.
+/// A loopable ambience track.
+///
+/// The `audioCueID` resolves through the audio manifest, which decides whether
+/// it is synthesised or played from a rendered file. That indirection is why
+/// these definitions did not change when Phase 10 gave them sound.
 public struct CalmSoundDefinition: Identifiable, Hashable, Sendable, Codable {
     public let id: ContentID
     public let displayNameKey: String

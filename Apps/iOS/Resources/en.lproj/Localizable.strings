@@ -105,8 +105,30 @@
 /* Settings */
 "settings.section.dayCycle" = "Time of day";
 "settings.dayCycle.footer" = "The look of the app follows the time of day. You can hold it at one setting if you'd rather.";
-"settings.section.sound" = "Sound and feel";
-"settings.sound.footer" = "Quiet hours keep sound and reminders to yourself overnight.";
+"settings.section.sound" = "Sound";
+"settings.sound.footer" = "Each kind of sound has its own switch and its own level, so you can keep the parts you like.";
+"settings.audio.master" = "Overall volume";
+"settings.section.soundBehaviour" = "When sound plays";
+"settings.audio.autoplay.footer" = "With this off, nothing makes a sound until you tap it. Leaving it off is a perfectly good way to use the app.";
+"settings.audio.themeAmbience.automatic" = "Let Sunnie choose";
+"settings.section.feel" = "Feel";
+"settings.feel.footer" = "Quiet hours keep sound and reminders to yourself overnight.";
+
+/* Audio layers and tracks */
+"audio.layer.music" = "Music";
+"audio.layer.ambience" = "Ambience";
+"audio.layer.effects" = "Sounds";
+"audio.layer.meditationBell" = "Bells";
+"audio.layer.narration" = "Voice";
+"audio.bell.start" = "Opening bell";
+"audio.bell.end" = "Closing bell";
+"audio.music.tropicalMorning" = "Tropical Morning";
+"audio.music.longAfternoon" = "Long Afternoon";
+"audio.music.quietCanopy" = "Quiet Canopy";
+"audio.music.thinkingRoom" = "Thinking Room";
+"audio.music.somewhereElse" = "Somewhere Else";
+"audio.music.smallGoodThing" = "A Small Good Thing";
+"audio.music.hisOwnPlace" = "His Own Place";
 "settings.section.accessibility" = "Accessibility";
 "settings.accessibility.footer" = "These work alongside your device settings, and either one is enough to take effect.";
 "settings.section.reminders" = "Reminders";
@@ -248,7 +270,7 @@
 "calm.category.night" = "Night";
 "calm.category.roomTone" = "Room tone";
 "calm.category.creatorMusic" = "Music";
-"calm.comingSoon" = "The sounds themselves are still being made. The list is here so you can see what's coming.";
+"calm.comingSoon" = "These are made by the app itself rather than recorded, so they never repeat. Tap one to hear it.";
 
 /* History — descriptive counts only, no causal or diagnostic claim. */
 "wellness.history.title" = "Your record";

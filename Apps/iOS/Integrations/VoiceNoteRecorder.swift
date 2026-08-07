@@ -76,13 +76,12 @@ final class VoiceNoteRecorder {
         ]
 
         do {
-            // `.playAndRecord` for the duration of the recording only; the
-            // ambient category is restored on stop so Sunnie's audio goes back to
-            // never interrupting anything.
-            try AVAudioSession.sharedInstance().setCategory(
-                .playAndRecord, mode: .spokenAudio, options: [.duckOthers]
-            )
-            try AVAudioSession.sharedInstance().setActive(true)
+            // The category comes from the policy rather than being chosen here
+            // (AUDIO_MIDI_AND_SOUNDSCAPES.md §7: one owner for session changes).
+            // It applies for the duration of the recording only; the decoration
+            // category is restored on stop, so Sunnie's audio goes back to never
+            // interrupting anything.
+            try Self.configure(AudioSessionPolicy.plan(for: .voiceNote))
 
             let recorder = try AVAudioRecorder(url: url, settings: settings)
             recorder.record(forDuration: Self.maximumDuration)
@@ -117,7 +116,7 @@ final class VoiceNoteRecorder {
         #if canImport(AVFAudio)
         recorder?.stop()
         recorder = nil
-        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
+        try? Self.configure(AudioSessionPolicy.plan(for: .cue))
         #endif
 
         defer {
@@ -156,6 +155,31 @@ final class VoiceNoteRecorder {
             }
         }
     }
+
+    #if canImport(AVFAudio)
+    /// Translates a plan into AVFAudio, and nothing more.
+    ///
+    /// The *decision* is `AudioSessionPolicy`'s. Recording is the one place in
+    /// the app that legitimately needs a different category from everything
+    /// else, which is exactly why it goes through the same table rather than
+    /// setting one by hand — a second opinion about session policy is how the
+    /// ring switch quietly stops working.
+    private static func configure(_ plan: AudioSessionPlan) throws {
+        var options: AVAudioSession.CategoryOptions = []
+        if plan.options.contains(.mixWithOthers) { options.insert(.mixWithOthers) }
+        if plan.options.contains(.duckOthers) { options.insert(.duckOthers) }
+
+        let category: AVAudioSession.Category = switch plan.category {
+        case .ambient: .ambient
+        case .playback: .playback
+        case .playAndRecord: .playAndRecord
+        }
+        let mode: AVAudioSession.Mode = plan.mode == .spokenAudio ? .spokenAudio : .default
+
+        try AVAudioSession.sharedInstance().setCategory(category, mode: mode, options: options)
+        try AVAudioSession.sharedInstance().setActive(true)
+    }
+    #endif
 }
 
 /// Attaches captured media to a record.
