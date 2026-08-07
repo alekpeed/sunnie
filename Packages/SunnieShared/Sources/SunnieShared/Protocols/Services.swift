@@ -420,6 +420,78 @@ public struct SilentNoiseGenerator: NoiseGenerating {
     public func fadeOutAndStop(over seconds: Double) async {}
 }
 
+/// Reads and writes Health, one type at a time
+/// (HEALTH_WATCH_WIDGETS_AND_INTENTS.md §1–§3).
+///
+/// Everything is per-type. There is no "request Health access" call, because
+/// there is no such decision to make — §1 says request the minimum necessary,
+/// and the minimum is different for someone who wants their mindful minutes
+/// saved than for someone who wants to see their steps.
+///
+/// Read authorization is deliberately not exposed. HealthKit does not reveal
+/// whether a read was denied — a denied read returns no data, exactly like a day
+/// with no data — and a protocol that pretended otherwise would invite screens
+/// to say "denied" when they cannot know (§12).
+public protocol HealthProviding: Sendable {
+    /// False on a device with no Health store. Everything else no-ops when this
+    /// is false, so callers do not need to branch.
+    var isAvailable: Bool { get }
+
+    /// The write authorization for one type. Reads always report
+    /// `.notDetermined`, for the reason above.
+    func authorization(for type: HealthDataType) async -> HealthAuthorization
+
+    /// Asks for exactly the types passed and nothing else.
+    ///
+    /// Returns the resulting write authorizations. A user who declines gets the
+    /// same app they had before — nothing here throws on refusal, because
+    /// refusing is an ordinary answer.
+    @discardableResult
+    func requestAuthorization(
+        read: Set<HealthDataType>, write: Set<HealthDataType>
+    ) async -> [HealthDataType: HealthAuthorization]
+
+    /// Reads a day's worth of the given types.
+    ///
+    /// Returns `.absent` readings rather than throwing for anything unavailable,
+    /// so one denied type never costs the caller the others.
+    func snapshot(
+        types: Set<HealthDataType>, day: Date, calendar: Calendar
+    ) async -> HealthSnapshot
+
+    /// Writes a completed mindful session (§3). Returns the sample identifier so
+    /// the caller can record that it was written and never write it twice.
+    func writeMindfulSession(from start: Date, to end: Date) async -> String?
+
+    /// Writes an explicit hydration log (§3).
+    func writeWater(millilitres: Int, at date: Date) async -> String?
+}
+
+/// The composition for a device with no Health, for previews, and for tests.
+///
+/// Every method answers as an unauthorized store would, so a test running
+/// against this exercises the same paths a real refusal produces.
+public struct UnavailableHealthService: HealthProviding {
+    public init() {}
+    public var isAvailable: Bool { false }
+    public func authorization(for type: HealthDataType) async -> HealthAuthorization {
+        .unavailable
+    }
+    @discardableResult
+    public func requestAuthorization(
+        read: Set<HealthDataType>, write: Set<HealthDataType>
+    ) async -> [HealthDataType: HealthAuthorization] {
+        Dictionary(uniqueKeysWithValues: read.union(write).map { ($0, .unavailable) })
+    }
+    public func snapshot(
+        types: Set<HealthDataType>, day: Date, calendar: Calendar
+    ) async -> HealthSnapshot {
+        .empty(at: day)
+    }
+    public func writeMindfulSession(from start: Date, to end: Date) async -> String? { nil }
+    public func writeWater(millilitres: Int, at date: Date) async -> String? { nil }
+}
+
 /// Grants the stamp and postcard a saved travel memory earns
 /// (TRAVEL_AND_FLIGHT_ATTENDANT.md §11, PROGRESSION_COLLECTIONS_AND_SUNNIE_HOME.md §6).
 ///

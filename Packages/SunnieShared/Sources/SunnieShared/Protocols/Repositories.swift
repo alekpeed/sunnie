@@ -148,6 +148,12 @@ public protocol TravelRepository: Sendable {
     func deletePackingTemplate(id: UUID) async throws
 
     func checklistItems(forTripID tripID: UUID) async throws -> [ChecklistItem]
+    /// One item by identifier, without knowing which trip it belongs to.
+    ///
+    /// The Watch ticks an item and sends only its id — it has no reason to carry
+    /// the trip, and asking it to would be one more thing that can go stale on
+    /// the wrist.
+    func checklistItem(id: UUID) async throws -> ChecklistItem?
     func save(_ item: ChecklistItem) async throws
     func saveChecklistItems(_ items: [ChecklistItem]) async throws
     func deleteChecklistItem(id: UUID) async throws
@@ -240,6 +246,21 @@ public protocol ProgressionRepository: Sendable {
     /// The days on which anything at all happened, for the rhythm summary.
     /// Bounded to a recent window, since older weeks cannot change.
     func eventDates(since: Date) async throws -> [Date]
+}
+
+/// Deliberate hydration entries (HEALTH_WATCH_WIDGETS_AND_INTENTS.md §3).
+///
+/// Stored locally as well as written to Health, because §1 requires the app to
+/// work without HealthKit. A log that lived only in Health would disappear for
+/// anyone who declined the permission.
+public protocol HydrationRepository: Sendable {
+    /// Stores the log unless `actionKey` is already present.
+    func save(_ log: HydrationLog) async throws -> SaveOutcome<HydrationLog>
+    func logs(from start: Date, to end: Date) async throws -> [HydrationLog]
+    /// Entries not yet written to Health, so a permission granted later can
+    /// catch up without writing anything twice.
+    func unwrittenLogs(limit: Int) async throws -> [HydrationLog]
+    func markWritten(id: UUID, sampleID: String) async throws
 }
 
 /// Sunnie's home: what is equipped, what is placed, what is playing

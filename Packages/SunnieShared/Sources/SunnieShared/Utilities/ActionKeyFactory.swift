@@ -58,6 +58,25 @@ public enum ActionKeyFactory {
         ActionKey(rawValue: "wellnessSession.v1|\(sessionID.uuidString)")
     }
 
+    /// Key for ticking a trip checklist item.
+    ///
+    /// Keyed on the item, not the moment: ticking the same item on the wrist and
+    /// again on the phone is one item done, and the second tick is a no-op rather
+    /// than a duplicate.
+    public static func checklistItem(itemID: UUID) -> ActionKey {
+        ActionKey(rawValue: "checklistItem.v1|\(itemID.uuidString)")
+    }
+
+    /// Key for a hydration log.
+    ///
+    /// Bucketed to the minute like plant care, and including the amount: two
+    /// glasses logged in the same minute are almost certainly one glass logged
+    /// twice, but 250 ml and 500 ml in the same minute are two deliberate
+    /// entries.
+    public static func hydration(millilitres: Int, loggedAt: Date) -> ActionKey {
+        ActionKey(rawValue: "hydration.v1|\(millilitres)|\(bucketedEpoch(loggedAt))")
+    }
+
     /// Key for finishing a puzzle.
     ///
     /// Derived from the puzzle and difficulty, deliberately **not** from the

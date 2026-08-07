@@ -38,6 +38,18 @@ final class WatchConnectivityClient: NSObject, @unchecked Sendable {
         session.transferUserInfo([WatchMessageKeys.careAction: data])
     }
 
+    /// Sends any Watch-originated action.
+    ///
+    /// `transferUserInfo` for the same reason as care: §7 assigns it to queued
+    /// background actions, and everything the wrist produces is one. A check-in
+    /// made on a plane must arrive when the phone is next reachable, not be
+    /// dropped because it was not reachable at the moment of the tap.
+    func send(_ envelope: WatchActionEnvelope) {
+        guard let session else { return }
+        guard let data = try? WatchActionEnvelope.coder.encoder.encode(envelope) else { return }
+        session.transferUserInfo([WatchMessageKeys.action: data])
+    }
+
     private func applyContext(from dictionary: [String: Any]) {
         guard let data = dictionary[WatchMessageKeys.applicationContext] as? Data else { return }
         guard let context = try? JSONDecoder().decode(

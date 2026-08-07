@@ -76,7 +76,13 @@ struct RecordWellnessCheckIn: Sendable {
         /// an entry on its own — without this, someone who recorded only a voice
         /// note would tap Save and have it silently rejected as blank.
         hasAttachments: Bool = false,
-        recordedAt: Date? = nil
+        recordedAt: Date? = nil,
+        /// Set for an entry that came from the Watch, so the record says where it
+        /// was actually made. The action key still derives from the timestamp, so
+        /// a check-in made on the wrist and a redelivery of it collapse into one
+        /// entry either way.
+        source: DeviceID? = nil,
+        timeZoneID: String? = nil
     ) async throws -> Result {
         let now = clock.now
         let timestamp = recordedAt ?? now
@@ -85,13 +91,13 @@ struct RecordWellnessCheckIn: Sendable {
         let checkIn = WellnessCheckIn(
             id: id,
             recordedAt: timestamp,
-            timeZoneID: clock.timeZone.identifier,
+            timeZoneID: timeZoneID ?? clock.timeZone.identifier,
             mood: mood,
             energy: energy,
             stress: stress,
             sleepQuality: sleepQuality,
             note: (trimmedNote?.isEmpty ?? true) ? nil : trimmedNote,
-            sourceDeviceID: deviceID,
+            sourceDeviceID: source ?? deviceID,
             actionKey: ActionKeyFactory.wellnessCheckIn(recordedAt: timestamp),
             createdAt: now
         )
@@ -206,6 +212,11 @@ struct ManageWellnessSession: Sendable {
     private let repository: any WellnessRepository
     private let summaryProvider: WellnessSummaryProvider
     private let audio: any AudioPlaying
+    /// Set after composition, because the Health integration and this use case
+    /// are built in the same pass and one of them has to come second. Optional
+    /// rather than a placeholder protocol: there is exactly one implementation,
+    /// and a second one would only exist to fill this gap.
+    private let health: ManageHealthIntegration?
     private let clock: any SunnieClock
     private let deviceID: DeviceID
 
@@ -213,12 +224,14 @@ struct ManageWellnessSession: Sendable {
         repository: any WellnessRepository,
         summaryProvider: WellnessSummaryProvider,
         audio: any AudioPlaying,
+        health: ManageHealthIntegration? = nil,
         clock: any SunnieClock,
         deviceID: DeviceID
     ) {
         self.repository = repository
         self.summaryProvider = summaryProvider
         self.audio = audio
+        self.health = health
         self.clock = clock
         self.deviceID = deviceID
     }
@@ -270,6 +283,13 @@ struct ManageWellnessSession: Sendable {
 
         if completion == .completed, let endCueID {
             await audio.playCue(endCueID)
+        }
+
+        // Mindful minutes, if the user turned that on (§3). Guarded inside, so a
+        // practice stopped early or a permission never granted writes nothing
+        // and says nothing about it.
+        if let sampleID = await health?.recordMindfulSession(updated) {
+            updated.healthKitSampleID = sampleID
         }
 
         await summaryProvider.invalidate()

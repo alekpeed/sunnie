@@ -42,8 +42,31 @@
 	<key>com.apple.developer.weatherkit</key>
 	<false/>
 
-	<!-- Added in Phase 9, when Health reads and writes are implemented. -->
+	<!--
+		HealthKit (HEALTH_WATCH_WIDGETS_AND_INTENTS.md §2, §3).
+
+		Inactive like the rest of this file. With no entitlement,
+		`HKHealthStore.isHealthDataAvailable()` is the guard every path already
+		checks: reads return absent values, writes return nil, and the Health
+		section of Settings says the device has no Health store. Nothing about
+		the app depends on it (§1).
+	-->
 	<key>com.apple.developer.healthkit</key>
 	<false/>
+	<key>com.apple.developer.healthkit-access</key>
+	<array/>
+
+	<!--
+		App Group, shared with the widget extension.
+
+		This is what lets the extension read the snapshot the app writes. The
+		identifier must match `WidgetSnapshotStore.appGroupIdentifier` and the
+		extension's own entitlements file exactly. Without it the app's write is
+		a no-op and the widgets show their "open Sunnie Days" state.
+	-->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.sunniedays.app</string>
+	</array>
 </dict>
 </plist>

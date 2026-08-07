@@ -1,31 +1,67 @@
 # Widgets
 
-Reserved for the WidgetKit extension and App Intents, delivered in Phase 9
-(`IMPLEMENTATION_ROADMAP.md`).
+The WidgetKit extension, built in Phase 9
+(`Documentation/06_Delivery/IMPLEMENTATION_ROADMAP.md`).
 
-No target exists yet. Phase 0 calls for iPhone, Watch, and test targets only, and
-the roadmap adds the widget extension "when implemented" — an empty extension
-target would be scaffolding with nothing behind it.
+```
+Widgets/
+├── SunnieWidgetBundle.swift   the bundle and the one shared timeline provider
+├── SunnieWidgets.swift        six widgets, plus their accessory families
+└── Resources/
+    ├── Info.plist
+    └── SunnieWidgets.entitlements   the App Group — inactive by default
+```
 
-## What is already in place
+## The extension reads a file, never the store (ADR-027)
 
-The foundation widgets need is built and tested:
+The app builds a `WidgetSnapshot` and writes it to the App Group container. The
+extension reads that and nothing else — no SwiftData, no migrations, no content
+packs.
 
-- `WatchDueTask` and `WatchApplicationContext` in the shared package are
-  platform-neutral `Codable` payload types. A widget timeline provider can use
-  them unchanged.
-- `AppRoute` and `DeepLinkParser` already resolve `sunniedays://` links, so a
-  widget tap resolves into the same typed route system as a notification or a
-  Watch handoff.
-- `PlantSummaryProvider` produces `PlantTodaySummary`, which is the shape a
-  plant-care widget would display.
+That is a memory and a reliability decision (an extension has a small budget and
+no way to report a crash), and a privacy one: `WidgetSnapshotPublisher` is the
+single place that decides what a widget may show, so §8's privacy rule is one
+reviewable function rather than a property of six timeline providers.
 
-## When adding the target
+**Do not add a store to this target.** If a widget needs something new, add it
+to the snapshot.
 
-- Widgets read through a repository or summary provider; they never query
-  SwiftData directly.
-- Sharing the store with the app needs an App Group, which means an entitlement
-  and an ADR update (see ADR-012 on why entitlements are currently inactive).
-- Every widget needs a placeholder and a redacted state.
-- Timeline entries respect the same time engine, so a widget shows the same
-  branded presentation as the app.
+## Without an App Group, widgets say so
+
+The App Group is an entitlement, and entitlements are inactive by default
+(ADR-012). With none configured:
+
+- `WidgetSnapshotStore` resolves no container.
+- The app's write is a no-op.
+- Every widget shows its "open Sunnie Days" state.
+
+That is the honest degraded behaviour, not a bug. To turn it on, see the four
+steps in `Config/Extension-Widgets.xcconfig`. The group identifier must match in
+three places — both entitlements files and
+`WidgetSnapshotStore.appGroupIdentifier` — and a mismatch is invisible and looks
+exactly like "the widget never updates".
+
+## The six widgets
+
+| Widget | Families | Shows |
+|---|---|---|
+| Today | small, medium | Day cycle, anything waiting |
+| Plants | small, medium, circular, inline | Due count, next plant's name |
+| Trip | small, medium, rectangular, inline | Countdown, destination clock |
+| Affirmation | small, medium, rectangular | One line from Sunnie |
+| Daily puzzle | small, inline | The day's puzzle, played or not |
+| Calm | small, circular, inline | A shortcut, and nothing about the user |
+
+The accessory families are what make four of these Smart Stack and complication
+surfaces (§10).
+
+## Lock-screen sensitivity
+
+A plant's name and a trip's title are the only user content these carry, and both
+are withheld when `redactionReasons` contains `.privacy`. Counts, day cycles, and
+affirmations stay — a number of plants tells a passer-by nothing, and an
+affirmation is content the app wrote.
+
+The Calm widget shows nothing about the user at all, which is why it is the right
+one for a lock screen: starting a breathing practice should not require unlocking
+a phone first.

@@ -8,6 +8,12 @@ import Foundation
 public enum WatchMessageKeys {
     public static let careAction = "sunnie.watch.careAction"
     public static let applicationContext = "sunnie.watch.applicationContext"
+    /// Any Watch-originated action, wrapped in a `WatchActionEnvelope`.
+    ///
+    /// Separate from `careAction`, which predates the envelope and is kept so a
+    /// Watch running the earlier build can still deliver a watering. Both keys
+    /// are handled on arrival; only this one is sent by current builds.
+    public static let action = "sunnie.watch.action"
 }
 
 /// Payload versioning for everything crossing the phone/Watch boundary.
@@ -77,6 +83,9 @@ public struct WatchApplicationContext: Hashable, Sendable, Codable {
     public let dayCyclePresentationKey: String
     /// A short, already-composed greeting. The Watch does no message selection.
     public let sunnieGreeting: String?
+    /// Check In, Calm, and Travel (§6). Optional so a Watch running the Phase 2
+    /// build decodes the rest of this context unchanged.
+    public let features: WatchFeatureContext?
 
     public init(
         payloadVersion: Int = WatchPayloadVersion.current,
@@ -84,7 +93,8 @@ public struct WatchApplicationContext: Hashable, Sendable, Codable {
         dueTasks: [WatchDueTask],
         totalActivePlants: Int,
         dayCyclePresentationKey: String,
-        sunnieGreeting: String?
+        sunnieGreeting: String?,
+        features: WatchFeatureContext? = nil
     ) {
         self.payloadVersion = payloadVersion
         self.generatedAt = generatedAt
@@ -92,6 +102,39 @@ public struct WatchApplicationContext: Hashable, Sendable, Codable {
         self.totalActivePlants = totalActivePlants
         self.dayCyclePresentationKey = dayCyclePresentationKey
         self.sunnieGreeting = sunnieGreeting
+        self.features = features
+    }
+
+    /// Decodes leniently, so a context written by a newer phone still yields the
+    /// parts this build understands.
+    ///
+    /// The same reasoning as `UserPreferences`: this crosses a version boundary,
+    /// and an all-or-nothing decode means a Watch that shows nothing rather than
+    /// a Watch that shows what it can.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        payloadVersion = (try? container.decode(Int.self, forKey: .payloadVersion))
+            ?? WatchPayloadVersion.current
+        generatedAt = try container.decode(Date.self, forKey: .generatedAt)
+        dueTasks = (try? container.decode([WatchDueTask].self, forKey: .dueTasks)) ?? []
+        totalActivePlants = (try? container.decode(Int.self, forKey: .totalActivePlants)) ?? 0
+        dayCyclePresentationKey = (try? container.decode(
+            String.self, forKey: .dayCyclePresentationKey
+        )) ?? DayCyclePresentation.sunnieDays.rawValue
+        sunnieGreeting = try? container.decodeIfPresent(String.self, forKey: .sunnieGreeting)
+        features = try? container.decodeIfPresent(
+            WatchFeatureContext.self, forKey: .features
+        )
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case payloadVersion
+        case generatedAt
+        case dueTasks
+        case totalActivePlants
+        case dayCyclePresentationKey
+        case sunnieGreeting
+        case features
     }
 
     /// Watch payloads should stay small; trim to the tasks that fit a glance.

@@ -42,6 +42,7 @@ final class AppDependencies {
     let mealRepository: any MealRepository
     let gameRepository: any GameRepository
     let homeRepository: any HomeRepository
+    let hydrationRepository: any HydrationRepository
 
     let progressionEngine: ProgressionEngine
     let summaryProvider: PlantSummaryProvider
@@ -55,6 +56,7 @@ final class AppDependencies {
     let weatherProvider: any WeatherProviding
     let calendarProvider: any CalendarProviding
     let haptics: HapticService
+    let healthService: any HealthProviding
 
     let logPlantCare: LogPlantCare
     let logBulkCare: LogBulkCare
@@ -71,6 +73,7 @@ final class AppDependencies {
     let playGame: PlayGame
     let manageCollection: ManageCollection
     let manageHome: ManageHome
+    let manageHealth: ManageHealthIntegration
     let recordWellnessCheckIn: RecordWellnessCheckIn
     let manageWellnessSession: ManageWellnessSession
     let manageJournalEntry: ManageJournalEntry
@@ -84,6 +87,7 @@ final class AppDependencies {
     // composition.
     @ObservationIgnored private(set) var watchSync: any WatchSyncing
     @ObservationIgnored private(set) var watchProcessor: WatchActionProcessor?
+    @ObservationIgnored private(set) var watchEnvelopeProcessor: WatchEnvelopeProcessor?
     @ObservationIgnored private var watchConnectivity: WatchConnectivityService?
 
     init(
@@ -119,6 +123,7 @@ final class AppDependencies {
         let meals = SwiftDataMealRepository(modelContainer: modelContainer)
         let gamesStore = SwiftDataGameRepository(modelContainer: modelContainer)
         let home = SwiftDataHomeRepository(modelContainer: modelContainer)
+        let hydration = SwiftDataHydrationRepository(modelContainer: modelContainer)
 
         self.plantRepository = plants
         self.careEventRepository = events
@@ -134,6 +139,7 @@ final class AppDependencies {
         self.mealRepository = meals
         self.gameRepository = gamesStore
         self.homeRepository = home
+        self.hydrationRepository = hydration
 
         self.progressionEngine = ProgressionEngine(repository: progression)
         self.summaryProvider = PlantSummaryProvider(
@@ -150,6 +156,15 @@ final class AppDependencies {
         self.weatherProvider = SunnieWeatherService()
         self.calendarProvider = SunnieCalendarService()
         self.haptics = HapticService()
+        // A real Health store on iOS, and the unavailable stand-in everywhere
+        // else — previews, tests, and any device with no Health at all. Every
+        // path already checks availability, so the two behave identically to
+        // callers (HEALTH_WATCH_WIDGETS_AND_INTENTS.md §1).
+        #if canImport(HealthKit) && !targetEnvironment(macCatalyst)
+        self.healthService = SunnieHealthService()
+        #else
+        self.healthService = UnavailableHealthService()
+        #endif
 
         self.reminderScheduler = ReminderScheduler(
             repository: reminders,
@@ -286,10 +301,20 @@ final class AppDependencies {
             deviceID: deviceID
         )
 
+        self.manageHealth = ManageHealthIntegration(
+            health: healthService,
+            hydrationRepository: hydration,
+            wellnessRepository: wellness,
+            preferencesRepository: preferences,
+            clock: clock,
+            deviceID: deviceID
+        )
+
         self.manageWellnessSession = ManageWellnessSession(
             repository: wellness,
             summaryProvider: wellnessSummaryProvider,
             audio: audioService,
+            health: manageHealth,
             clock: clock,
             deviceID: deviceID
         )
@@ -380,6 +405,27 @@ final class AppDependencies {
         // Idempotent, so running it on every launch costs nothing and missing it
         // costs a reward that silently never arrives.
         _ = await manageCollection.sweep()
+        // Mirrors anything logged while the Health permission was off. Bounded,
+        // and a no-op when the permission is still off.
+        await manageHealth.catchUpHealthWrites()
+        await publishWatchContext()
+        await publishWidgetSnapshot()
+    }
+
+    /// Rebuilds and sends the Watch snapshot.
+    ///
+    /// Exposed so the places that change what the Watch shows — logging care,
+    /// saving a trip, finishing a practice — can refresh it without each of them
+    /// knowing how a context is assembled.
+    func publishWatchContext() async {
+        await WatchContextPublisher(dependencies: self).publish()
+    }
+
+    /// Rebuilds and writes the widget snapshot, then reloads the timelines.
+    ///
+    /// Rate-limited inside, so calling it after every small change is fine.
+    func publishWidgetSnapshot(force: Bool = false) async {
+        await WidgetSnapshotPublisher(dependencies: self).publish(force: force)
     }
 
     /// Convenience initializer for previews and tests: a fresh in-memory store
@@ -406,8 +452,19 @@ final class AppDependencies {
         )
         self.watchProcessor = processor
 
+        let envelopeProcessor = WatchEnvelopeProcessor(
+            recordCheckIn: recordWellnessCheckIn,
+            wellnessRepository: wellnessRepository,
+            travelRepository: travelRepository,
+            health: manageHealth,
+            clock: clock
+        )
+        self.watchEnvelopeProcessor = envelopeProcessor
+
         let connectivity = WatchConnectivityService { payload in
             await processor.receive(payload)
+        } onAction: { envelope in
+            await envelopeProcessor.receive(envelope)
         }
         self.watchConnectivity = connectivity
         self.watchSync = connectivity

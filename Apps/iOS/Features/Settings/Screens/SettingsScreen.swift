@@ -12,6 +12,7 @@ struct SettingsScreen: View {
     @Environment(\.sunnieTheme) private var theme
 
     @State private var notificationStatus: NotificationAuthorization = .notDetermined
+    @State private var enabledHealthTypes: Set<HealthDataType> = []
     @State private var isExporting = false
     @State private var exportedFiles: [URL] = []
 
@@ -24,6 +25,7 @@ struct SettingsScreen: View {
             reminderCadenceSection
             quietHoursSection
             dietarySection
+            healthSection
             rhythmSection
             exportSection
             privacySection
@@ -33,6 +35,7 @@ struct SettingsScreen: View {
         .navigationTitle(Text("more.settings", bundle: .main))
         .task {
             notificationStatus = await dependencies.notificationService.authorizationStatus()
+            enabledHealthTypes = await dependencies.manageHealth.enabledTypes()
         }
     }
 
@@ -356,6 +359,60 @@ struct SettingsScreen: View {
             Text("settings.section.food", bundle: .main)
         } footer: {
             Text("settings.food.footer", bundle: .main)
+        }
+    }
+
+    /// Health, one type at a time (HEALTH_WATCH_WIDGETS_AND_INTENTS.md §1, §2).
+    ///
+    /// A switch per type rather than one Health switch, because §1 says request
+    /// the minimum necessary and the minimum is different for everyone. Each row
+    /// carries its own reason, so the reason is visible at the moment of the
+    /// decision rather than in a privacy page nobody opens.
+    ///
+    /// Turning a row on asks the system for exactly that type. Turning it off
+    /// changes only the app's own preference — there is no API to hand a
+    /// permission back, and the footer says where the real switch is rather than
+    /// implying this one does it (§12).
+    @ViewBuilder
+    private var healthSection: some View {
+        Section {
+            if dependencies.manageHealth.isAvailable {
+                ForEach(HealthDataType.allCases, id: \.self) { type in
+                    healthRow(type)
+                }
+            } else {
+                Text("settings.health.unavailable", bundle: .main)
+                    .font(SunnieFont.secondary)
+                    .foregroundStyle(theme.color.textSecondary)
+            }
+        } header: {
+            Text("settings.section.health", bundle: .main)
+        } footer: {
+            Text("settings.health.footer", bundle: .main)
+        }
+    }
+
+    private func healthRow(_ type: HealthDataType) -> some View {
+        VStack(alignment: .leading, spacing: Space.xxs) {
+            Toggle(
+                String(localized: .init(type.localizationKey)),
+                isOn: Binding(
+                    get: { enabledHealthTypes.contains(type) },
+                    set: { isOn in
+                        Task {
+                            if isOn {
+                                await dependencies.manageHealth.enable(type)
+                            } else {
+                                await dependencies.manageHealth.disable(type)
+                            }
+                            enabledHealthTypes = await dependencies.manageHealth.enabledTypes()
+                        }
+                    }
+                )
+            )
+            Text(LocalizedStringKey(type.reasonKey))
+                .font(SunnieFont.caption)
+                .foregroundStyle(theme.color.textSecondary)
         }
     }
 

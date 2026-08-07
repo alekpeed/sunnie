@@ -1252,3 +1252,91 @@
 
 /* Collection — content pack */
 "content.pack.collection.core" = "Sunnie's things";
+
+/* ===== Health, Watch, widgets, intents (Phase 9) ===== */
+
+/* Health — types */
+"health.type.stepCount" = "Steps";
+"health.type.sleepAnalysis" = "Sleep";
+"health.type.heartRate" = "Heart rate";
+"health.type.restingHeartRate" = "Resting heart rate";
+"health.type.workouts" = "Workouts";
+"health.type.activeEnergy" = "Active energy";
+"health.type.standTime" = "Standing";
+"health.type.mindfulSession" = "Mindful minutes";
+"health.type.dietaryWater" = "Water";
+
+/* Health — why the app would ask. Shown beside each switch. */
+"health.reason.stepCount" = "So Sunnie can mention how much you moved. Nothing is compared to a target.";
+"health.reason.sleepAnalysis" = "So Sunnie can say what Health recorded, if you'd like to see it here.";
+"health.reason.heartRate" = "Shown as a number and nothing more. Sunnie draws no conclusions from it.";
+"health.reason.restingHeartRate" = "Shown as a number and nothing more. Sunnie draws no conclusions from it.";
+"health.reason.workouts" = "So a day with a workout in it can say so.";
+"health.reason.activeEnergy" = "Shown as a number, with no goal attached.";
+"health.reason.standTime" = "Shown as a number, with no goal attached.";
+"health.reason.mindfulSession" = "So a breathing practice or meditation you finish here is saved to Health.";
+"health.reason.dietaryWater" = "So water you log here is saved to Health too. It's kept here either way.";
+
+/* Health — authorization */
+"health.authorization.notDetermined" = "Not asked yet";
+"health.authorization.sharingAuthorized" = "On";
+"health.authorization.sharingDenied" = "Off in Health";
+"health.authorization.unavailable" = "Not available on this device";
+
+/* Health — how complete a reading is */
+"health.coverage.complete" = "";
+"health.coverage.inProgress" = "";
+"health.coverage.partial" = "";
+"health.coverage.none" = "";
+"health.caveat.inProgress" = "so far today";
+"health.caveat.partial" = "from part of the day";
+
+/* Health — units */
+"health.unit.steps" = "steps";
+"health.unit.hours" = "hours";
+"health.unit.bpm" = "bpm";
+"health.unit.workouts" = "workouts";
+"health.unit.kilocalories" = "kcal";
+"health.unit.minutes" = "minutes";
+"health.unit.millilitres" = "ml";
+
+/* Health — settings */
+"settings.section.health" = "Health";
+"settings.health.footer" = "Each of these is asked for on its own, and only when you turn it on. Turning one off here stops Sunnie asking for it — to take the permission back, use the Health app. Sunnie shows what Health recorded and nothing else: no targets, no comparisons, and nothing about what any of it means.";
+"settings.health.unavailable" = "This device doesn't have Health.";
+"settings.health.systemNote" = "Reading is granted in Health rather than here, and Health doesn't tell apps when a read was declined. If something you turned on shows nothing, that's why.";
+
+/* Hydration */
+"hydration.title" = "Water";
+"hydration.today" = "%d ml today";
+"hydration.log" = "%d ml";
+"hydration.note" = "Kept here whether or not it goes to Health.";
+
+/* Watch destinations */
+"watch.destination.today" = "Today";
+"watch.destination.checkIn" = "Check in";
+"watch.destination.plants" = "Plants";
+"watch.destination.calm" = "Calm";
+"watch.destination.travel" = "Travel";
+
+/* Widgets */
+"widget.today.name" = "Today";
+"widget.today.description" = "The time of day, and anything waiting.";
+"widget.today.settled" = "Nothing waiting.";
+"widget.plants.name" = "Plants";
+"widget.plants.description" = "How many plants could use something.";
+"widget.plants.none" = "All settled.";
+"widget.trip.name" = "Trip";
+"widget.trip.description" = "A countdown, and the time where you're going.";
+"widget.trip.days" = "days to go";
+"widget.trip.none" = "No trip planned.";
+"widget.affirmation.name" = "A line from Sunnie";
+"widget.affirmation.description" = "One affirmation, changed through the day.";
+"widget.puzzle.name" = "Today's puzzle";
+"widget.puzzle.description" = "The day's puzzle, and whether it's been played.";
+"widget.puzzle.done" = "Played";
+"widget.puzzle.none" = "No puzzle today.";
+"widget.calm.name" = "Breathe";
+"widget.calm.description" = "Opens a breathing practice.";
+"widget.headline.plants" = "waiting";
+"widget.noData" = "Open Sunnie Days once to fill this in.";

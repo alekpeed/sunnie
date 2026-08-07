@@ -928,3 +928,181 @@ extra geometry, and the snap targets are just slots that the user cannot see.
 S-22. `CollectionsTests.placementRulesRefuseSpecifically`,
 `CollectionContentTests.everythingPlaceableHasASlot`,
 `CollectionFlowTests.slotsHoldOneThing`.
+
+## ADR-026: Health is asked for one type at a time, and read denial is never claimed
+
+**Status:** accepted (Phase 9)
+
+### Context
+
+HEALTH_WATCH_WIDGETS_AND_INTENTS.md §1 says request the minimum necessary and
+§2 ends with "do not request every type merely because it exists". The path of
+least resistance is one "Enable Health" switch that asks for everything the app
+might ever want, which is the opposite of both.
+
+There is also an asymmetry in HealthKit that shapes the whole design: **the
+system does not report read denial.** A denied read returns no data, exactly
+like a day with no data. There is no API that distinguishes them, by design —
+telling an app that a read was refused would itself leak that the user has that
+data type.
+
+### Decision
+
+Two rules, both structural rather than conventional.
+
+**Per type.** `HealthDataType` is granular and `requestAuthorization(read:write:)`
+passes exactly the sets it is given. There is no call anywhere that asks for
+everything, and Settings shows one switch per type with its own reason beside it.
+The app writes only two types — mindful sessions and dietary water — and both
+only after a completed user action.
+
+**Read authorization is not exposed.** `HealthProviding.authorization(for:)`
+returns `.notDetermined` for every read-only type, and the doc comment says why.
+No screen can claim "denied" for a read, because nothing can know it. The
+Settings footer says plainly that a type showing nothing may mean a declined
+read, and that the real switch is in the Health app.
+
+The app's own preference records *what it asked for*, not what it was granted.
+Those are different facts and only one of them is knowable.
+
+### Consequences
+
+- A user can have mindful minutes written without handing over their heart rate.
+- Turning a switch off changes only the app's preference. The copy says so
+  rather than implying the app can hand a permission back, because it cannot.
+- Nothing re-prompts. iOS will not show the sheet twice, so a button that
+  appeared to ask again would silently do nothing — which is worse than no
+  button (§12).
+- Hydration is stored locally *and* mirrored to Health rather than living in
+  Health, so the feature works for someone who declined (§1). A catch-up pass
+  mirrors earlier entries if the permission arrives later, keyed so nothing is
+  written twice.
+
+### Alternatives considered
+
+**One Health switch.** Rejected: it is precisely what §2's last line forbids.
+
+**Track granted-vs-requested per type.** Rejected because the granted set is
+unknowable for reads. A field claiming to hold it would be wrong, and every
+screen reading that field would be wrong with it.
+
+### Documents/tests affected
+
+`HEALTH_WATCH_WIDGETS_AND_INTENTS.md` §1–§4, §12.
+`HealthAndIntegrationTests` — the absence-is-not-zero, in-progress-caveat, and
+unavailable-service suites. `IntegrationFlowTests` — hydration without Health,
+and the mindful-write guards.
+
+## ADR-027: Widgets read a snapshot file, never the store
+
+**Status:** accepted (Phase 9)
+
+### Context
+
+A widget extension needs the app's data. The obvious approach is to open the
+same SwiftData store from the extension through a shared App Group container.
+
+Three problems with that, in increasing order of seriousness. An extension has a
+small memory budget and a large `ModelContainer` is a real fraction of it. A
+migration could run in the extension, at an arbitrary moment, with no UI and no
+way to report failure. And a widget that crashes is a blank rectangle on
+someone's home screen that gives no indication anything is wrong.
+
+There is also a privacy question the store cannot answer: §8 requires widgets to
+show only privacy-appropriate content, and a widget with the whole store in
+scope has every journal entry and every check-in in reach.
+
+### Decision
+
+The app builds a `WidgetSnapshot` — a small, already-filtered `Codable` value —
+and writes it as JSON to the App Group container. The extension reads that file
+and nothing else. It never opens SwiftData, never runs a migration, and never
+resolves a content pack.
+
+`WidgetSnapshotPublisher` is the single place that decides what a widget may
+show, which makes the §8 privacy rule one reviewable function rather than a
+property of six timeline providers.
+
+### Consequences
+
+- What is in a widget is auditable by reading one file. The test asserts a
+  plant's private note does not appear in the encoded snapshot.
+- The App Group is an entitlement, and entitlements are inactive by default
+  (ADR-012). With none configured `WidgetSnapshotStore` resolves no container,
+  the write is a no-op, and every widget shows an "open Sunnie Days" state —
+  degraded honestly rather than blank.
+- A snapshot written by a newer app is ignored rather than half-read, because
+  the two halves are not always updated in the same instant.
+- The snapshot is one refresh stale between publishes. Acceptable: the app
+  republishes on meaningful change, and a plant count that is a minute old has
+  never hurt anyone.
+
+### Alternatives considered
+
+**Open the store from the extension.** Rejected for the migration and memory
+risks, and because it puts everything in scope.
+
+**`UserDefaults` in the App Group.** Rejected: the snapshot is a document,
+defaults is not a database, and a corrupt defaults plist is a far worse failure
+than a file that can simply be ignored.
+
+### Documents/tests affected
+
+`HEALTH_WATCH_WIDGETS_AND_INTENTS.md` §8, §10.
+`HealthAndIntegrationTests` — the store round trip, the no-container case, and
+the newer-payload case. `IntegrationFlowTests` — the snapshot privacy assertion.
+
+## ADR-028: Every Watch action travels in one envelope
+
+**Status:** accepted (Phase 9)
+
+### Context
+
+Phase 2 shipped one Watch action — plant care — as a bare `WatchCareActionPayload`
+under its own message key. Phase 9 adds four more: check-ins, finished practices,
+ticked checklist items, and hydration.
+
+Five keys and five decode attempts per delivery would mean the phone cannot tell
+"a payload I do not recognise" from "a payload that failed to decode", and a
+Watch running a newer build than the phone produces exactly the first case.
+
+### Decision
+
+Everything the wrist sends is wrapped in a `WatchActionEnvelope` carrying the
+five fields §7 requires — stable action ID, kind, timestamp, source device, and
+payload version — with the body as opaque `Data`.
+
+The phone routes on `kind` without decoding the body. An unknown kind is
+recognisably unknown and is logged rather than treated as corruption.
+
+The Phase 2 key is still handled on arrival. A Watch on the older build may have
+a queued transfer that arrives after the phone updated, and that watering must
+still be recorded.
+
+### Consequences
+
+- Every action's key is generated on the wrist at the moment of the tap and
+  travels with it, which is what makes §7's "phone processing is idempotent"
+  true: a redelivered transfer resolves to the record that already exists.
+- The wrist's own key must survive the trip. `logWater` and the check-in use
+  case both accept an explicit key and source for this reason — regenerating one
+  from the phone's clock would produce a different key and a duplicate entry.
+- The envelope's coder is declared once in the shared package, because it is
+  encoded on one device and decoded on another, and two independently configured
+  coders that disagree about dates would produce transfers that arrive and cannot
+  be read.
+
+### Alternatives considered
+
+**A key per action kind.** Rejected for the reason above.
+
+**One `enum` payload with associated values.** Rejected: it would fail to decode
+entirely when a newer build adds a case, which is precisely the case the
+envelope exists to survive.
+
+### Documents/tests affected
+
+`HEALTH_WATCH_WIDGETS_AND_INTENTS.md` §6, §7, §11.
+`HealthAndIntegrationTests` — the envelope round trip, the unknown-kind case, and
+the lenient context decode. `IntegrationFlowTests` — idempotency for all four
+new actions through a real store.

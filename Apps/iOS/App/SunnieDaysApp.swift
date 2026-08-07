@@ -55,6 +55,10 @@ struct SunnieDaysApp: App {
                     await SampleData.seedIfNeeded(dependencies: dependencies)
                     await dependencies.processPendingWatchActions()
                     await dependencies.performLaunchHousekeeping()
+                    // A shortcut that launched the app left its destination
+                    // behind; the app navigates rather than the intent, because
+                    // they are separate processes.
+                    if let route = IntentRouteBox.take() { router.handle(route) }
                 }
                 .onOpenURL { url in
                     router.handle(url: url)
@@ -65,7 +69,12 @@ struct SunnieDaysApp: App {
             // Returning to the foreground may cross a phase boundary or bring
             // actions the Watch queued while the app was away.
             appState.refreshTimeContext()
-            Task { await dependencies.processPendingWatchActions() }
+            if let route = IntentRouteBox.take() { router.handle(route) }
+            Task {
+                await dependencies.processPendingWatchActions()
+                await dependencies.publishWatchContext()
+                await dependencies.publishWidgetSnapshot()
+            }
         }
     }
 }

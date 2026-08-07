@@ -1,0 +1,36 @@
+// WidgetKit extension target.
+
+PRODUCT_NAME = SunnieWidgets
+PRODUCT_BUNDLE_IDENTIFIER = $(SUNNIE_BUNDLE_ID_PREFIX).app.widgets
+PRODUCT_MODULE_NAME = SunnieWidgets
+
+SDKROOT = iphoneos
+TARGETED_DEVICE_FAMILY = 1
+SUPPORTED_PLATFORMS = iphoneos iphonesimulator
+
+INFOPLIST_FILE = Apps/Widgets/Resources/Info.plist
+GENERATE_INFOPLIST_FILE = NO
+
+SWIFT_EMIT_LOC_STRINGS = YES
+ENABLE_PREVIEWS = YES
+SKIP_INSTALL = YES
+
+// An extension links against the app's frameworks, one level up from its own
+// bundle.
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/Frameworks @executable_path/../../Frameworks
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENTITLEMENTS ARE OFF BY DEFAULT, as everywhere else (ADR-012).
+//
+// This target's entitlement is the App Group, which is what lets the extension
+// read the snapshot the app writes. Without it `WidgetSnapshotStore` resolves no
+// container, the app's write is a no-op, and every widget shows its "open
+// Sunnie Days" state — which is honest rather than broken.
+//
+// To enable widgets with live data:
+//   1. Set SUNNIE_DEVELOPMENT_TEAM in Shared.xcconfig.
+//   2. Register the group in the developer portal and update the identifier in
+//      both entitlements files and in WidgetSnapshotStore.appGroupIdentifier.
+//   3. Uncomment the line below and the matching one in App-iOS.xcconfig.
+// ─────────────────────────────────────────────────────────────────────────────
+// CODE_SIGN_ENTITLEMENTS = Apps/Widgets/Resources/SunnieWidgets.entitlements

@@ -393,6 +393,14 @@ actor SwiftDataTravelRepository: TravelRepository {
         }
     }
 
+    func checklistItem(id: UUID) async throws -> ChecklistItem? {
+        var descriptor = FetchDescriptor<SDChecklistItem>(
+            predicate: #Predicate<SDChecklistItem> { $0.id == id }
+        )
+        descriptor.fetchLimit = 1
+        return try modelContext.fetch(descriptor).first.map { ModelMapping.domain($0) }
+    }
+
     func save(_ item: ChecklistItem) async throws {
         let id = item.id
         var descriptor = FetchDescriptor<SDChecklistItem>(

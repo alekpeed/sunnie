@@ -124,6 +124,18 @@ public struct UserPreferences: Hashable, Sendable, Codable {
     /// metrics"). On by default because it is a warm number, and turn-off-able
     /// because for some people any number becomes a target.
     public var showsRhythm: Bool
+    /// Health types the user has asked the app to use, as
+    /// `HealthDataType` raw values.
+    ///
+    /// Stored as strings rather than a typed set so a future type needs no
+    /// migration, and empty by default: every integration is optional and
+    /// nothing is requested until someone asks for it
+    /// (HEALTH_WATCH_WIDGETS_AND_INTENTS.md §1).
+    ///
+    /// This records what the app *asked for*, not what it was granted. HealthKit
+    /// does not report read denial, so the granted set is unknowable and any
+    /// field claiming to hold it would be wrong (§12).
+    public var healthTypeKeys: [String]
 
     public static let `default` = UserPreferences(
         activeThemeID: ThemeCatalog.lushTropicalJungleID,
@@ -139,7 +151,8 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         reminderLevels: [:],
         favoriteCalmSoundIDs: [],
         calmSoundTimerMinutes: nil,
-        showsRhythm: true
+        showsRhythm: true,
+        healthTypeKeys: []
     )
 
     public init(
@@ -156,7 +169,8 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         reminderLevels: [String: Int] = [:],
         favoriteCalmSoundIDs: [ContentID] = [],
         calmSoundTimerMinutes: Int? = nil,
-        showsRhythm: Bool = true
+        showsRhythm: Bool = true,
+        healthTypeKeys: [String] = []
     ) {
         self.activeThemeID = activeThemeID
         self.automaticDayCycle = automaticDayCycle
@@ -172,6 +186,7 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         self.favoriteCalmSoundIDs = favoriteCalmSoundIDs
         self.calmSoundTimerMinutes = calmSoundTimerMinutes
         self.showsRhythm = showsRhythm
+        self.healthTypeKeys = healthTypeKeys
     }
 
     /// The cadence the user chose for a category. Disabled unless they said otherwise.
@@ -229,6 +244,7 @@ public struct UserPreferences: Hashable, Sendable, Codable {
             Int.self, forKey: .calmSoundTimerMinutes
         )
         showsRhythm = value(.showsRhythm, fallback.showsRhythm)
+        healthTypeKeys = value(.healthTypeKeys, fallback.healthTypeKeys)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -245,6 +261,7 @@ public struct UserPreferences: Hashable, Sendable, Codable {
         case reminderLevels
         case favoriteCalmSoundIDs
         case showsRhythm
+        case healthTypeKeys
         case calmSoundTimerMinutes
     }
 }

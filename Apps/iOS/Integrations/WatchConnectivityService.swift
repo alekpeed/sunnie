@@ -18,6 +18,9 @@ final class WatchConnectivityService: NSObject, WatchSyncing, @unchecked Sendabl
 
     private let log = SunnieLog(category: .watch)
     private let onCareAction: @Sendable (WatchCareActionPayload) async -> Void
+    /// Everything the Watch sends in the Phase 9 envelope: check-ins, finished
+    /// practices, ticked checklist items, hydration.
+    private let onAction: @Sendable (WatchActionEnvelope) async -> Void
 
     #if canImport(WatchConnectivity)
     private var session: WCSession? {
@@ -25,8 +28,12 @@ final class WatchConnectivityService: NSObject, WatchSyncing, @unchecked Sendabl
     }
     #endif
 
-    init(onCareAction: @escaping @Sendable (WatchCareActionPayload) async -> Void) {
+    init(
+        onCareAction: @escaping @Sendable (WatchCareActionPayload) async -> Void,
+        onAction: @escaping @Sendable (WatchActionEnvelope) async -> Void = { _ in }
+    ) {
         self.onCareAction = onCareAction
+        self.onAction = onAction
         super.init()
     }
 
@@ -119,8 +126,38 @@ extension WatchConnectivityService: WCSessionDelegate {
         handle(userInfo)
     }
 
+    /// Routes one delivery.
+    ///
+    /// Both keys are handled: the envelope is what current builds send, and the
+    /// bare care action is what a Watch still on the Phase 2 build sends. A
+    /// transfer queued by that older Watch and delivered after the phone updated
+    /// must still water the plant.
     private func handle(_ payload: [String: Any]) {
-        guard let data = payload[WatchMessageKeys.careAction] as? Data else { return }
+        if let data = payload[WatchMessageKeys.action] as? Data {
+            handleEnvelope(data)
+        }
+        if let data = payload[WatchMessageKeys.careAction] as? Data {
+            handleLegacyCareAction(data)
+        }
+    }
+
+    private func handleEnvelope(_ data: Data) {
+        guard let envelope = try? WatchActionEnvelope.coder.decoder.decode(
+            WatchActionEnvelope.self, from: data
+        ) else {
+            log.debug("Received a Watch envelope this build cannot decode; ignoring it.")
+            return
+        }
+        guard envelope.isReadable else {
+            log.info("Received a Watch envelope from a newer build; ignoring it.")
+            return
+        }
+
+        let handler = onAction
+        Task { await handler(envelope) }
+    }
+
+    private func handleLegacyCareAction(_ data: Data) {
         guard let action = try? JSONDecoder().decode(
             WatchCareActionPayload.self, from: data
         ) else {

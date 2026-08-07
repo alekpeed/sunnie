@@ -13,6 +13,8 @@ struct WellnessScreen: View {
     @Environment(\.sunnieTheme) private var theme
 
     @State private var model: WellnessModel?
+    @State private var hydrationToday = 0
+    @State private var healthDescriptors: [HealthPhrasing.Descriptor] = []
 
     var body: some View {
         ScrollView {
@@ -25,6 +27,8 @@ struct WellnessScreen: View {
                 affirmationCard
                 practicesCard
                 calmSoundsCard
+                hydrationCard
+                if !healthDescriptors.isEmpty { healthCard }
                 historyCard
             }
             .padding(Space.m)
@@ -37,6 +41,7 @@ struct WellnessScreen: View {
                 model = WellnessModel(dependencies: dependencies, appState: appState)
             }
             await model?.onAppear()
+            await refreshHealth()
         }
         .onDisappear {
             Task { await model?.onDisappear() }
@@ -71,6 +76,95 @@ struct WellnessScreen: View {
 
     /// Sunnie's reply, plus at most one optional next step. Always dismissible
     /// straight away (WELLNESS_JOURNAL_AND_CALM.md §3).
+    private func refreshHealth() async {
+        hydrationToday = await dependencies.manageHealth.todayHydration()
+        healthDescriptors = await dependencies.manageHealth.todayDescriptors()
+    }
+
+    /// Hydration (HEALTH_WATCH_WIDGETS_AND_INTENTS.md §3).
+    ///
+    /// Three round amounts and a running total. No goal, no ring, and no
+    /// remaining-to-target: the app records what someone drank, and has no view
+    /// about whether it was enough.
+    private var hydrationCard: some View {
+        SunnieCard {
+            SectionHeader(
+                title: String(localized: "hydration.title", defaultValue: "Water", comment: "Hydration heading"),
+                subtitle: String(
+                    format: String(
+                        localized: "hydration.today",
+                        defaultValue: "%d ml today",
+                        comment: "Water logged today"
+                    ),
+                    hydrationToday
+                )
+            )
+
+            HStack(spacing: Space.xs) {
+                ForEach(HydrationLog.quickAmounts, id: \.self) { amount in
+                    SunnieSecondaryButton(
+                        title: String(
+                            format: String(
+                                localized: "hydration.log",
+                                defaultValue: "%d ml",
+                                comment: "Logs a quantity of water"
+                            ),
+                            amount
+                        )
+                    ) {
+                        Task {
+                            _ = try? await dependencies.manageHealth.logWater(millilitres: amount)
+                            await refreshHealth()
+                        }
+                    }
+                }
+            }
+
+            Text("hydration.note", bundle: .main)
+                .font(SunnieFont.caption)
+                .foregroundStyle(theme.color.textSecondary)
+        }
+    }
+
+    /// What Health recorded, said as plainly as §4 allows.
+    ///
+    /// Each line is a number and a noun, built by `HealthPhrasing` — which has no
+    /// way to express a target, a comparison, or a conclusion. The caveat, when
+    /// there is one, says the window is still open rather than presenting a
+    /// partial day as a whole one.
+    private var healthCard: some View {
+        SunnieCard {
+            SectionHeader(title: String(
+                localized: "settings.section.health",
+                defaultValue: "Health",
+                comment: "Health section heading"
+            ))
+
+            ForEach(healthDescriptors, id: \.type) { descriptor in
+                HStack {
+                    Text(LocalizedStringKey(descriptor.type.localizationKey))
+                        .font(SunnieFont.secondary)
+                        .foregroundStyle(theme.color.textSecondary)
+                    Spacer()
+                    HStack(spacing: Space.xxs) {
+                        Text(descriptor.formattedValue)
+                            .font(SunnieFont.numeric)
+                            .foregroundStyle(theme.color.textPrimary)
+                        Text(LocalizedStringKey(descriptor.unitKey))
+                            .font(SunnieFont.caption)
+                            .foregroundStyle(theme.color.textSecondary)
+                        if let caveatKey = descriptor.caveatKey {
+                            Text(LocalizedStringKey(caveatKey))
+                                .font(SunnieFont.caption)
+                                .foregroundStyle(theme.color.textSecondary)
+                        }
+                    }
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+    }
+
     private func acknowledgementCard(_ message: SunnieMessage) -> some View {
         SunnieCard {
             SunnieMessageView(message: message, presence: .medium)

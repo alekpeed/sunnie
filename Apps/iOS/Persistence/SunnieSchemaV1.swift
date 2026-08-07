@@ -413,14 +413,15 @@ enum SunnieMigrationPlan: SchemaMigrationPlan {
             SunnieSchemaV4.self,
             SunnieSchemaV5.self,
             SunnieSchemaV6.self,
-            SunnieSchemaV7.self
+            SunnieSchemaV7.self,
+            SunnieSchemaV8.self
         ]
     }
 
     static var stages: [MigrationStage] {
         [
-            migrateV1toV2, migrateV2toV3, migrateV3toV4,
-            migrateV4toV5, migrateV5toV6, migrateV6toV7
+            migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5,
+            migrateV5toV6, migrateV6toV7, migrateV7toV8
         ]
     }
 
@@ -472,10 +473,18 @@ enum SunnieMigrationPlan: SchemaMigrationPlan {
         fromVersion: SunnieSchemaV6.self,
         toVersion: SunnieSchemaV7.self
     )
+
+    /// Additive: hydration logs are a new model. Mindful minutes needed nothing —
+    /// `SDWellnessSession` has carried `healthKitSampleID` since V2, which is
+    /// what lets Phase 9 start writing them without touching an existing shape.
+    static let migrateV7toV8 = MigrationStage.lightweight(
+        fromVersion: SunnieSchemaV7.self,
+        toVersion: SunnieSchemaV8.self
+    )
 }
 
 /// The version the app currently opens stores at.
 ///
 /// Referenced in one place so bumping the schema is a single edit rather than a
 /// search for every `Schema(versionedSchema:)` call site.
-typealias SunnieCurrentSchema = SunnieSchemaV7
+typealias SunnieCurrentSchema = SunnieSchemaV8

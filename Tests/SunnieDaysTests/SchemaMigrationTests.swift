@@ -199,7 +199,8 @@ struct SchemaMigrationTests {
             Schema.Version(4, 0, 0),
             Schema.Version(5, 0, 0),
             Schema.Version(6, 0, 0),
-            Schema.Version(7, 0, 0)
+            Schema.Version(7, 0, 0),
+            Schema.Version(8, 0, 0)
         ])
         // One stage fewer than versions, always. A missing stage means a store
         // that cannot be opened at all.
@@ -218,7 +219,8 @@ struct SchemaMigrationTests {
             ("V4", SunnieSchemaV4.models),
             ("V5", SunnieSchemaV5.models),
             ("V6", SunnieSchemaV6.models),
-            ("V7", SunnieSchemaV7.models)
+            ("V7", SunnieSchemaV7.models),
+            ("V8", SunnieSchemaV8.models)
         ].map { ($0.0, Set($0.1.map { String(describing: $0) })) }
 
         for (previous, next) in zip(versions, versions.dropFirst()) {

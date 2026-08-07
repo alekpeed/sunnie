@@ -11,6 +11,8 @@
 		5D00000000000000000000B2 /* SunnieShared in Frameworks */ = {isa = PBXBuildFile; productRef = 5D00000000000000000000E2 /* SunnieShared */; };
 		5D00000000000000000000B3 /* SunnieShared in Frameworks */ = {isa = PBXBuildFile; productRef = 5D00000000000000000000E3 /* SunnieShared */; };
 		5D00000000000000000000B4 /* SunnieDaysWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 5D00000000000000000000C2 /* SunnieDaysWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5D00000000000000000000B5 /* SunnieShared in Frameworks */ = {isa = PBXBuildFile; productRef = 5D00000000000000000000E5 /* SunnieShared */; };
+		5D00000000000000000000B6 /* SunnieWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5D00000000000000000000C5 /* SunnieWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,6 +37,13 @@
 			remoteGlobalIDString = 5D0000000000000000000101;
 			remoteInfo = SunnieDays;
 		};
+		5D00000000000000000000F4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5D00000000000000000000A1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5D0000000000000000000105;
+			remoteInfo = SunnieWidgets;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -49,6 +58,17 @@
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5D0000000000000000000152 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				5D00000000000000000000B6 /* SunnieWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +76,8 @@
 		5D00000000000000000000C2 /* SunnieDaysWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SunnieDaysWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D00000000000000000000C3 /* SunnieDaysTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SunnieDaysTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D00000000000000000000C4 /* SunnieDaysUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SunnieDaysUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D00000000000000000000C5 /* SunnieWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SunnieWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D00000000000000000000DB /* Extension-Widgets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Extension-Widgets.xcconfig"; sourceTree = "<group>"; };
 		5D00000000000000000000D1 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
 		5D00000000000000000000D2 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		5D00000000000000000000D3 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
@@ -84,6 +106,15 @@
 			);
 			target = 5D0000000000000000000102 /* SunnieDaysWatch */;
 		};
+		5D0000000000000000000123 /* Exceptions for "Widgets" folder in "SunnieWidgets" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				README.md,
+				Resources/Info.plist,
+				Resources/SunnieWidgets.entitlements,
+			);
+			target = 5D0000000000000000000105 /* SunnieWidgets */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -101,6 +132,14 @@
 				5D0000000000000000000122 /* Exceptions for "Watch" folder in "SunnieDaysWatch" target */,
 			);
 			path = Watch;
+			sourceTree = "<group>";
+		};
+		5D0000000000000000000115 /* Widgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5D0000000000000000000123 /* Exceptions for "Widgets" folder in "SunnieWidgets" target */,
+			);
+			path = Widgets;
 			sourceTree = "<group>";
 		};
 		5D0000000000000000000113 /* SunnieDaysTests */ = {
@@ -147,6 +186,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5D0000000000000000000145 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5D00000000000000000000B5 /* SunnieShared in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -170,6 +217,7 @@
 				5D00000000000000000000C2 /* SunnieDaysWatch.app */,
 				5D00000000000000000000C3 /* SunnieDaysTests.xctest */,
 				5D00000000000000000000C4 /* SunnieDaysUITests.xctest */,
+				5D00000000000000000000C5 /* SunnieWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -182,6 +230,7 @@
 				5D00000000000000000000D3 /* Release.xcconfig */,
 				5D00000000000000000000D4 /* App-iOS.xcconfig */,
 				5D00000000000000000000D5 /* App-Watch.xcconfig */,
+				5D00000000000000000000DB /* Extension-Widgets.xcconfig */,
 				5D00000000000000000000D6 /* Tests-Unit.xcconfig */,
 				5D00000000000000000000D7 /* Tests-UI.xcconfig */,
 			);
@@ -193,6 +242,7 @@
 			children = (
 				5D0000000000000000000111 /* iOS */,
 				5D0000000000000000000112 /* Watch */,
+				5D0000000000000000000115 /* Widgets */,
 			);
 			path = Apps;
 			sourceTree = "<group>";
@@ -217,11 +267,13 @@
 				5D0000000000000000000141 /* Frameworks */,
 				5D0000000000000000000161 /* Resources */,
 				5D0000000000000000000151 /* Embed Watch Content */,
+				5D0000000000000000000152 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				5D0000000000000000000181 /* PBXTargetDependency */,
+				5D0000000000000000000184 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				5D0000000000000000000111 /* iOS */,
@@ -304,6 +356,29 @@
 			productReference = 5D00000000000000000000C4 /* SunnieDaysUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		5D0000000000000000000105 /* SunnieWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5D0000000000000000000176 /* Build configuration list for PBXNativeTarget "SunnieWidgets" */;
+			buildPhases = (
+				5D0000000000000000000135 /* Sources */,
+				5D0000000000000000000145 /* Frameworks */,
+				5D0000000000000000000165 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5D0000000000000000000115 /* Widgets */,
+			);
+			name = SunnieWidgets;
+			packageProductDependencies = (
+				5D00000000000000000000E5 /* SunnieShared */,
+			);
+			productName = SunnieWidgets;
+			productReference = 5D00000000000000000000C5 /* SunnieWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -328,6 +403,9 @@
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = 5D0000000000000000000101;
 					};
+					5D0000000000000000000105 = {
+						CreatedOnToolsVersion = 16.0;
+					};
 				};
 			};
 			buildConfigurationList = 5D0000000000000000000171 /* Build configuration list for PBXProject "SunnieDays" */;
@@ -351,6 +429,7 @@
 				5D0000000000000000000102 /* SunnieDaysWatch */,
 				5D0000000000000000000103 /* SunnieDaysTests */,
 				5D0000000000000000000104 /* SunnieDaysUITests */,
+				5D0000000000000000000105 /* SunnieWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -378,6 +457,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		5D0000000000000000000164 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5D0000000000000000000165 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -415,6 +501,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5D0000000000000000000135 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -432,6 +525,11 @@
 			isa = PBXTargetDependency;
 			target = 5D0000000000000000000101 /* SunnieDays */;
 			targetProxy = 5D00000000000000000000F3 /* PBXContainerItemProxy */;
+		};
+		5D0000000000000000000184 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5D0000000000000000000105 /* SunnieWidgets */;
+			targetProxy = 5D00000000000000000000F4 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -506,6 +604,20 @@
 			};
 			name = Release;
 		};
+		5D000000000000000000019B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5D00000000000000000000DB /* Extension-Widgets.xcconfig */;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		5D000000000000000000019C /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5D00000000000000000000DB /* Extension-Widgets.xcconfig */;
+			buildSettings = {
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -554,6 +666,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		5D0000000000000000000176 /* Build configuration list for PBXNativeTarget "SunnieWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5D000000000000000000019B /* Debug */,
+				5D000000000000000000019C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -573,6 +694,10 @@
 			productName = SunnieShared;
 		};
 		5D00000000000000000000E3 /* SunnieShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SunnieShared;
+		};
+		5D00000000000000000000E5 /* SunnieShared */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SunnieShared;
 		};

@@ -1,8 +1,10 @@
 import SwiftUI
 import SunnieShared
 
-/// **Placeholder presentation.** Complete Watch flows are Phase 9; this is the
-/// minimum the vertical slice requires — see what is due, and complete it.
+/// Today on the wrist (§6): an affirmation, the next task, and what is due.
+///
+/// Everything shown here was resolved on the phone. The Watch picks no message
+/// and computes no due date — it renders a snapshot.
 struct WatchTodayScreen: View {
     @Environment(WatchModel.self) private var model
 
@@ -15,6 +17,24 @@ struct WatchTodayScreen: View {
                 if let greeting = model.context?.sunnieGreeting {
                     Text(greeting)
                         .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let affirmation = model.affirmation {
+                    Text(affirmation)
+                        .font(.footnote)
+                }
+
+                if let next = model.features?.nextTaskDescription {
+                    Label(next, systemImage: "leaf")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let travel = model.travel,
+                   let days = travel.daysUntilDeparture(now: Date(), calendar: .current) {
+                    Label("\(days) days", systemImage: "airplane")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
