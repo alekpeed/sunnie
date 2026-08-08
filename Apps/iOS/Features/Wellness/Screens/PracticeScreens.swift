@@ -95,7 +95,10 @@ struct BreathingPlayerScreen: View {
     /// practice on its own.
     private var circleScale: CGFloat {
         guard !reduceMotion else { return 1 }
-        switch model?.phase {
+        // Explicit `return`: implicit return only applies to a single-expression
+        // body, and the guard above makes this one two statements. Without it
+        // the cases read as discarded literals and the getter returns nothing.
+        return switch model?.phase {
         case .inhale, .holdAfterInhale: 1.25
         default: 0.85
         }
