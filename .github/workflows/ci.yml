@@ -137,17 +137,26 @@ jobs:
             2>&1 | tee xcodebuild-iphone.log | xcbeautify --renderer github-actions
 
       # Always, and deliberately: a failed build is the run worth reading.
+      # Printed to stdout as well as the summary, and deliberately last: a full
+      # xcodebuild log runs to five figures of lines, and log readers truncate.
+      # Anything that matters has to be near the end to be legible at all.
       - name: Summarize diagnostics
         if: always()
         run: |
           [ -f xcodebuild-iphone.log ] || exit 0
+          errors=$(grep -E "error: " xcodebuild-iphone.log \
+            | sed 's|/Users/runner/work/sunnie/sunnie/||' | sort -u)
+          count=$(printf '%s' "$errors" | grep -c . || true)
+
+          echo "════════ $count distinct error(s) ════════"
+          printf '%s\n' "$errors"
+          echo "════════ end of errors ════════"
+
           {
-            echo "### iPhone build diagnostics"
+            echo "### iPhone build: $count distinct error(s)"
             echo
             echo '```'
-            grep -E "(error|warning): " xcodebuild-iphone.log \
-              | sed 's|/Users/runner/work/sunnie/sunnie/||' \
-              | sort -u | head -300
+            printf '%s\n' "$errors" | head -300
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 

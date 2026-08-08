@@ -505,6 +505,9 @@ struct CollectionFlowTests {
     func moreLeadsToBothScreens() {
         #expect(MoreDestination.collections.route == .collections)
         #expect(MoreDestination.sunnieHome.route == .sunnieHome)
-        #expect(MoreDestination.allCases.allSatisfy(\.isImplemented))
+        // A closure rather than a key path: `allSatisfy` is `rethrows`, and
+        // #expect decomposes its argument into a separate value, at which point
+        // the compiler can no longer see that the predicate cannot throw.
+        #expect(MoreDestination.allCases.allSatisfy { $0.isImplemented })
     }
 }

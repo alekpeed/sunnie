@@ -337,7 +337,7 @@ struct IntegrationFlowTests {
         trip = try await dependencies.manageTrip.save(trip)
 
         let item = ChecklistItem(
-            tripID: trip.id, kind: .leaving, title: "Passport", sortOrder: 0
+            tripID: trip.id, kind: .beforeLeaving, title: "Passport", sortOrder: 0
         )
         try await dependencies.travelRepository.save(item)
 
@@ -416,7 +416,7 @@ struct IntegrationFlowTests {
         trip = try await dependencies.manageTrip.save(trip)
 
         try await dependencies.travelRepository.save(
-            ChecklistItem(tripID: trip.id, kind: .leaving, title: "Passport", sortOrder: 0)
+            ChecklistItem(tripID: trip.id, kind: .beforeLeaving, title: "Passport", sortOrder: 0)
         )
 
         let context = try #require(
@@ -446,7 +446,7 @@ struct IntegrationFlowTests {
         for index in 0..<12 {
             try await dependencies.travelRepository.save(
                 ChecklistItem(
-                    tripID: trip.id, kind: .leaving, title: "Item \(index)", sortOrder: index
+                    tripID: trip.id, kind: .beforeLeaving, title: "Item \(index)", sortOrder: index
                 )
             )
         }
