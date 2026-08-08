@@ -144,23 +144,70 @@ jobs:
       # Printed to stdout as well as the summary, and deliberately last: a full
       # xcodebuild log runs to five figures of lines, and log readers truncate.
       # Anything that matters has to be near the end to be legible at all.
+      # Reports three separate things, because a run can fail in three ways and
+      # the first version of this could only see one of them.
+      #
+      # It grepped for "error: " alone, and that was wrong twice over. Swift
+      # Testing never writes "error:" — a failed `#expect` is an issue record —
+      # so a red suite summarised as zero errors and the job failed with no
+      # stated reason. And CoreData narrates a *recovered* store failure across
+      # several hundred lines that all contain "error:", every one of them
+      # harmless, which buried the handful that were not.
       - name: Summarize diagnostics
         if: always()
         run: |
           [ -f xcodebuild-iphone.log ] || exit 0
-          errors=$(grep -E "error: " xcodebuild-iphone.log \
-            | sed 's|/Users/runner/work/sunnie/sunnie/||' | sort -u)
-          count=$(printf '%s' "$errors" | grep -c . || true)
 
-          echo "════════ $count distinct error(s) ════════"
-          printf '%s\n' "$errors"
-          echo "════════ end of errors ════════"
+          # The store fails to open, CoreData recovers, and says so at length.
+          # Filtering it is safe precisely because it always ends in "Recovery
+          # attempt ... was successful".
+          noise='CoreData: error:|component is (readable|writeable|not )|File (inode|Size|Device ID|user ID|group ID|Permissions)|Information for /|Device ID:|Executing as effective user|Logging status information|Failed to stat'
+
+          # Every grep here is `|| true`, and every test is an `if`. This step
+          # runs under `bash -e`, where a grep that matches nothing is a failure
+          # that kills the step — so the diagnostics would vanish in exactly the
+          # case they are written for: the run with no compile errors in it.
+          compile=$(grep -E "error: " xcodebuild-iphone.log 2>/dev/null \
+            | grep -vE "$noise" \
+            | sed 's|/Users/runner/work/sunnie/sunnie/||' | sort -u || true)
+          compile_count=$(printf '%s' "$compile" | grep -c . || true)
+
+          # XCTest says "error:"; Swift Testing says "recorded an issue". Both
+          # are test failures and both belong here.
+          failures=$(grep -E "recorded an issue|✘ Test|Testing failed|Test Case .* failed" \
+            xcodebuild-iphone.log 2>/dev/null \
+            | sed 's|/Users/runner/work/sunnie/sunnie/||' | sort -u || true)
+          failure_count=$(printf '%s' "$failures" | grep -c . || true)
+
+          # The verdict lines, so a green run says so rather than saying nothing.
+          verdict=$(grep -E "\*\* (TEST|BUILD) (FAILED|SUCCEEDED) \*\*|Executed [0-9]+ test|Test run with [0-9]+ test" \
+            xcodebuild-iphone.log 2>/dev/null | sort -u | tail -20 || true)
+
+          echo "════════ $compile_count compile error(s), $failure_count test failure(s) ════════"
+          if [ "$compile_count" -gt 0 ]; then printf '%s\n' "$compile"; fi
+          if [ "$failure_count" -gt 0 ]; then printf '%s\n' "$failures"; fi
+          echo "──────── verdict ────────"
+          printf '%s\n' "$verdict"
+          echo "════════ end ════════"
 
           {
-            echo "### iPhone build: $count distinct error(s)"
+            echo "### iPhone: $compile_count compile error(s), $failure_count test failure(s)"
             echo
+            if [ "$compile_count" -gt 0 ]; then
+              echo "#### Compile errors"
+              echo '```'
+              printf '%s\n' "$compile" | head -150
+              echo '```'
+            fi
+            if [ "$failure_count" -gt 0 ]; then
+              echo "#### Test failures"
+              echo '```'
+              printf '%s\n' "$failures" | head -150
+              echo '```'
+            fi
+            echo "#### Verdict"
             echo '```'
-            printf '%s\n' "$errors" | head -300
+            printf '%s\n' "$verdict"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
