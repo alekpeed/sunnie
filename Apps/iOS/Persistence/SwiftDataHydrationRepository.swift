@@ -50,8 +50,24 @@ actor SwiftDataHydrationRepository: HydrationRepository {
     }
 
     func unwrittenLogs(limit: Int) async throws -> [HydrationLog] {
+        // `== ""` rather than `.isEmpty`, which is not the stylistic choice it
+        // looks like.
+        //
+        // The column is a non-empty-by-convention String — empty until the
+        // sample is written, never null (SunnieSchemaV8) — so the two are the
+        // same question in Swift. They are not the same question in SQL, where
+        // `isEmpty` is a Swift property with no column operator behind it. This
+        // returned no rows for a store that had them: the fetch succeeded and
+        // matched nothing, which is worse than throwing, because a queue that
+        // is silently always empty looks exactly like a queue with nothing in
+        // it. Water logged while Health was off would never have been caught up
+        // once it was turned on.
+        //
+        // Third of this kind after the journal's `??` and travel's `!=` on a
+        // null column. The pattern is the same each time: valid Swift, obvious
+        // reading, no equivalent on the other side of the translation.
         var descriptor = FetchDescriptor<SDHydrationLog>(
-            predicate: #Predicate<SDHydrationLog> { $0.healthKitSampleID.isEmpty },
+            predicate: #Predicate<SDHydrationLog> { $0.healthKitSampleID == "" },
             sortBy: [SortDescriptor(\.loggedAt, order: .forward)]
         )
         descriptor.fetchLimit = max(1, limit)

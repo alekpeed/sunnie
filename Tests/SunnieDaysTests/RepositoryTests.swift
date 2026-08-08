@@ -480,4 +480,52 @@ struct RepositoryTests {
         #expect(try await repository.trips(includingArchived: true)
             .contains { $0.id == archived.id })
     }
+
+    // MARK: - Hydration
+
+    /// An entry that has never reached Health must appear in the unwritten queue.
+    ///
+    /// The predicate asked `healthKitSampleID.isEmpty`, which is a Swift
+    /// property with no operator behind it in SQL, so the fetch succeeded and
+    /// matched nothing. A queue that is silently always empty is
+    /// indistinguishable from a queue with nothing in it, and the consequence
+    /// was that water logged while Health was off would never be caught up once
+    /// it was turned on.
+    @Test("An unwritten hydration log appears in the catch-up queue")
+    func unwrittenHydrationLogsAreFound() async throws {
+        let repository = SwiftDataHydrationRepository(modelContainer: try makeContainer())
+        let now = Date()
+        let entry = HydrationLog(
+            millilitres: 250,
+            loggedAt: now,
+            sourceDeviceID: DeviceID(rawValue: "phone"),
+            actionKey: ActionKey(rawValue: "hydration.test.1")
+        )
+        _ = try await repository.save(entry)
+
+        let pending = try await repository.unwrittenLogs(limit: 10)
+        #expect(pending.contains { $0.id == entry.id })
+    }
+
+    /// And one that has reached Health must drop out of it.
+    ///
+    /// The other half: a predicate loose enough to return everything would pass
+    /// the test above and re-write every sample on the next catch-up pass.
+    @Test("A written hydration log leaves the catch-up queue")
+    func writtenHydrationLogsAreExcluded() async throws {
+        let repository = SwiftDataHydrationRepository(modelContainer: try makeContainer())
+        let now = Date()
+        let entry = HydrationLog(
+            millilitres: 250,
+            loggedAt: now,
+            sourceDeviceID: DeviceID(rawValue: "phone"),
+            actionKey: ActionKey(rawValue: "hydration.test.2")
+        )
+        _ = try await repository.save(entry)
+
+        try await repository.markWritten(id: entry.id, sampleID: "sample-1")
+
+        let pending = try await repository.unwrittenLogs(limit: 10)
+        #expect(!pending.contains { $0.id == entry.id })
+    }
 }
