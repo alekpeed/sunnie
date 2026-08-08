@@ -1,0 +1,234 @@
+name: TestFlight
+
+# Builds a signed iPhone build and uploads it to TestFlight.
+#
+# This exists because the project has no Mac behind it. Without a Mac there is
+# no Xcode, and without Xcode there is no way to get an iOS build onto a phone —
+# except this one: a macOS runner archives and signs, App Store Connect
+# processes, and the phone installs from the TestFlight app.
+#
+# Manual on purpose (`workflow_dispatch`). macOS minutes bill at ten times the
+# Linux rate on a private repository, and a build nobody is waiting to install
+# is money spent on nothing. Run it when you want something to test.
+#
+# Setup — the secrets below, and the App Store Connect records they refer to —
+# is documented step by step in `Documentation/TESTFLIGHT_SETUP.md`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: "What to test in this build (shown to testers)"
+        required: false
+        default: "Latest changes from main."
+
+concurrency:
+  # Two uploads racing for the same build number is a failure that costs a full
+  # macOS run to discover, so they queue instead.
+  group: testflight
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    name: Build and upload to TestFlight
+    runs-on: macos-15
+    timeout-minutes: 90
+
+    env:
+      # Everything identity-shaped comes from repository secrets. Nothing that
+      # identifies the developer account is committed.
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      BUNDLE_ID_PREFIX: ${{ secrets.SUNNIE_BUNDLE_ID_PREFIX }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: ./Tools/select_xcode.sh
+
+      # Fail here, with a sentence a person can act on, rather than 40 minutes
+      # later inside a signing error that names none of these.
+      - name: Check the required secrets are present
+        run: |
+          missing=0
+          for name in APPLE_TEAM_ID SUNNIE_BUNDLE_ID_PREFIX ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            eval "value=\${SECRET_$name}"
+            if [ -z "$value" ]; then
+              echo "::error::Missing repository secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "See Documentation/TESTFLIGHT_SETUP.md for where each of these comes from."
+            exit 1
+          fi
+          echo "All five secrets are present."
+        env:
+          SECRET_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          SECRET_SUNNIE_BUNDLE_ID_PREFIX: ${{ secrets.SUNNIE_BUNDLE_ID_PREFIX }}
+          SECRET_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          SECRET_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          SECRET_ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+
+      # The API key authenticates both halves of this job: xcodebuild uses it to
+      # create signing certificates and provisioning profiles on demand, and
+      # altool uses it to upload. altool will not take a path — it searches a
+      # fixed list of directories for `AuthKey_<KEYID>.p8` — so the file goes
+      # where it looks, under a name it recognises.
+      - name: Install the App Store Connect API key
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.appstoreconnect/private_keys
+          destination=~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+          # Accepts the key either way round: base64, or the .p8 file's text
+          # pasted in as-is. Both are a reasonable reading of "put the key in a
+          # secret", the difference is invisible in the GitHub UI once saved,
+          # and getting it wrong otherwise fails deep inside altool with a
+          # message about authentication rather than about encoding.
+          if printf '%s' "$ASC_KEY_P8" | grep -q "BEGIN PRIVATE KEY"; then
+            printf '%s' "$ASC_KEY_P8" > "$destination"
+            echo "Key read as PEM text."
+          else
+            printf '%s' "$ASC_KEY_P8" | tr -d '[:space:]' | base64 --decode > "$destination" 2>/dev/null || true
+            echo "Key read as base64."
+          fi
+          chmod 600 "$destination"
+
+          # Checked without ever printing the key itself.
+          if ! grep -q "BEGIN PRIVATE KEY" "$destination"; then
+            echo "::error::ASC_KEY_P8 is neither a PEM private key nor base64 of one."
+            echo "Paste the entire contents of the AuthKey_XXXXXXXXXX.p8 file, including"
+            echo "the BEGIN and END lines. See Documentation/TESTFLIGHT_SETUP.md."
+            exit 1
+          fi
+          echo "Key installed for $ASC_KEY_ID."
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+
+      # Every upload needs a CFBundleVersion no previous upload has used, for a
+      # given marketing version. The run number is monotonic and never reused,
+      # which is exactly the property required and the only one.
+      - name: Archive
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project SunnieDays.xcodeproj \
+            -scheme SunnieDays \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/SunnieDays.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            SUNNIE_DEVELOPMENT_TEAM="$TEAM_ID" \
+            SUNNIE_BUNDLE_ID_PREFIX="$BUNDLE_ID_PREFIX" \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            2>&1 | tee xcodebuild-archive.log | xcbeautify --renderer github-actions
+
+      - name: Export the signed build
+        run: |
+          set -euo pipefail
+          # Written here rather than committed because the only field that
+          # varies is the team id, and that is a secret.
+          cat > build/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>destination</key>
+            <string>export</string>
+          </dict>
+          </plist>
+          PLIST
+
+          set -o pipefail
+          xcodebuild -exportArchive \
+            -archivePath build/SunnieDays.xcarchive \
+            -exportOptionsPlist build/ExportOptions.plist \
+            -exportPath build/export \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            2>&1 | tee xcodebuild-export.log | xcbeautify --renderer github-actions
+
+          ls -la build/export
+
+          # Found rather than assumed: the exported name follows PRODUCT_NAME,
+          # and a rename would otherwise fail two steps later as "file not
+          # found" with nothing pointing at the cause.
+          ipa=$(find build/export -maxdepth 1 -name '*.ipa' | head -1)
+          if [ -z "$ipa" ]; then
+            echo "::error::No .ipa was exported. See xcodebuild-export.log."
+            exit 1
+          fi
+          echo "IPA=$ipa" >> "$GITHUB_ENV"
+          echo "Exported $ipa"
+
+      # Validation is a separate call from upload deliberately: it reports the
+      # same rejections (missing icon, bad bundle id, duplicate build number)
+      # without consuming the build number, so a fixable mistake stays fixable.
+      - name: Validate the build
+        run: |
+          set -o pipefail
+          xcrun altool --validate-app \
+            -f "$IPA" \
+            -t ios \
+            --apiKey "$ASC_KEY_ID" \
+            --apiIssuer "$ASC_ISSUER_ID"
+
+      - name: Upload to TestFlight
+        run: |
+          set -o pipefail
+          xcrun altool --upload-app \
+            -f "$IPA" \
+            -t ios \
+            --apiKey "$ASC_KEY_ID" \
+            --apiIssuer "$ASC_ISSUER_ID"
+
+          {
+            echo "### Uploaded build ${{ github.run_number }}"
+            echo
+            echo "Processing in App Store Connect usually takes 5–15 minutes."
+            echo "It appears in the TestFlight app once processing finishes."
+            echo
+            echo "**What to test:** ${{ inputs.notes }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The archive log is the one worth reading when signing goes wrong, and
+      # signing is what goes wrong.
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testflight-logs
+          path: |
+            xcodebuild-archive.log
+            xcodebuild-export.log
+          if-no-files-found: ignore
+
+      - name: Explain a failure
+        if: failure()
+        run: |
+          echo "════════ signing and upload errors ════════"
+          grep -iE "error:|Provisioning|No profiles|no signing certificate|Invalid|altool" \
+            xcodebuild-archive.log xcodebuild-export.log 2>/dev/null \
+            | sed 's|/Users/runner/work/sunnie/sunnie/||' | sort -u | head -60 || true
+          echo "════════ end ════════"
+          echo
+          echo "Most first-run failures are one of:"
+          echo "  • The bundle id prefix is registered to a different team."
+          echo "  • The app record does not exist in App Store Connect yet."
+          echo "  • The API key lacks the App Manager role."
+          echo "See Documentation/TESTFLIGHT_SETUP.md."

@@ -41,8 +41,13 @@ final class TodayModel {
 
     func onAppear() async {
         greeting = appState.greeting()
-        await load()
+        // Subscribed before the first read, not after it. Loading first leaves a
+        // window in which something can change the jungle, publish, and be
+        // missed entirely — which is exactly what first-launch seeding does
+        // (see SampleData). Subscribing first means the worst case is one
+        // redundant rebuild rather than a screen that stays wrong.
         await subscribeToChanges()
+        await load()
     }
 
     func onDisappear() async {
@@ -84,7 +89,13 @@ final class TodayModel {
         guard eventToken == nil else { return }
 
         eventToken = await dependencies.eventBus.subscribe { [weak self] event in
+            // The set a plant card can be wrong about: care logged elsewhere,
+            // a plant added or archived. `plantAdded` covers first-launch
+            // seeding as well as the Phase 4 editor, since both mean the same
+            // thing to this screen — the jungle is not what Today last read.
             guard event.type == .plantCareLogged
+                || event.type == .plantAdded
+                || event.type == .plantArchived
                 || event.type == .wellnessCheckInRecorded else { return }
             await self?.reload()
         }

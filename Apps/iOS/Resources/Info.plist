@@ -51,6 +51,26 @@
 		<string>audio</string>
 	</array>
 
+	<!--
+		Export compliance, answered here rather than by hand.
+
+		Without this key every upload arrives in App Store Connect as "Missing
+		Compliance" and sits there, undistributable, until somebody opens the
+		build and answers the same question in a web form. Declared in the
+		bundle, the answer travels with the build and TestFlight processing runs
+		straight through.
+
+		`false` is the accurate answer, not the convenient one. The app performs
+		no encryption of its own. What it does touch is exempt under the
+		relevant note: HTTPS to Apple's own services (WeatherKit, CloudKit) and
+		iOS file data protection, both of which are the platform's encryption
+		rather than the app's. If custom cryptography is ever added — an
+		encrypted export archive, a passphrase on the journal — this key must be
+		revisited, because it would no longer be true.
+	-->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchScreen</key>

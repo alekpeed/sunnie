@@ -8,10 +8,20 @@ import XCTest
 ///
 /// First executed in CI on a simulator, not on a device. Four passed on that
 /// run — the app launches, shows five tabs and the plant card, and navigating to
-/// a plant and logging care works end to end. Three failed on their first
-/// assertion, which is why those three now print the screen's buttons when they
-/// do: on a machine nobody can attach to, the failure message is the only
-/// evidence there is. See `Documentation/BUILD_AND_VERIFY.md`.
+/// a plant and logging care works end to end. Three failed, and between them
+/// they found one real defect and one bad selector:
+///
+///   * The two care tests were right. Today really had no care action on it,
+///     because first-launch seeding finished after Today had already read an
+///     empty jungle and nothing told it to read again. A new user saw "No plants
+///     yet" above five plants that existed. Fixed in `SampleData` and
+///     `PlantSummaryProvider`; these tests are what noticed.
+///   * The Themes test was wrong. A `.menu` Picker is not addressable by its
+///     bare title, and the exact-match lookup could never have succeeded.
+///
+/// The failure messages print the screen's buttons because these run where no
+/// debugger can attach, and a bare `XCTAssertTrue failed` cannot tell a wrong
+/// screen from a wrong label. See `Documentation/BUILD_AND_VERIFY.md`.
 final class VerticalSliceUITests: XCTestCase {
 
     private var app: XCUIApplication!
@@ -36,13 +46,20 @@ final class VerticalSliceUITests: XCTestCase {
     /// screen was wrong, the label was wrong, or the wait was too short. These
     /// run on a machine nobody can attach a debugger to, so the failure message
     /// has to carry the evidence itself.
+    /// Joined on one line, deliberately.
+    ///
+    /// The first version separated the labels with newlines, which read well in
+    /// a terminal and was useless where it mattered: an XCTest failure message
+    /// is logged up to its first line break, so CI printed "Buttons on screen:"
+    /// and threw away every label after it. A separator that survives the log is
+    /// worth more than one that formats nicely.
     private func visibleButtons() -> String {
         let labels = app.buttons.allElementsBoundByIndex
             .prefix(40)
-            .map { "  • \($0.label.isEmpty ? "<no label>" : $0.label)" }
+            .map { $0.label.isEmpty ? "<no label>" : $0.label }
         return labels.isEmpty
             ? "No buttons on screen."
-            : "Buttons on screen:\n" + labels.joined(separator: "\n")
+            : "Buttons on screen: " + labels.joined(separator: " | ")
     }
 
     func testTodayShowsPlantCard() throws {
@@ -104,7 +121,14 @@ final class VerticalSliceUITests: XCTestCase {
         app.tabBars.buttons["More"].tap()
         app.buttons["Themes"].tap()
 
-        let picker = app.buttons["Time of day"]
+        // Matched on a substring rather than by exact label. A `.menu` Picker
+        // publishes itself to accessibility as its title *and* its current
+        // selection — "Time of day, Right now" — so `buttons["Time of day"]`
+        // matches nothing, and would break again every time the default
+        // selection changed.
+        let picker = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "Time of day")
+        ).firstMatch
         XCTAssertTrue(
             picker.waitForExistence(timeout: 10),
             "No time-of-day picker on Themes. \(visibleButtons())"

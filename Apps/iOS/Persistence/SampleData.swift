@@ -93,6 +93,29 @@ enum SampleData {
             }
 
             await dependencies.summaryProvider.invalidate()
+
+            // Invalidating the cache is not enough on its own, and the gap it
+            // leaves was invisible until a UI test walked first launch.
+            //
+            // Today builds its summary from the store during its own `.task`,
+            // which runs alongside this one — and wins, because seeding has ten
+            // writes to get through first. So Today caches a summary of an empty
+            // jungle, and clearing the provider's cache afterwards changes
+            // nothing on screen: nothing asks it to read again. A brand-new user
+            // saw "No plants yet" sitting above five plants that existed,
+            // until they switched tabs and came back.
+            //
+            // So seeding says what it did, in the same typed vocabulary every
+            // other feature uses (TECHNICAL_ARCHITECTURE.md §6). One event
+            // rather than one per plant: the listeners rebuild a whole summary
+            // either way, and five would just mean five rebuilds.
+            await dependencies.eventBus.publish(
+                DomainEvent(
+                    type: .plantAdded,
+                    occurredAt: now,
+                    sourceEntityID: nil
+                )
+            )
             log.info("Seeded \(seeds.count) sample plants on first launch.")
         } catch {
             // A failed seed leaves an empty jungle, which the empty state already
