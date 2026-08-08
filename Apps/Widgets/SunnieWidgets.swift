@@ -196,7 +196,19 @@ struct TripCountdownView: View {
                         // lock screen while away.
                         if let zoneID = trip.destinationTimeZoneID,
                            let zone = TimeZone(identifier: zoneID) {
-                            Text(entry.date, format: .dateTime.hour().minute().timeZone(zone))
+                            // Formats *in* the zone. The initializer parameter
+                            // does that; `.timeZone(_:)` only appends the
+                            // zone's name, which would show local time under a
+                            // destination label — the one reading that makes
+                            // this clock worse than not having it.
+                            Text(
+                                entry.date,
+                                format: Date.FormatStyle(
+                                    date: .omitted,
+                                    time: .shortened,
+                                    timeZone: zone
+                                )
+                            )
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
