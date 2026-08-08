@@ -1,0 +1,68 @@
+CLAUDE'S NEXT WORK, IN ORDER
+
+Prepared on August 7, 2026
+
+RULE FOR EVERY ITEM
+
+Do not mark an item done because the writing looks right. Mark it done only after
+the app has been used in the situation described and the result has been saved.
+
+FIRST: PROVE THE APP CAN RUN
+
+1. Open the project on a Mac with the current Apple tools.
+2. Build the iPhone app, Watch app, and home screen displays.
+3. Fix every build warning that points to unsafe behavior.
+4. Run all app checks, not only the shared 441 checks.
+5. Save the results and update the single official status page.
+
+SECOND: PROTECT PEOPLE'S INFORMATION
+
+1. Add erase-one-area and erase-everything controls.
+2. Permanently remove journal items after a short undo period.
+3. Remove related photos and recordings when their owner is permanently erased.
+4. Set and test a locked-phone rule for the saved store, photos, and recordings.
+5. Clean temporary export files after sharing.
+6. Explain what Apple Health keeps after app information is erased.
+
+THIRD: PROVE UPDATES ARE SAFE
+
+1. Make filled sample stores for every old saved-information version.
+2. Update each sample to the newest version.
+3. Compare counts and important details before and after.
+4. Test an interrupted update and a recovery from backup.
+5. Freeze old layouts so later edits cannot quietly rewrite history.
+
+FOURTH: MAKE APPLE FEATURES HONEST
+
+1. Sign a private test copy with the owner's Apple account setup.
+2. Turn on and test Health sharing only for the choices the user enables.
+3. Turn on and test private sharing between the owner's devices.
+4. Turn on and test live home screen displays.
+5. Hide or clearly label anything that is unavailable in the unsigned copy.
+6. Remove unused camera and full photo-library permission messages.
+
+FIFTH: TEST REAL-LIFE TROUBLE
+
+1. Refuse every permission and confirm the main app still works.
+2. Fill the phone nearly full and try saving a photo and voice note.
+3. Turn connections off during Watch actions and restore them later.
+4. Make the same care action on the phone and Watch at nearly the same time.
+5. Interrupt sound with calls, alarms, headphones, and microphone use.
+6. Use very large text and a screen reader on every main task.
+7. Confirm delete and export failures produce a calm, useful message.
+
+SIXTH: CLEAN THE DOCUMENTS
+
+1. Make one status page the only official testing record.
+2. Remove copied test counts from other pages.
+3. Replace “none of the tests ran” with the accurate split:
+   the shared 441 passed; the Apple app checks have not run.
+4. Keep known limits at the top, not buried near the end.
+
+DONE MEANS
+
+The iPhone app, Watch app, and home screen displays build. All automatic checks
+pass. Old information survives updates. Erase-all works. Temporary exports are
+removed. Private files stay protected while the phone is locked. The core flows
+have been used on a real iPhone and paired Watch. Accessibility checks have been
+done by hand. The documents match those results exactly.
