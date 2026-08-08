@@ -15,6 +15,11 @@ struct SettingsScreen: View {
     @State private var enabledHealthTypes: Set<HealthDataType> = []
     @State private var isExporting = false
     @State private var exportedFiles: [URL] = []
+    /// The directory the current export lives in, so it can be removed once the
+    /// share sheet closes. Personal data must not be left in `tmp` waiting for
+    /// the system to feel like reclaiming it.
+    @State private var exportDirectory: URL?
+    @State private var exportFailed = false
 
     var body: some View {
         Form {
@@ -465,13 +470,39 @@ struct SettingsScreen: View {
                 ShareSheet(items: exportedFiles)
             }
         }
+        .alert(
+            Text("settings.export.failed.title", bundle: .main),
+            isPresented: $exportFailed
+        ) {
+            Button(role: .cancel) { exportFailed = false } label: {
+                Text("common.ok", bundle: .main)
+            }
+        } message: {
+            Text("settings.export.failed.message", bundle: .main)
+        }
     }
 
     private var exportSheetBinding: Binding<Bool> {
         Binding(
             get: { !exportedFiles.isEmpty },
-            set: { if !$0 { exportedFiles = [] } }
+            set: { if !$0 { discardExport() } }
         )
+    }
+
+    /// Clears the export and deletes the files behind it.
+    ///
+    /// The share sheet has already copied whatever the user chose to send by the
+    /// time it closes, so removing the source is safe — and leaving a jungle
+    /// export, with plant names and care history, sitting in the temporary
+    /// directory is exactly the kind of quiet residue the privacy plan exists to
+    /// prevent. The system does clear `tmp` eventually, but "eventually" is not
+    /// a retention policy.
+    private func discardExport() {
+        exportedFiles = []
+        if let exportDirectory {
+            try? FileManager.default.removeItem(at: exportDirectory)
+        }
+        exportDirectory = nil
     }
 
     /// Writes the export to a temporary directory and hands it to the share
@@ -481,15 +512,25 @@ struct SettingsScreen: View {
         isExporting = true
         defer { isExporting = false }
 
+        // Any previous export is removed before a new one is written, so two
+        // exports in a row cannot leave the first one behind.
+        discardExport()
+        exportFailed = false
+
         do {
             let export = try await dependencies.exportJungle.build()
             let directory = FileManager.default.temporaryDirectory
                 .appendingPathComponent("SunnieExport-\(UUID().uuidString)", isDirectory: true)
+            exportDirectory = directory
             exportedFiles = try dependencies.exportJungle.write(
                 export, format: format, to: directory
             )
         } catch {
-            exportedFiles = []
+            // Previously this failed silently: the button stopped spinning, no
+            // sheet appeared, and nothing said why. A tap that does nothing is
+            // indistinguishable from a broken app.
+            discardExport()
+            exportFailed = true
         }
     }
 

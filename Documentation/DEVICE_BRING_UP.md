@@ -42,7 +42,7 @@ swift build
 Fix until green, then:
 
 ```bash
-swift test        # 659 tests, first run ever
+swift test        # 441 tests, all passing
 ```
 
 Only then open the project:

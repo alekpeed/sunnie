@@ -35,10 +35,26 @@ struct MediaFileStore: Sendable {
         return "\(UUID().uuidString).\(ext)"
     }
 
+    /// Written with `.completeUntilFirstUserAuthentication`.
+    ///
+    /// Photos and voice notes are among the most personal things this app holds,
+    /// and without an explicit protection class they inherit the default, which
+    /// leaves them readable from a device that has been powered on but never
+    /// unlocked.
+    ///
+    /// `.completeUntilFirstUserAuthentication` rather than `.complete`: the
+    /// stronger class makes a file unreadable whenever the screen is locked,
+    /// which would break the launch housekeeping sweep and any background work
+    /// that touches media. This class protects the realistic threat — a device
+    /// taken while off — without breaking anything that runs unattended
+    /// (PRIVACY_SECURITY_AND_DATA_LIFECYCLE.md).
     func write(_ data: Data, token: String) throws {
         try ensureDirectory()
         do {
-            try data.write(to: url(for: token), options: .atomic)
+            try data.write(
+                to: url(for: token),
+                options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
+            )
         } catch {
             log.error("Writing a media file failed.")
             throw DomainError.persistenceFailed(operation: "writeMedia")
@@ -78,6 +94,14 @@ struct MediaFileStore: Sendable {
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
         try? directoryURL.setResourceValues(values)
+
+        // The directory carries the same protection class as the files inside
+        // it, so anything written by a path that misses the explicit option
+        // above still inherits it rather than falling back to the default.
+        try? FileManager.default.setAttributes(
+            [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication],
+            ofItemAtPath: directoryURL.path
+        )
     }
 }
 

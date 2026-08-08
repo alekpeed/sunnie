@@ -57,6 +57,28 @@
 	<array/>
 
 	<!--
+		Default data protection for the whole container.
+
+		This is the mechanism that covers the SwiftData store, which cannot be given
+		a protection class through `ModelConfiguration` the way an individual file
+		can. With it, every file the app writes — the store, its journal and
+		write-ahead files included — is unreadable until the device has been unlocked
+		once since boot.
+
+		`UntilFirstUserAuthentication` rather than `Complete`: the stronger class
+		makes files unreadable whenever the screen is locked, which would break
+		launch housekeeping, notification handling, and background Watch delivery.
+		This class defends the realistic threat — a device taken while powered off —
+		without breaking anything that runs unattended.
+
+		Inactive like the rest of this file (ADR-012). The media store sets the same
+		class per file in `SwiftDataMediaRepository`, which does take effect today
+		and does not depend on signing.
+	-->
+	<key>com.apple.developer.default-data-protection</key>
+	<string>NSFileProtectionCompleteUntilFirstUserAuthentication</string>
+
+	<!--
 		App Group, shared with the widget extension.
 
 		This is what lets the extension read the snapshot the app writes. The

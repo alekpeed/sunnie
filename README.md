@@ -86,7 +86,8 @@ and Sunnie's Home, HealthKit, an Apple Watch companion, widgets, App Intents,
 and an audio layer that synthesises its own ambience and bells.
 
 Eight SwiftData schema versions, all additive. 31 architecture decision records.
-1,111 localized strings. 659 tests, none of them run.
+1,111 localized strings. 441 shared-package tests passing; the app-target
+tests have never run.
 
 ## What is deliberately not built
 
