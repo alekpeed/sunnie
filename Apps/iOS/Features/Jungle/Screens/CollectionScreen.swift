@@ -356,7 +356,7 @@ struct CollectionScreen: View {
                 } label: {
                     Label(
                         String(
-                            localized: "collection.bulkCare \(model?.selection.count ?? 0)",
+                            localized: "collection.bulkCare",
                             defaultValue: "Care for \(model?.selection.count ?? 0)",
                             comment: "Opens bulk care for the selected plants"
                         ),

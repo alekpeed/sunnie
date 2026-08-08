@@ -167,7 +167,7 @@ struct AttachmentsSection: View {
             String(localized: "attachment.photo", defaultValue: "Photo", comment: "A photo attachment")
         case .voiceNote:
             String(
-                localized: "attachment.voiceNote \(Int(attachment.duration ?? 0))",
+                localized: "attachment.voiceNote",
                 defaultValue: "Voice note, \(Int(attachment.duration ?? 0))s",
                 comment: "A voice note attachment with its length"
             )

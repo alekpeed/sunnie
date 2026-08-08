@@ -145,7 +145,7 @@ struct TravelScreen: View {
                             // as pressure.
                             StatusChip(
                                 text: String(
-                                    localized: "trip.inDays \(days)",
+                                    localized: "trip.inDays",
                                     defaultValue: "In \(days) days",
                                     comment: "Days until a trip starts"
                                 ),

@@ -165,7 +165,7 @@ struct PlanTravelCoverage: Sendable {
     func instructions(for need: CoverageNeed, plantName: String) -> String {
         guard need.needsAnything else {
             return String(
-                localized: "coverage.instructions.none \(plantName)",
+                localized: "coverage.instructions.none",
                 defaultValue: "\(plantName) shouldn't need anything while you're away.",
                 comment: "Caretaker instructions when nothing is due"
             )
@@ -182,7 +182,7 @@ struct PlanTravelCoverage: Sendable {
                 localized: .init("care.\(occurrence.careType.storageKey)")
             )
             lines.append(String(
-                localized: "coverage.instructions.line \(careName) \(formatter.string(from: occurrence.dueDate))",
+                localized: "coverage.instructions.line",
                 defaultValue: "\(careName) — may be ready around \(formatter.string(from: occurrence.dueDate))",
                 comment: "One line of caretaker instructions: care type and approximate date"
             ))

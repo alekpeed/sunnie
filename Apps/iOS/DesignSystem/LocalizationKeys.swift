@@ -13,6 +13,20 @@ import SunnieShared
 /// rather than being interpolated at the call site.
 enum LocalizationKeys {
 
+    /// Resolves a key known only at run time to plain text.
+    ///
+    /// `String(localized:defaultValue:)` types its key as `StaticString` — it is
+    /// built for literals the tooling can extract into a String Catalog, so a
+    /// key assembled at run time cannot go through it at all. This is the API
+    /// designed for that case.
+    ///
+    /// `value:` is the string used when the key is missing. Passing the caller's
+    /// fallback rather than `nil` means a gap renders as readable English
+    /// instead of an empty label that looks like a layout bug.
+    static func text(_ key: String, fallback: String) -> String {
+        Bundle.main.localizedString(forKey: key, value: fallback, table: nil)
+    }
+
     static func timePhase(_ phase: TimePhase) -> LocalizedStringKey {
         LocalizedStringKey("timePhase." + phase.rawValue)
     }

@@ -195,7 +195,7 @@ struct ManagePacking: Sendable {
             quantity: Int = 1
         ) -> PackingTemplate.Entry {
             PackingTemplate.Entry(
-                name: String(localized: .init(key), defaultValue: .init(fallback)),
+                name: LocalizationKeys.text(key, fallback: fallback),
                 category: category,
                 quantity: quantity,
                 isRequired: required
@@ -332,7 +332,7 @@ struct ManageChecklists: Sendable {
             items.append(ChecklistItem(
                 tripID: tripID,
                 kind: kind,
-                title: String(localized: .init(key), defaultValue: .init(fallback)),
+                title: LocalizationKeys.text(key, fallback: fallback),
                 linkedRoute: route,
                 sortOrder: order
             ))

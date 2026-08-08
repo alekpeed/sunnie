@@ -237,7 +237,7 @@ struct JungleScreen: View {
                     comment: "Section listing every plant"
                 ),
                 subtitle: String(
-                    localized: "jungle.section.collection.subtitle \(totalPlants)",
+                    localized: "jungle.section.collection.subtitle",
                     defaultValue: "\(totalPlants) plants",
                     comment: "Plant count"
                 )

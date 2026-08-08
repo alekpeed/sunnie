@@ -427,7 +427,7 @@ struct WellnessScreen: View {
 
     private func durationLabel(_ duration: TimeInterval) -> String {
         String(
-            localized: "wellness.duration.minutes \(Int(duration / 60))",
+            localized: "wellness.duration.minutes",
             defaultValue: "\(Int(duration / 60)) minutes",
             comment: "Duration in minutes"
         )

@@ -36,7 +36,7 @@ struct PlantTaskCard: View {
                 if summary.actionableTasks.count > 1 {
                     SunnieSecondaryButton(
                         title: String(
-                            localized: "today.plants.seeAll \(summary.actionableTasks.count)",
+                            localized: "today.plants.seeAll",
                             defaultValue: "See all \(summary.actionableTasks.count)",
                             comment: "Opens the full due list; parameter is the task count"
                         ),
@@ -71,13 +71,13 @@ struct PlantTaskCard: View {
     private var subtitle: String {
         if summary.actionableTasks.isEmpty {
             return String(
-                localized: "today.plants.subtitle.clear \(summary.totalActivePlants)",
+                localized: "today.plants.subtitle.clear",
                 defaultValue: "\(summary.totalActivePlants) plants, nothing waiting",
                 comment: "Plant card subtitle when no care is due"
             )
         }
         return String(
-            localized: "today.plants.subtitle.waiting \(summary.actionableTasks.count)",
+            localized: "today.plants.subtitle.waiting",
             defaultValue: "\(summary.actionableTasks.count) may be ready for a little attention",
             comment: "Plant card subtitle; parameter is the number of tasks"
         )
@@ -151,7 +151,7 @@ struct PlantTaskCard: View {
             )
         case .waiting:
             String(
-                localized: "jungle.status.waiting \(task.daysWaiting)",
+                localized: "jungle.status.waiting",
                 defaultValue: "Waiting \(task.daysWaiting) days",
                 comment: "Task has been due for a number of days"
             )

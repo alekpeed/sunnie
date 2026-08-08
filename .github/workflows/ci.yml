@@ -69,6 +69,10 @@ jobs:
       # This reports every one of them at once, on Linux, in a second.
       - name: Validate shared-package imports
         run: python3 Tools/validate_shared_imports.py
+      # A localization key must be constant; only its default value may carry
+      # arguments. Invisible without an Apple type checker, cheap to check here.
+      - name: Validate localization keys
+        run: python3 Tools/validate_localization_keys.py
 
   # Syntax-only, on Linux. The app targets cannot be type-checked without an
   # Apple SDK, but they can be parsed — which catches malformed Swift that

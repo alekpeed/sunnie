@@ -236,7 +236,7 @@ struct GroceryScreen: View {
         let titles = item.linkedEntryIDs.compactMap { entryTitles[$0] }
         guard !titles.isEmpty else { return nil }
         return String(
-            localized: "grocery.for \(titles.joined(separator: ", "))",
+            localized: "grocery.for",
             defaultValue: "for \(titles.joined(separator: ", "))",
             comment: "Which meals a grocery line came from"
         )

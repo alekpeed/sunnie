@@ -165,12 +165,12 @@ struct GrowthTimelineScreen: View {
 
         return difference > 0
             ? String(
-                localized: "growth.delta.up \(metricName) \(formatted)\(unit)",
+                localized: "growth.delta.up",
                 defaultValue: "\(metricName): up \(formatted)\(unit) since then",
                 comment: "Describes an increase between two growth entries"
             )
             : String(
-                localized: "growth.delta.down \(metricName) \(formatted)\(unit)",
+                localized: "growth.delta.down",
                 defaultValue: "\(metricName): down \(formatted)\(unit) since then",
                 comment: "Describes a decrease between two growth entries"
             )

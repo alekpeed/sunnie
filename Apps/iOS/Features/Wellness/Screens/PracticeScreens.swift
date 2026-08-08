@@ -123,7 +123,7 @@ struct BreathingPlayerScreen: View {
     private func remainingLabel(_ remaining: TimeInterval) -> String {
         let seconds = Int(remaining.rounded())
         return String(
-            localized: "practice.remaining \(seconds / 60) \(seconds % 60)",
+            localized: "practice.remaining",
             defaultValue: "\(seconds / 60):\(String(format: "%02d", seconds % 60)) left",
             comment: "Time remaining in a practice"
         )
@@ -246,7 +246,7 @@ struct MeditationPlayerScreen: View {
     private func remainingLabel(_ remaining: TimeInterval) -> String {
         let seconds = Int(remaining.rounded())
         return String(
-            localized: "practice.remaining \(seconds / 60) \(seconds % 60)",
+            localized: "practice.remaining",
             defaultValue: "\(seconds / 60):\(String(format: "%02d", seconds % 60)) left",
             comment: "Time remaining in a practice"
         )

@@ -60,6 +60,25 @@ permanent setting.
 
 ## 1. Runtime-key localization — 34 call sites, highest count in the codebase
 
+> **Settled by a real compiler.** The app target has now been built with Xcode
+> 26.3 on a GitHub macOS runner, and the compile half of this section has an
+> answer: **`String(localized: .init(runtimeKey))` type-checks.** Those call
+> sites compiled without complaint, so the "missing argument label" outcome
+> guessed at below does not happen.
+>
+> What did fail was narrower and was not predicted here at all:
+> `String(localized:defaultValue:)` types its *key* as `StaticString`. That
+> broke two things — two sites passing a runtime key alongside a `defaultValue`,
+> and sixteen sites interpolating a value into the key itself. Both are fixed;
+> `Tools/validate_localization_keys.py` keeps the second from returning, and
+> `LocalizationKeys.text(_:fallback:)` is the supported way to resolve a runtime
+> key, wrapping `Bundle.localizedString(forKey:value:table:)`.
+>
+> **The second half below is still open**, and is the more interesting one: these
+> calls compile, but whether a runtime key actually resolves to a translation
+> rather than returning the key itself is a runtime question that no build
+> answers. It needs a device or a simulator run.
+
 **Look here first if you see a wall of errors in one shape.**
 
 Thirty-four places do this:
