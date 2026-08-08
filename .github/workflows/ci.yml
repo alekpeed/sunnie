@@ -73,6 +73,10 @@ jobs:
       # arguments. Invisible without an Apple type checker, cheap to check here.
       - name: Validate localization keys
         run: python3 Tools/validate_localization_keys.py
+      # A bundle missing a required key builds clean and is refused at install,
+      # taking the whole app with it. No build catches this; this does.
+      - name: Validate Info.plists
+        run: python3 Tools/validate_info_plists.py
 
   # Syntax-only, on Linux. The app targets cannot be type-checked without an
   # Apple SDK, but they can be parsed — which catches malformed Swift that

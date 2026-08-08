@@ -8,6 +8,12 @@
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<!-- Without this the extension builds and links, and then installd refuses
+	     the whole app: an app embedding an executable-less appex is rejected,
+	     so a missing key here takes the phone app down with it. The iOS and
+	     Watch plists have always carried it; this target was hand-written. -->
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>XPC!</string>
 	<key>CFBundleShortVersionString</key>
