@@ -2,17 +2,22 @@
 
 ## Read this first
 
-**The shared package is compiled and tested. The app targets are not.**
+**Everything but the Watch is compiled, tested, and green on every push.**
 
 - `Packages/SunnieShared` **builds and passes 441 tests** on Linux with Swift
   6.1.2 (ADR-032). Run it anywhere: `cd Packages/SunnieShared && swift test`.
-- The iPhone app, the Watch app, and the widget extension have **never been
-  built**. They need Xcode, which this project has never had access to. Their
-  129 source files do all pass `swiftc -parse` (`./Tools/parse_check.sh`), which
-  proves the syntax is well-formed and proves nothing about whether they
-  compile — no imports resolved, no names looked up, no types checked.
-- No screen has been rendered, on a simulator or a device.
-- The app-side tests — roughly 220 of them — have never been executed.
+- The iPhone app and the widget extension **compile**, and the app **runs on a
+  simulator**. 223 tests across 13 suites pass, and 7 UI tests drive the real
+  app: five tabs, the plant card, and Today → plant → log care end to end.
+- The **Watch app has still never been built.** Its job is manual-only, because
+  the runner ships no watchOS SDK and fetching one costs several gigabytes per
+  run. It is the last target with no compiler evidence behind it at all.
+- No screen has been rendered on a **device**. Haptics, camera, audio
+  interruption, and Health are all still unobserved.
+
+The gap between "compiles" and "works" is where this project has lost most of
+its ground, and it is worth being precise about which one a claim rests on.
+Every defect listed below type-checked.
 
 Getting the shared package to compile found three defects that no amount of
 static checking had caught: `ColorValue` encoding as an object against content
@@ -21,10 +26,23 @@ travel coverage dropping tasks already overdue at departure, and a nickname
 helper that was uncallable by its only callers. All three are fixed and have
 regression tests.
 
-`CLAUDE.md` says never to claim a feature is complete when it has only a
-placeholder or an untested happy path. This document is that disclosure. Treat
-everything here as a first draft that compiles only once you have made it
-compile.
+Running the app found four more, and three of them share a shape worth naming:
+a `#Predicate` that is valid Swift, reads exactly as intended, and means
+something else once translated to SQL. Journal search used `??`, which becomes a
+ternary with no SQL behind it and threw on every query. The trip list compared a
+null column with `!=`, which SQL answers NULL rather than true, so it returned
+nothing at all — emptying the travel list, the Watch context, the widget
+snapshot, and Sunnie's Home from one line. The hydration catch-up queue asked
+`.isEmpty`, a Swift property with no column operator, and silently matched
+nothing, so water logged while Health was off would never have been written once
+it was turned on. The fourth was ordering: Today built its summary before
+first-launch seeding finished and was never told to look again, so a new user
+saw "No plants yet" above five plants that existed.
+
+None of the four was findable without executing the code. Two of them would have
+looked like features quietly doing nothing, with no error to explain why. That is
+the standing argument for running things over reasoning about them, and for
+`CLAUDE.md`'s rule against calling anything complete on an untested happy path.
 
 What *has* been verified, because it needs no Swift toolchain:
 
@@ -158,17 +176,29 @@ differently in practice. On a physically paired iPhone and Watch:
 - Complete the same care on both devices within a minute and confirm one care
   event exists.
 
-## Exit criteria not yet met
+## Exit criteria
 
-From `IMPLEMENTATION_ROADMAP.md` and `FIRST_VERTICAL_SLICE.md`, still open:
+From `IMPLEMENTATION_ROADMAP.md` and `FIRST_VERTICAL_SLICE.md`. Met means a
+machine checked it and CI keeps checking it on every push.
 
-- [ ] iPhone and Watch schemes compile
-- [ ] Tests run and pass
-- [ ] Flow works on Simulator and a physical iPhone
+- [x] The iPhone scheme compiles
+- [x] Tests run and pass — 223 across 13 suites, plus 7 UI tests on a simulator
+- [x] The flow works on Simulator — Today → plant → log care, end to end
+- [ ] The Watch scheme compiles. The job exists but is `workflow_dispatch` only,
+      because the runner ships no watchOS SDK and downloading it costs several
+      gigabytes per run. Never yet executed.
+- [ ] Flow works on a physical iPhone
 - [ ] Queued Watch transfer verified on physically paired devices
-- [ ] Local data survives relaunch
-- [ ] All three branded presentations render coherently
-- [ ] Accessibility pass: Dynamic Type, VoiceOver, Reduce Motion, contrast
+- [ ] Local data survives relaunch. **Not** covered by the UI tests despite
+      appearances: they launch with a fresh in-memory store precisely so a run
+      cannot depend on the last one, which is the opposite of what this asks.
+      By hand, or with a test that does not use `-SunnieUITesting`.
+- [~] All three branded presentations render coherently. A UI test walks every
+      phase and asserts the Sunnie Nights presentation appears, so the plumbing
+      is checked; whether it *reads* well is a judgement no test makes.
+- [~] Accessibility. Two automated: the primary action stays hittable at
+      accessibility text sizes, and every interactive element carries a label.
+      VoiceOver in use, Reduce Motion, and contrast remain by-hand checks.
 
 Already satisfied by construction, and worth re-checking during review:
 

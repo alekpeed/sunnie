@@ -8,8 +8,11 @@ HealthKit, App Groups, CloudKit, and WeatherKit. Without one, steps 5 onward are
 mostly unavailable and the app runs local-only — which is still a complete app,
 just without Health, widgets, or sync.
 
-> **Nothing here has ever been compiled.** Step 1 is where that becomes your
-> problem. Everything after it assumes the build is green.
+> **The build is green.** It compiles, the tests pass, and CI proves it on every
+> push — which was not true when this document was written, and the steps below
+> were shaped by the expectation that step 1 would be a fight. It is not one
+> any more. What remains genuinely unverified is everything that needs hardware:
+> haptics, camera, audio interruptions, Health, and the Watch.
 
 ---
 
@@ -17,19 +20,20 @@ just without Health, widgets, or sync.
 
 | | |
 |---|---|
-| **A Mac** | Non-negotiable. There is no path to an iOS build without one. |
+| **A Mac** | For *this* route. Without one, `TESTFLIGHT_SETUP.md` builds on a CI runner and installs through TestFlight instead. |
 | **Xcode 16 or later** | The project pins Swift 5 language mode with complete concurrency checking. |
 | **iPhone on iOS 18+** | `IPHONEOS_DEPLOYMENT_TARGET = 18.0`. An older phone will not install it. |
 | **Apple Watch on watchOS 11+** | Only for the Watch app. Optional. |
 | **A cable** | Wireless debugging works, but first pairing over cable is less fiddly. |
 
 The iPhone is **not** needed for steps 1–3. The Simulator covers most of the app,
-and it is a far faster loop while the build is still red.
+and it is a far faster loop than a device for anything that does not need one.
 
 ---
 
-## 1. Make it compile
+## 1. Confirm it still compiles
 
+It does — but confirm it locally before blaming your setup for anything later.
 Start with the shared package. It is a third of the codebase, has no UI, no
 SwiftData, and no Apple framework beyond Foundation — so it builds in seconds and
 fails on the domain logic rather than on a view hierarchy.
@@ -39,7 +43,7 @@ cd Packages/SunnieShared
 swift build
 ```
 
-Fix until green, then:
+Then:
 
 ```bash
 swift test        # 441 tests, all passing
@@ -51,10 +55,10 @@ Only then open the project:
 open SunnieDays.xcodeproj      # scheme: SunnieDays, destination: any iPhone 16 simulator
 ```
 
-**Expect errors.** Not because anything is known to be wrong, but because 64,000
-lines of Swift have never met a type checker. `Documentation/COMPILE_RISK_REVIEW.md`
-lists the specific places most likely to need attention and why, ordered so the
-ones that cascade are first.
+This built clean in CI, so errors here mean your toolchain rather than the code:
+the project needs Xcode 16 or later. `Documentation/COMPILE_RISK_REVIEW.md` was
+written when none of this had met a type checker and is kept as a record of what
+was predicted against what actually broke.
 
 Two settings worth knowing while you work:
 
@@ -88,9 +92,14 @@ xcodebuild test -project SunnieDays.xcodeproj -scheme SunnieDays \
   -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
-`.github/workflows/ci.yml` runs the same three jobs — shared package, content
-validation, build-and-test — and has never had a green run. Getting one is a good
-milestone before touching hardware.
+`.github/workflows/ci.yml` runs the same jobs on every push and is green: 223
+tests across 13 suites, 7 UI tests on a simulator, and the shared package on both
+Linux and macOS. A local run should agree with it, and a disagreement is worth
+understanding before you go near hardware.
+
+Note what the UI tests do *not* prove. They run against a fresh in-memory store,
+so nothing there exercises data surviving a relaunch — that is still a by-hand
+check, and it is on the list in §2.
 
 ## 4. Put it on the phone, unsigned features only
 
