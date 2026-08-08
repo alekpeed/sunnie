@@ -65,6 +65,10 @@ jobs:
       # compiled, so this Linux check costs seconds and saves a macOS run.
       - name: Validate bundle resource names
         run: python3 Tools/validate_bundle_resources.py
+      # Missing imports surface one per build, each costing a macOS round trip.
+      # This reports every one of them at once, on Linux, in a second.
+      - name: Validate shared-package imports
+        run: python3 Tools/validate_shared_imports.py
 
   # Syntax-only, on Linux. The app targets cannot be type-checked without an
   # Apple SDK, but they can be parsed — which catches malformed Swift that

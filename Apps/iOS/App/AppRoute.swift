@@ -1,4 +1,5 @@
 import Foundation
+import SunnieShared
 
 /// The five primary destinations. The order is locked
 /// (INFORMATION_ARCHITECTURE.md §1).
