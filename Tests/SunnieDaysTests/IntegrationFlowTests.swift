@@ -35,9 +35,19 @@ struct IntegrationFlowTests {
     @MainActor
     func hydrationWorksWithoutHealth() async throws {
         let dependencies = try makeDependencies()
-        // No Health store in a test process, which is the same shape as a user
-        // who declined the permission.
-        #expect(!dependencies.manageHealth.isAvailable)
+        // Deliberately asserts nothing about whether Health exists here.
+        //
+        // This used to require `!isAvailable`, on the reasoning that a test
+        // process has no Health store. It does: `isAvailable` is true on an
+        // iPhone simulator and on a device alike, so the assertion was false
+        // wherever this test could actually run, and it contradicted the
+        // sentence in its own name — the claim is that water is recorded
+        // locally *whether or not* Health is available, which is a claim about
+        // both branches and must not be pinned to one.
+        //
+        // What follows holds either way: the entry is written locally, carries
+        // no HealthKit sample id while no type is enabled, and counts towards
+        // today's total.
 
         let entry = try await dependencies.manageHealth.logWater(millilitres: 250)
         #expect(entry.millilitres == 250)

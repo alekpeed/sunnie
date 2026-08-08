@@ -242,8 +242,25 @@ struct SchemaMigrationTests {
         //
         // Corrections are recorded in SDCareEventSupersession precisely so this
         // stays true.
+        // Reflecting a `@Model` does not show the properties as written. The
+        // macro rewrites each stored property to an underscored one behind a
+        // computed accessor, and adds two of its own — so `Mirror` reports
+        // `_id`, `_plantID`, … alongside `_$backingData` and
+        // `_$observationRegistrar`, and never the bare names this test names.
+        //
+        // Compared raw, every assertion here fails on every property at once:
+        // the superset check reports all twelve missing and the no-drift check
+        // reports fourteen gained. That is what it did, from the day it was
+        // written until the CI summary was able to show a Swift Testing failure
+        // at all — a guard on ADR-017 that could only ever fail told nobody.
+        //
+        // So the macro's own bookkeeping is dropped and the underscore removed,
+        // which leaves exactly the persisted shape the test means to freeze.
         let properties = Set(
-            Mirror(reflecting: SDPlantCareEvent()).children.compactMap(\.label)
+            Mirror(reflecting: SDPlantCareEvent()).children
+                .compactMap(\.label)
+                .filter { !$0.hasPrefix("_$") }
+                .map { $0.hasPrefix("_") ? String($0.dropFirst()) : $0 }
         )
         let expected: Set<String> = [
             "id", "plantID", "careTypeKey", "performedAt", "sourceDeviceID",
