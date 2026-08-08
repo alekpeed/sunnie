@@ -1,0 +1,184 @@
+SUNNIE DAYS: SECURITY, STABILITY, AND FUNCTION REVIEW
+
+Prepared on August 7, 2026
+
+OVERALL VERDICT
+
+This is a strong and careful first draft, but it is not ready for a real user or
+the App Store. The ideas and the rule-checking are ahead of the actual proof that
+the app works. The safest description is: promising, partly tested, and still in
+need of its first full build and hands-on test.
+
+WHAT IS GOOD
+
+1. The app is designed to keep personal information on the owner's devices.
+   There are no advertising tools, outside tracking tools, or extra sign-in
+   system in the project.
+
+2. No passwords, private signing files, or obvious secret keys were found in the
+   saved project files.
+
+3. The app avoids writing journal words, health details, and recordings into its
+   activity notes. The notes use general messages and scrambled record labels.
+
+4. Links into the app accept only the app's own kind of link and check that plant
+   and trip labels are valid before opening them.
+
+5. The app tries hard not to save the same care action, reward, Watch action, or
+   health action twice. Many of the passing checks focus on this.
+
+6. If saved information cannot be opened, the app tries to stay usable and gives
+   the user a clear warning that new work will not be kept.
+
+7. The writing rules are kind. The built-in words are checked for shame,
+   pressure, unsafe health promises, and misleading food claims.
+
+RELEASE BLOCKERS: FIX THESE BEFORE ANY RELEASE
+
+1. The full app has never been built.
+
+   The iPhone app, Watch app, and home screen displays need a Mac with the current
+   Apple app-building tools. The shared decision-making part passed 441 checks,
+   but that does not prove the screens, saved information, Watch connection,
+   health connection, notifications, sound, or sharing work.
+
+   Why this matters: a project can have excellent written plans and still fail to
+   start because of one small mismatch that only Apple's tools can see.
+
+2. Moving old saved information forward has not been proven.
+
+   The project contains eight versions of its saved-information layout, but no
+   move from an older version has been run. A mistake here could make a person's
+   plants, journal, trips, or wellness history disappear after an update.
+
+   Make several old sample stores, fill them with realistic information, update
+   each one, and check every item afterward. Also keep a backup-and-recovery test.
+
+3. The promises about Apple services do not match the default app setup.
+
+   Health sharing and private device-to-device sharing are switched off in the
+   default setup because the project does not have the owner's Apple signing
+   details. The small home screen displays also cannot receive live information
+   until device sharing is turned on. This is understandable for a clean copy of
+   the project, but it means those features are not ready.
+
+   The app should either hide these choices until they are truly available or be
+   signed and tested with the owner's real setup before release.
+
+4. The owner cannot erase everything from inside the app.
+
+   The privacy plan says the app will let the owner erase one area or all app
+   information. The settings screen does not yet provide those controls. This is
+   especially important because the app holds journal, wellness, travel, plant,
+   photo, and voice information.
+
+   Add a clear review screen, a strong confirmation step, removal of attached
+   photos and recordings, and a plain explanation that Apple Health keeps its own
+   records separately.
+
+5. Private files need a clear locked-device rule.
+
+   Photos and voice notes are given random names and kept away from ordinary
+   backups, which is good. The project does not clearly set or test when those
+   files can be opened while the phone is locked. The saved-information store has
+   the same unanswered question.
+
+   Choose and test a rule that keeps journals, wellness notes, photos, and voice
+   notes unavailable while the phone is locked, without breaking background work.
+
+HIGH-PRIORITY PROBLEMS
+
+1. The plant export leaves temporary copies behind.
+
+   The export guide says temporary copies should be cleaned up. The current
+   sharing flow creates a new folder every time and forgets the folder after the
+   share screen closes, but it does not remove it. The phone may clean its
+   temporary area eventually, but the app should not depend on that for personal
+   information.
+
+   Remove each export after sharing finishes or after a short safety delay. Also
+   show a friendly error if the export fails; right now failure is silent.
+
+2. Some delete buttons hide failures.
+
+   Several screens ask the app to delete something and ignore any problem. That
+   can make the screen look successful even when the item remains. Show a calm
+   message and keep the item visible until the removal is confirmed.
+
+3. Journal deletion is really a hidden soft delete.
+
+   This supports a useful undo button, but private journal words may remain in
+   storage after the user believes they were deleted. The app needs a stated time
+   limit for undo, followed by permanent removal of the entry and its attachments.
+   The wording should make the difference clear.
+
+4. The photo permission message is unnecessary and slightly misleading.
+
+   The app uses Apple's private photo chooser, which does not require full photo
+   library permission. The project still declares a full-library explanation.
+   The permission checker noticed this. Remove the unused explanation unless the
+   app later adds direct library access.
+
+5. The camera permission message also appears unused.
+
+   No camera capture was found. Keeping an unused reason can create questions
+   during review and makes the privacy story harder to understand. Remove it or
+   add and test the promised camera feature.
+
+6. The documents disagree with themselves.
+
+   One section says the shared part passed 441 checks. Other lines still say the
+   whole project is uncompiled or that none of 659 checks have run. These mixed
+   messages make it hard for a reviewer to know what is true.
+
+   Use one status sentence everywhere: the shared part has passed; the Apple app
+   parts and their checks have not run.
+
+7. The automated Apple build has no proven successful run.
+
+   A good automatic check file exists, but the project documents say it has never
+   passed. Turn it on, make it pass, and require it before changes are accepted.
+
+MEDIUM-PRIORITY WORK
+
+1. Test every permission by saying yes, saying no, and changing the choice later.
+   The app should remain useful in every case.
+
+2. Test with the largest text size, screen reading, high contrast, reduced
+   movement, reduced transparency, and color filters. No screen has been seen yet,
+   so accessibility is still a promise rather than proof.
+
+3. Test sound with phone calls, alarms, headphones, Bluetooth loss, screen lock,
+   other music already playing, and microphone recording.
+
+4. Test the Watch while the phone app is closed, while either device has no
+   connection, and when the same action is made on both devices.
+
+5. Test low storage, a damaged saved-information file, interrupted photo saves,
+   and an update that stops halfway through.
+
+6. Add limits for very large photos, long lists, very long notes, and years of
+   history. The voice recorder already has a five-minute limit, which is a good
+   example to follow.
+
+7. Check that every screen explains failures instead of quietly doing nothing.
+
+8. Finish a real privacy page that explains what stays on the phone, what may be
+   shared through the owner's Apple account, how to export, and how to erase.
+
+DOCUMENTATION REVIEW
+
+The documents are unusually detailed and often honest about missing proof. That
+is a major strength. They explain the product's voice, privacy goals, feature
+limits, and testing gaps better than most early projects.
+
+The weakness is repetition. The same status is copied into several files and has
+already drifted. Pick one short status page as the only official answer. Other
+documents should link to it instead of copying test counts and release claims.
+
+FINAL RECOMMENDATION
+
+Do not add large new features yet. Spend the next round making the existing app
+build, protecting private information, proving saved-information updates, adding
+erase-all, cleaning exports, and testing on real Apple devices. Once those are
+done, the current feature set is already rich enough for a useful first release.

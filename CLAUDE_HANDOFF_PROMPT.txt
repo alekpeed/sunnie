@@ -1,0 +1,156 @@
+COPY EVERYTHING BELOW THIS LINE AND SEND IT TO CLAUDE
+
+Hello Claude,
+
+You originally built the Sunnie Days project. I asked another reviewer to check
+it for safety, privacy, dependability, whether the features really work, and
+whether the documents accurately describe its condition.
+
+This message contains the important findings. You do not need a separate review
+package to understand or begin this work. Please check every finding against the
+current project before changing anything.
+
+MAIN CONCLUSION
+
+The project is thoughtful and promising, but it is not ready to release. The
+shared decision-making part built on Linux and passed all 441 checks. The full
+iPhone app, Watch app, and home screen displays have not been built or opened
+with Apple's Mac tools. Their screens, saved information, notifications, Apple
+Health connection, Watch connection, sound, and sharing are therefore unproven.
+
+WHAT THE REVIEWER LIKED
+
+1. The app is designed to keep personal information on the owner's devices.
+2. No advertising, outside tracking, private signing files, or obvious secret
+   keys were found.
+3. Activity notes avoid journal words, health details, and recordings.
+4. Links into the app accept only the app's own kind of link and check important
+   labels before opening them.
+5. Many passing checks prevent duplicate care, reward, Watch, and health actions.
+6. The built-in writing is checked for shame, pressure, unsafe health promises,
+   and misleading food claims.
+
+RELEASE BLOCKERS
+
+1. Prove the complete project builds and opens.
+
+   Build the iPhone app, Watch app, and home screen displays on a Mac. Run every
+   available check. Fix what fails. Do not call a feature complete merely because
+   its files exist or the shared checks pass.
+
+2. Prove old saved information survives updates.
+
+   The project has eight saved-information versions, but moving real information
+   from each older version to the newest one has not been proven. Make realistic,
+   filled examples for every old version. Update each one, compare everything
+   before and after, and test recovery from an interrupted update.
+
+3. Add honest erase controls.
+
+   The privacy plan promises ways to erase one area and erase everything, but the
+   settings screen does not provide them. Permanent deletion must also remove
+   related photos and voice recordings. Explain separately that Apple Health
+   keeps its own records.
+
+4. Protect private files while the phone is locked.
+
+   Choose and test a clear rule for when the saved store, journal information,
+   wellness information, photos, and voice recordings may be opened while the
+   phone is locked. Make sure the rule does not break necessary background work.
+
+5. Make Apple features match what the app promises.
+
+   Apple Health sharing, private sharing between the owner's devices, and live
+   home screen information are switched off in the clean project copy. Set them
+   up and test them with the owner's real Apple signing setup, or hide and clearly
+   label them until they are truly available.
+
+HIGH-PRIORITY FIXES
+
+1. Remove temporary plant-export copies after sharing. The current flow creates
+   a new temporary folder and forgets it without removing it.
+
+2. Show a calm message when an export or deletion fails. Several places quietly
+   ignore the problem, which can make an unsuccessful action look successful.
+
+3. Make journal deletion honest. It currently supports undo by keeping a hidden
+   copy. State how long undo lasts, then permanently remove the entry and its
+   attachments.
+
+4. Remove the unused full photo-library explanation. The app uses Apple's private
+   photo chooser, which does not need full library access.
+
+5. Remove the camera explanation unless camera capture is actually added and
+   tested. No camera capture was found during the review.
+
+6. Correct the documents. Some places say the shared 441 checks passed while
+   other places still say none of 659 checks ran. Use one official status page.
+   The accurate starting statement is:
+
+   “The shared part passed 441 checks. The iPhone, Watch, and home screen parts
+   and their checks have not yet been run with Apple's Mac tools.”
+
+REAL-LIFE TESTS STILL NEEDED
+
+1. Refuse every permission and confirm the main app remains useful.
+2. Fill the phone nearly full and try saving a photo and voice note.
+3. Interrupt saves and confirm the app recovers without losing earlier work.
+4. Turn connections off during Watch actions and restore them later.
+5. Make the same care action on the phone and Watch at nearly the same time.
+6. Interrupt sound with calls, alarms, headphones, and microphone use.
+7. Test very large text, screen reading, high contrast, reduced transparency,
+   reduced movement, and color filters.
+8. Use a real iPhone and paired Watch for behavior that a pretend device cannot
+   prove.
+
+WHERE TO VERIFY THE MAIN FINDINGS
+
+Build status and existing claims:
+- README.md
+- REVIEW_PACKET.md
+- Documentation/BUILD_AND_VERIFY.md
+- .github/workflows/ci.yml
+
+Saved information and updates:
+- Apps/iOS/Persistence/ModelContainerFactory.swift
+- Apps/iOS/Persistence/SunnieSchemaV1.swift through SunnieSchemaV8.swift
+- Apps/iOS/Persistence/SwiftDataMediaRepository.swift
+
+Privacy, export, and deletion:
+- Documentation/05_Technical/PRIVACY_SECURITY_AND_DATA_LIFECYCLE.md
+- Apps/iOS/Features/Settings/Screens/SettingsScreen.swift
+- Apps/iOS/Features/Journal/UseCases/JournalUseCases.swift
+- Apps/iOS/Persistence/SwiftDataWellnessRepository.swift
+- Apps/iOS/Integrations/VoiceNoteRecorder.swift
+
+Apple service setup and permission explanations:
+- Config/App-iOS.xcconfig
+- Config/Extension-Widgets.xcconfig
+- Apps/iOS/Resources/Info.plist
+- Tools/validate_permissions.py
+
+BEFORE CHANGING ANYTHING, PLEASE REPLY WITH
+
+1. Which findings you agree with.
+2. Which findings you disagree with, with clear proof from the current project.
+3. The order you will fix the accepted findings.
+4. Which work needs a Mac, real iPhone, paired Watch, Apple signing setup, or my
+   personal decision.
+5. Any safety risk the review missed.
+
+Then work in small groups. After each group:
+
+1. Tell me in ordinary language what changed.
+2. Tell me exactly what was tested and what passed.
+3. Tell me what could not be tested and why.
+4. Update the official project status.
+5. Do not quietly add unrelated features.
+
+Do not begin new feature ideas yet. First make the existing app build, protect
+private information, survive updates, erase information correctly, and work
+accessibly on real devices.
+
+The standard for completion is proof, not confidence. If something has not been
+built, opened, or tried in the real situation it depends on, say that plainly.
+
+END OF PROMPT

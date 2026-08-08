@@ -1,0 +1,78 @@
+FEATURE IDEAS FOR LATER
+
+Prepared on August 7, 2026
+
+Do not start these until the release blockers in AUDIT_REPORT.txt are fixed.
+
+SMALL IDEAS WITH HIGH VALUE
+
+1. A “today is hard” switch.
+
+   For one day, the app could hide scores, reduce reminders, use shorter plans,
+   and offer only gentle choices. It should reset by itself the next day and
+   never remove anything the user earned.
+
+2. A weekly private postcard.
+
+   Sunnie could make a short, editable summary of plants cared for, meals planned,
+   calm minutes, and trip moments. Nothing should leave the phone unless the user
+   chooses to share it.
+
+3. A plant handover card.
+
+   Make a simple printable or shareable card for a caretaker. It could show only
+   the selected plants, dates, and care steps, without exposing journal, health,
+   home, or trip history.
+
+4. A “why am I seeing this?” button.
+
+   Reminders and suggestions could explain their reason in one sentence, such as
+   “This plant is two days past its usual watering day.” This builds trust and
+   helps the owner notice bad information.
+
+5. A private app lock.
+
+   Offer an optional face or passcode check before opening journal and wellness
+   areas. Keep the rest of the app, such as plant care, quick to open.
+
+6. A recovery and backup checkup.
+
+   A settings card could say when the last private device backup succeeded and
+   let the owner make a fresh export. It should never pretend a backup exists
+   unless the app can truly confirm it.
+
+7. Seasonal plant review.
+
+   At gentle intervals, Sunnie could ask whether light, room, pot, and care timing
+   still fit. The result should be a suggestion, never a diagnosis.
+
+8. Accessibility presets.
+
+   Alongside following the phone's settings, offer simple choices like “less
+   movement,” “stronger contrast,” “quiet mode,” and “extra-simple screens.”
+
+LARGER IDEAS
+
+1. A shared caretaker mode with limited access.
+
+   A trusted person could see and finish only chosen plant tasks for a set time.
+   They should never see journal, wellness, meals, or unrelated travel details.
+
+2. A travel day card for poor connections.
+
+   Put the day's places, packing reminders, plant handover details, and chosen
+   emergency notes into one page that works without a connection.
+
+3. A personal pattern viewer.
+
+   Let the owner compare routines without judgments: for example, sleep with calm
+   practice, or travel days with meal planning. Always say that a pattern is not
+   proof and never turn it into medical advice.
+
+FEATURES TO AVOID FOR NOW
+
+1. Public profiles, leaderboards, or competitive streaks.
+2. Advertising or outside tracking.
+3. Automatic health conclusions.
+4. A talking helper that sends private writing to an outside service by default.
+5. More games before the current app is proven stable and accessible.

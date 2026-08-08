@@ -1,0 +1,49 @@
+WHERE CLAUDE SHOULD LOOK
+
+This page points to the parts of the project behind the review findings.
+
+BUILD AND TEST STATUS
+
+README.md
+REVIEW_PACKET.md
+Documentation/BUILD_AND_VERIFY.md
+.github/workflows/ci.yml
+
+SAVED INFORMATION AND UPDATES
+
+Apps/iOS/Persistence/ModelContainerFactory.swift
+Apps/iOS/Persistence/SunnieSchemaV1.swift through SunnieSchemaV8.swift
+The update plan near the end of Apps/iOS/Persistence/SunnieSchemaV1.swift
+Apps/iOS/Persistence/SwiftDataMediaRepository.swift
+
+PRIVACY, EXPORT, AND DELETION
+
+Documentation/05_Technical/PRIVACY_SECURITY_AND_DATA_LIFECYCLE.md
+Apps/iOS/Features/Settings/Screens/SettingsScreen.swift
+Apps/iOS/Features/Journal/UseCases/JournalUseCases.swift
+Apps/iOS/Persistence/SwiftDataWellnessRepository.swift
+Apps/iOS/Integrations/VoiceNoteRecorder.swift
+
+APPLE SERVICE SETUP
+
+Config/App-iOS.xcconfig
+Config/Extension-Widgets.xcconfig
+Apps/iOS/Resources/Info.plist
+Apps/iOS/Resources/SunnieDays.entitlements
+Apps/Widgets/Resources/SunnieWidgets.entitlements
+
+PERMISSION CHECKING
+
+Tools/validate_permissions.py
+
+LINK SAFETY
+
+Apps/iOS/App/AppRoute.swift
+Apps/iOS/App/AppRouter.swift
+
+AUTOMATIC CHECKS THAT PASSED HERE
+
+Packages/SunnieShared/Tests/SunnieSharedTests/
+Scripts/validate-content.sh
+Tools/validate_audio_manifest.py
+Tools/validate_permissions.py
