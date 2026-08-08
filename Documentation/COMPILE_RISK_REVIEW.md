@@ -11,6 +11,17 @@ codebase meets a compiler, ordered so the ones that cascade come first.
 > not errors. **The §1 risk about runtime-key localization is still unverified**,
 > because those 34 call sites live in the app target, which remains uncompiled.
 > Everything below applies to the app targets unless it says otherwise.
+>
+> **Second update — the app targets have now been parsed.** All 129 files pass
+> `swiftc -parse` (`./Tools/parse_check.sh`, wired into CI). That is a real
+> result and a narrow one: it proves the files are well-formed Swift, and proves
+> nothing about whether they compile. Parsing resolves no imports, looks up no
+> names, and checks no types.
+>
+> An attempt was made to settle §1 with the toolchain and **failed**:
+> `String.LocalizationValue` does not exist in Linux Foundation at all, so the
+> experiment could not distinguish "this call is wrong" from "this API is
+> absent here." §1 remains exactly as uncertain as it was.
 
 **This is not a list of known bugs.** It is a list of places where the code makes
 an assumption a type checker has never confirmed. Most will be fine. The point is

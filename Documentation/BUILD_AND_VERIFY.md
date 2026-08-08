@@ -7,7 +7,10 @@
 - `Packages/SunnieShared` **builds and passes 441 tests** on Linux with Swift
   6.1.2 (ADR-032). Run it anywhere: `cd Packages/SunnieShared && swift test`.
 - The iPhone app, the Watch app, and the widget extension have **never been
-  built**. They need Xcode, which this project has never had access to.
+  built**. They need Xcode, which this project has never had access to. Their
+  129 source files do all pass `swiftc -parse` (`./Tools/parse_check.sh`), which
+  proves the syntax is well-formed and proves nothing about whether they
+  compile — no imports resolved, no names looked up, no types checked.
 - No screen has been rendered, on a simulator or a device.
 - The app-side tests — roughly 220 of them — have never been executed.
 

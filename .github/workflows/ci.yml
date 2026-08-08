@@ -64,6 +64,18 @@ jobs:
       - name: Validate the creator audio manifest
         run: python3 Tools/validate_audio_manifest.py CreatorAudioSource/audio.manifest.json
 
+  # Syntax-only, on Linux. The app targets cannot be type-checked without an
+  # Apple SDK, but they can be parsed — which catches malformed Swift that
+  # brace-counting cannot see, on every push, with no Mac involved.
+  parse-app-targets:
+    name: Parse app targets (syntax only)
+    runs-on: ubuntu-24.04
+    container: swift:6.1.2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse
+        run: ./Tools/parse_check.sh
+
   build-and-test:
     name: Build and test
     runs-on: macos-15
