@@ -121,7 +121,7 @@ struct WellnessFlowTests {
         let dependencies = try makeDependencies()
 
         let stressed = try await dependencies.recordWellnessCheckIn(
-            stress: .five, energy: .one, note: "A lot today"
+            energy: .one, stress: .five, note: "A lot today"
         )
 
         #expect(stressed.suggestion != nil)
