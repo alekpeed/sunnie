@@ -19,7 +19,26 @@ actor SwiftDataTravelRepository: TravelRepository {
             sortBy: [SortDescriptor(\.startsAt, order: .reverse)]
         )
         if !includingArchived {
-            descriptor.predicate = #Predicate<SDTrip> { $0.statusOverrideRaw != archived }
+            // The nil case is spelled out, and has to be.
+            //
+            // `statusOverrideRaw != archived` reads as "every trip that is not
+            // archived" and is not what SQL does with it. The column is null for
+            // every ordinary trip — an override is the exception, not the rule —
+            // and in SQL `NULL != 'archived'` is NULL rather than true, so a row
+            // with no override fails the test and is dropped. This returned an
+            // empty list for a store full of trips, always.
+            //
+            // It took the whole feature with it: this one fetch feeds the travel
+            // list, the Watch context, the widget snapshot, and Sunnie's Home,
+            // and every one of them showed nothing. Three integration tests said
+            // so from the day they were written, and could not be heard until
+            // CI learned to report Swift Testing failures.
+            //
+            // Same shape as the journal-search predicate: type-checks, reads
+            // correctly, and means something else once translated.
+            descriptor.predicate = #Predicate<SDTrip> {
+                $0.statusOverrideRaw == nil || $0.statusOverrideRaw != archived
+            }
         }
         do {
             return try modelContext.fetch(descriptor).map { ModelMapping.domain($0) }

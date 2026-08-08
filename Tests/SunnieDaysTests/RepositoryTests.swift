@@ -425,4 +425,59 @@ struct RepositoryTests {
         let again = try await repository.enqueue(action)
         #expect(!again.wasCreated)
     }
+
+    // MARK: - Trips
+
+    /// The unarchived-trips fetch must return a trip that has no status override.
+    ///
+    /// Which is every ordinary trip: an override is the exception. The predicate
+    /// used to read `statusOverrideRaw != archived`, and SQL answers NULL rather
+    /// than true when the column is null, so this returned nothing at all for a
+    /// store full of trips — emptying the travel list, the Watch context, the
+    /// widget snapshot, and Sunnie's Home from one line.
+    ///
+    /// Tested here, at the repository, because the three integration tests that
+    /// caught it could only report a missing panel several layers away.
+    @Test("Trips without a status override are not filtered out")
+    func unarchivedTripsIncludeTripsWithNoOverride() async throws {
+        let repository = SwiftDataTravelRepository(modelContainer: try makeContainer())
+        let now = Date()
+
+        let ordinary = Trip(
+            title: "Lisbon",
+            type: .personal,
+            startsAt: now.addingTimeInterval(86_400 * 4),
+            endsAt: now.addingTimeInterval(86_400 * 8),
+            homeTimeZoneID: "UTC",
+            createdAt: now,
+            modifiedAt: now
+        )
+        try await repository.save(ordinary)
+
+        let visible = try await repository.trips(includingArchived: false)
+        #expect(visible.contains { $0.id == ordinary.id })
+    }
+
+    @Test("An archived trip is still excluded")
+    func archivedTripsAreExcluded() async throws {
+        let repository = SwiftDataTravelRepository(modelContainer: try makeContainer())
+        let now = Date()
+
+        var archived = Trip(
+            title: "Last year",
+            type: .personal,
+            homeTimeZoneID: "UTC",
+            createdAt: now,
+            modifiedAt: now
+        )
+        archived.statusOverride = .archived
+        try await repository.save(archived)
+
+        // The fix widened the predicate, so this is the half that must not have
+        // been widened with it.
+        let visible = try await repository.trips(includingArchived: false)
+        #expect(!visible.contains { $0.id == archived.id })
+        #expect(try await repository.trips(includingArchived: true)
+            .contains { $0.id == archived.id })
+    }
 }
