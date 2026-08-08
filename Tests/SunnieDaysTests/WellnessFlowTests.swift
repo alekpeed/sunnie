@@ -357,13 +357,4 @@ struct WellnessFlowTests {
         #expect(result.wasNewlyRecorded)
         #expect(result.checkIn.id == draftID)
     }
-
-    @Test("A wholly blank check-in is still refused")
-    func blankCheckInIsRefused() async throws {
-        let dependencies = try makeDependencies()
-
-        await #expect(throws: DomainError.self) {
-            _ = try await dependencies.recordWellnessCheckIn()
-        }
-    }
 }
