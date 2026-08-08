@@ -61,6 +61,10 @@ jobs:
         run: python3 Tools/validate_permissions.py
       - name: Validate the creator audio manifest
         run: python3 Tools/validate_audio_manifest.py CreatorAudioSource/audio.manifest.json
+      # Two resources with the same filename fail the build before any Swift is
+      # compiled, so this Linux check costs seconds and saves a macOS run.
+      - name: Validate bundle resource names
+        run: python3 Tools/validate_bundle_resources.py
 
   # Syntax-only, on Linux. The app targets cannot be type-checked without an
   # Apple SDK, but they can be parsed — which catches malformed Swift that
