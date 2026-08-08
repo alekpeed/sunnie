@@ -298,7 +298,7 @@
 "journal.search.none" = "Nothing matching that.";
 "journal.draft" = "Draft";
 "journal.untitled" = "Untitled";
-"journal.deleted" = "Entry removed.";
+"journal.deleted %lld" = "Removed. You can bring it back for the next %lld days.";
 "journal.undo" = "Undo";
 "journal.editor.title" = "Entry";
 "journal.title" = "Title (optional)";

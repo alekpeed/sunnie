@@ -539,3 +539,57 @@ struct SensitiveNicknameTests {
         #expect(!context.isSensitiveMoment)
     }
 }
+
+/// The journal's restore window (ADR-033).
+///
+/// "Delete" in the journal means a thirty-day soft delete followed by permanent
+/// destruction. ADR-033 requires the user to be told that, which means the number
+/// in the sentence has to come from the same place as the behaviour — otherwise
+/// the app promises one window and enforces another, which is the silent-delete
+/// problem wearing a different hat.
+@Suite("Journal restore window")
+struct JournalRestoreWindowTests {
+
+    private let now = Date(timeIntervalSince1970: 1_770_033_600)
+
+    private func entry(deletedAt: Date?) -> JournalEntry {
+        JournalEntry(createdAt: now, modifiedAt: now, deletedAt: deletedAt)
+    }
+
+    @Test("The displayed number matches the enforced window")
+    func displayedDaysMatchTheWindow() {
+        // The whole point: one source, two consumers.
+        #expect(
+            JournalEntry.restoreWindowDays
+                == Int(JournalEntry.restoreWindow / (60 * 60 * 24))
+        )
+        #expect(JournalEntry.restoreWindowDays == 30)
+    }
+
+    @Test("An entry is restorable right up to the edge of the window")
+    func restorableUntilTheWindowCloses() {
+        let justInside = entry(deletedAt: now.addingTimeInterval(-JournalEntry.restoreWindow + 60))
+        #expect(justInside.isRestorable(at: now))
+
+        let justOutside = entry(deletedAt: now.addingTimeInterval(-JournalEntry.restoreWindow - 60))
+        #expect(!justOutside.isRestorable(at: now))
+    }
+
+    @Test("An entry that was never deleted is not restorable")
+    func liveEntriesAreNotRestorable() {
+        #expect(!entry(deletedAt: nil).isRestorable(at: now))
+    }
+
+    /// The promise the sentence makes has to hold for the whole stated period,
+    /// not merely most of it.
+    @Test("Every day inside the promised window is restorable")
+    func everyPromisedDayHolds() {
+        for day in 0..<JournalEntry.restoreWindowDays {
+            let deleted = now.addingTimeInterval(-Double(day) * 24 * 60 * 60)
+            #expect(
+                entry(deletedAt: deleted).isRestorable(at: now),
+                "day \(day) of \(JournalEntry.restoreWindowDays) was not restorable"
+            )
+        }
+    }
+}

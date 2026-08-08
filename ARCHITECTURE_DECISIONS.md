@@ -1481,9 +1481,16 @@ whichever direction the error runs.
 - The ten-plus `try? await …delete(…)` call sites in feature screens now violate
   a locked decision rather than merely being untidy. They must surface failure.
   Tracked as open work; they cannot be verified until the app target compiles.
-- Journal deletion keeps its thirty-day restore window, but the app must **say
-  so** — the current screens do not, which is its own quiet form of the same
-  problem.
+- Journal deletion keeps its thirty-day restore window, and the app now **says
+  so**: the sentence shown on delete states the window, and the number is derived
+  from `JournalEntry.restoreWindowDays` rather than written into a string file,
+  so the promise cannot drift from the behaviour. A hardcoded number that
+  outlived a retuned window would have the app promising one thing and enforcing
+  another — the same class of problem in a different coat.
+- Still open: once the entry scrolls past the immediate undo banner there is no
+  way to reach it, even though it remains restorable. `deletedEntries()` exists
+  on the repository with no caller. A "Recently deleted" view is the natural
+  finish and is app-target UI work.
 
 ### Alternatives considered
 

@@ -69,9 +69,19 @@ Both run at launch, from `AppDependencies.performLaunchHousekeeping()`.
 The salvageable part of the finding is the user-facing wording: nothing on the
 journal screen tells the user that "delete" means thirty days of recoverability.
 That is a real gap, and it is a copy change rather than the data-retention defect
-the audit describes. It also sits directly under ADR-033: a thirty-day window the
-user is never told about is its own quiet form of a silent delete. Tracked with
-the HP-2 sites below.
+the audit describes — and it sits directly under ADR-033, since a thirty-day
+window the user is never told about is its own quiet form of a silent delete.
+
+**Fixed.** The sentence shown on delete now states the window, and the number
+comes from `JournalEntry.restoreWindowDays` rather than a string literal, so it
+cannot drift from the behaviour it describes. Four tests cover the window,
+including one that walks every day inside it — the journal domain had no
+shared-package coverage at all before this.
+
+What remains is reach rather than disclosure: once the undo banner is gone, a
+restorable entry cannot be opened. `deletedEntries()` exists on the repository
+with no caller, so a "Recently deleted" view is a small piece of app-target UI on
+top of machinery that is already there.
 
 ## Changed in this pass
 

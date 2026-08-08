@@ -174,6 +174,18 @@ public struct JournalEntry: Identifiable, Hashable, Sendable, Codable {
     /// How long a deleted entry can still be restored.
     public static let restoreWindow: TimeInterval = 60 * 60 * 24 * 30
 
+    /// The same window in whole days, for the sentence shown when an entry is
+    /// deleted.
+    ///
+    /// Derived rather than written out again. ADR-033 requires the user to be
+    /// told that "delete" is reversible and for how long; a hardcoded "30" in a
+    /// string file would drift from `restoreWindow` the first time anyone tuned
+    /// it, and the app would then be quietly promising the wrong thing — which
+    /// is the same class of problem the rule exists to prevent.
+    public static var restoreWindowDays: Int {
+        Int((restoreWindow / (60 * 60 * 24)).rounded())
+    }
+
     public func isRestorable(at date: Date) -> Bool {
         guard let deletedAt else { return false }
         return date.timeIntervalSince(deletedAt) < Self.restoreWindow

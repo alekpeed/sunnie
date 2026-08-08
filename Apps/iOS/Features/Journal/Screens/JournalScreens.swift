@@ -219,8 +219,14 @@ struct JournalScreen: View {
     private func undoSection(_ entry: JournalEntry) -> some View {
         Section {
             HStack {
-                Text("journal.deleted", bundle: .main)
-                    .font(SunnieFont.secondary)
+                // States the window rather than implying the entry is gone.
+                // ADR-033: a thirty-day undo the user is never told about is its
+                // own quiet form of a silent delete.
+                Text(
+                    "journal.deleted \(JournalEntry.restoreWindowDays)",
+                    bundle: .main
+                )
+                .font(SunnieFont.secondary)
                 Spacer()
                 Button(String(
                     localized: "journal.undo",
