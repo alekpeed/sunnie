@@ -10,11 +10,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Pin the toolchain rather than trusting whatever the runner defaults to
-  # (PROJECT_STRUCTURE_AND_CODING_STANDARDS.md §11).
-  DEVELOPER_DIR: /Applications/Xcode_16.app/Contents/Developer
-
 jobs:
   # Runs on Linux, deliberately. The shared package guards its two Apple-only
   # touch points (`os`, the App Group container) behind `canImport`, so a third
@@ -40,8 +35,11 @@ jobs:
   shared-package:
     name: Shared package (macOS)
     runs-on: macos-15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: ./Tools/select_xcode.sh
 
       # The same package on Apple, where `os` and the App Group call are real
       # rather than compiled out. Linux proves the logic; this proves the guards
@@ -76,11 +74,18 @@ jobs:
       - name: Parse
         run: ./Tools/parse_check.sh
 
+  # The iPhone app, alone. The Watch build used to run first in this job, which
+  # meant a missing watchOS SDK on the runner skipped the iPhone build entirely
+  # — the one result the project most needs. They are separate jobs now so
+  # neither can mask the other.
   build-and-test:
-    name: Build and test
+    name: Build and test (iPhone)
     runs-on: macos-15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: ./Tools/select_xcode.sh
 
       # Destinations are discovered rather than hardcoded, so CI does not break
       # when the runner image changes its simulator lineup.
@@ -104,16 +109,10 @@ jobs:
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
           echo "Using simulator $UDID"
 
-      - name: Build the Watch app
-        run: |
-          set -o pipefail
-          xcodebuild build \
-            -project SunnieDays.xcodeproj \
-            -scheme SunnieDaysWatch \
-            -destination 'generic/platform=watchOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO \
-            | xcbeautify --renderer github-actions
-
+      # The raw log is teed to a file before xcbeautify sees it. xcbeautify is
+      # for reading in the browser; the raw log is the one that contains every
+      # diagnostic in full, and on a target that has never compiled that
+      # complete list is the entire point of running this.
       - name: Build and test the iPhone app
         run: |
           set -o pipefail
@@ -123,12 +122,68 @@ jobs:
             -destination "id=${{ steps.destination.outputs.udid }}" \
             -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO \
-            | xcbeautify --renderer github-actions
+            2>&1 | tee xcodebuild-iphone.log | xcbeautify --renderer github-actions
 
-      - name: Upload test results
+      # Always, and deliberately: a failed build is the run worth reading.
+      - name: Summarize diagnostics
+        if: always()
+        run: |
+          [ -f xcodebuild-iphone.log ] || exit 0
+          {
+            echo "### iPhone build diagnostics"
+            echo
+            echo '```'
+            grep -E "(error|warning): " xcodebuild-iphone.log \
+              | sed 's|/Users/runner/work/sunnie/sunnie/||' \
+              | sort -u | head -300
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload logs and test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: TestResults
-          path: TestResults.xcresult
+          name: iphone-build
+          path: |
+            xcodebuild-iphone.log
+            TestResults.xcresult
+          if-no-files-found: ignore
+
+  # Separate, and manual. The macos-15 image ships no watchOS SDK, so this has
+  # to download several gigabytes before it can build anything — expensive on a
+  # private repository, where macOS minutes bill at ten times the rate. The
+  # iPhone app does not depend on it, so it runs when asked for rather than on
+  # every push.
+  build-watch:
+    name: Build the Watch app
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode
+        run: ./Tools/select_xcode.sh
+
+      - name: Install the watchOS platform
+        run: |
+          set -o pipefail
+          xcodebuild -downloadPlatform watchOS \
+            || sudo xcodebuild -downloadPlatform watchOS
+
+      - name: Build the Watch app
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project SunnieDays.xcodeproj \
+            -scheme SunnieDaysWatch \
+            -destination 'generic/platform=watchOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee xcodebuild-watch.log | xcbeautify --renderer github-actions
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: watch-build
+          path: xcodebuild-watch.log
           if-no-files-found: ignore
