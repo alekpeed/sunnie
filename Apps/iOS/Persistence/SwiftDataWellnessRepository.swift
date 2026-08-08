@@ -206,24 +206,41 @@ actor SwiftDataJournalRepository: JournalRepository {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
 
-        var descriptor = FetchDescriptor<SDJournalEntry>(
-            // `($0.title ?? "")` rather than `$0.title?.localizedStandardContains(…)
-            // ?? false`. Both read the same, but optional-chaining a *method call*
-            // inside `#Predicate` is one of the constructs the macro handles least
-            // reliably — it is a frequent source of "could not be converted to a
-            // predicate expression". Coalescing to a non-optional first keeps the
-            // method call on the well-trodden path, and the semantics are
-            // identical: no title means no match.
-            predicate: #Predicate<SDJournalEntry> {
-                $0.deletedAt == nil
-                    && ($0.body.localizedStandardContains(trimmed)
-                        || ($0.title ?? "").localizedStandardContains(trimmed))
-            },
+        // The text match runs in Swift, not inside the predicate, and that is a
+        // deliberate retreat rather than a shortcut.
+        //
+        // Two shapes were tried here and both were wrong. The first,
+        // `$0.title?.localizedStandardContains(…) ?? false`, was replaced on the
+        // reasoning that optional-chaining a method call is poorly supported by
+        // the macro. Its replacement, `($0.title ?? "").localizedStandardContains(…)`,
+        // compiles just as cleanly — and then fails on a device:
+        //
+        //     CoreData: error: unimplemented SQL generation for predicate :
+        //     (TERNARY(title != nil, title, "") CONTAINS[cdl] "tokyo") (bad RHS)
+        //
+        // `??` becomes a ternary, and there is no SQL for a ternary on the left
+        // of a CONTAINS, so journal search threw for every query typed. Nothing
+        // short of running it finds that: it type-checks, and the translation is
+        // attempted only when the fetch executes.
+        //
+        // So the predicate now asks only what SQL certainly answers, and the
+        // matching happens in memory — where `localizedStandardContains` is the
+        // real Foundation call rather than something being translated, folding
+        // case and diacritics by the user's locale in a way SQL's CONTAINS[cdl]
+        // only approximates. The cost is fetching one person's undeleted entries
+        // in order to filter them, which for a private journal is a bounded set.
+        let descriptor = FetchDescriptor<SDJournalEntry>(
+            predicate: #Predicate<SDJournalEntry> { $0.deletedAt == nil },
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
         )
-        descriptor.fetchLimit = max(0, limit)
         do {
-            return try modelContext.fetch(descriptor).map { ModelMapping.domain($0) }
+            return try modelContext.fetch(descriptor)
+                .filter {
+                    $0.body.localizedStandardContains(trimmed)
+                        || ($0.title ?? "").localizedStandardContains(trimmed)
+                }
+                .prefix(max(0, limit))
+                .map { ModelMapping.domain($0) }
         } catch {
             throw DomainError.persistenceFailed(operation: "searchJournalEntries")
         }

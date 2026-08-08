@@ -6,8 +6,12 @@ import XCTest
 /// accessibility identifiers and labels rather than layout, so the visual design
 /// pass can change every pixel of these screens without breaking them.
 ///
-/// Not verified on a device: these have never been executed. See
-/// `Documentation/BUILD_AND_VERIFY.md`.
+/// First executed in CI on a simulator, not on a device. Four passed on that
+/// run — the app launches, shows five tabs and the plant card, and navigating to
+/// a plant and logging care works end to end. Three failed on their first
+/// assertion, which is why those three now print the screen's buttons when they
+/// do: on a machine nobody can attach to, the failure message is the only
+/// evidence there is. See `Documentation/BUILD_AND_VERIFY.md`.
 final class VerticalSliceUITests: XCTestCase {
 
     private var app: XCUIApplication!
@@ -23,6 +27,22 @@ final class VerticalSliceUITests: XCTestCase {
 
     override func tearDownWithError() throws {
         app = nil
+    }
+
+    /// Every button currently on screen, with its label.
+    ///
+    /// A UI test that fails with a bare `XCTAssertTrue failed` says only that
+    /// something was not found, which leaves the reader guessing whether the
+    /// screen was wrong, the label was wrong, or the wait was too short. These
+    /// run on a machine nobody can attach a debugger to, so the failure message
+    /// has to carry the evidence itself.
+    private func visibleButtons() -> String {
+        let labels = app.buttons.allElementsBoundByIndex
+            .prefix(40)
+            .map { "  • \($0.label.isEmpty ? "<no label>" : $0.label)" }
+        return labels.isEmpty
+            ? "No buttons on screen."
+            : "Buttons on screen:\n" + labels.joined(separator: "\n")
     }
 
     func testTodayShowsPlantCard() throws {
@@ -43,7 +63,10 @@ final class VerticalSliceUITests: XCTestCase {
         let markWatered = app.buttons.matching(
             NSPredicate(format: "label CONTAINS[c] %@", "Mark watered")
         ).firstMatch
-        XCTAssertTrue(markWatered.waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            markWatered.waitForExistence(timeout: 10),
+            "No care action on Today. \(visibleButtons())"
+        )
 
         markWatered.tap()
 
@@ -82,7 +105,10 @@ final class VerticalSliceUITests: XCTestCase {
         app.buttons["Themes"].tap()
 
         let picker = app.buttons["Time of day"]
-        XCTAssertTrue(picker.waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            picker.waitForExistence(timeout: 10),
+            "No time-of-day picker on Themes. \(visibleButtons())"
+        )
 
         // All three branded presentations must render coherently; this walks the
         // phases that produce them.
@@ -108,7 +134,10 @@ final class VerticalSliceUITests: XCTestCase {
         let markWatered = app.buttons.matching(
             NSPredicate(format: "label CONTAINS[c] %@", "Mark watered")
         ).firstMatch
-        XCTAssertTrue(markWatered.waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            markWatered.waitForExistence(timeout: 10),
+            "No care action at accessibility text sizes. \(visibleButtons())"
+        )
         XCTAssertTrue(markWatered.isHittable, "The care action must stay reachable at large text sizes")
     }
 
