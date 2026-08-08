@@ -74,10 +74,20 @@ Provide:
 - Delete individual record
 - Archive where safer
 - Delete category
-- Delete all app data
 - Explain HealthKit data deletion separately because Health owns its store
 - Propagate CloudKit deletion
 - Remove media files
+
+**There is no "delete all app data" control, and there must not be** (ADR-033).
+Deleting the app removes everything the app owns; that is the erase-everything
+path, and it is the operating system's, not a button inside a companion whose
+entire purpose is to be a gentle place. A one-tap destroy-it-all inside the app
+is a bad-day risk, not a privacy feature.
+
+**No deletion is silent.** Every removal is something the user asked for and can
+see. A delete that fails must say so rather than leaving a screen looking
+successful, and nothing may be destroyed on the user's behalf without their
+knowledge.
 
 ## 8. Accessibility
 

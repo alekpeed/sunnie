@@ -1420,3 +1420,87 @@ the app targets.
 load rather than falling back, which is the check that would have caught the
 `ColorValue` defect.
 `JungleSupportTests` — overdue coverage, including the no-double-count case.
+
+## ADR-033: There is no erase-everything button, and no deletion is silent
+
+**Status:** Accepted
+**Date:** Post-audit, at the owner's direction
+
+### Context
+
+`PRIVACY_SECURITY_AND_DATA_LIFECYCLE.md` §7 and
+`ONBOARDING_SETTINGS_AND_PERMISSIONS.md` both listed "delete all app data" as a
+required control, and neither was ever built. An independent audit flagged the
+gap as a release blocker, reasoning — reasonably, on the face of it — that an app
+holding journal, wellness, travel, plant, photo, and voice data owes its owner a
+way to erase all of it.
+
+The owner's answer was the opposite: **do not build it.**
+
+### Decision
+
+There is no "delete all app data" control, and there must not be one. Deleting
+the app from the device removes everything the app owns; that is the
+erase-everything path, and it belongs to the operating system.
+
+Separately and equally binding: **no deletion is silent.** Two consequences —
+
+1. A delete that fails must say so. A screen that looks successful while the
+   record survives is a lie the user acts on.
+2. Nothing is destroyed on the user's behalf without their knowledge.
+
+### Reason
+
+The specification treated erase-all as a privacy feature. For this app it is
+closer to a hazard.
+
+Sunnie Days is a companion built around wellbeing, mood, and a journal, for one
+person, on a bad-day-tolerant premise that runs through every other decision
+here: nothing earned is ever taken away, no streak is ever punished, no message
+is ever disappointed. A single control that destroys years of journal entries,
+plant history, and travel memories is exactly the wrong thing to put one
+confirmation dialog away from someone having a bad night. The feature's
+worst-case user is the same person as its intended user.
+
+The privacy argument it was meant to serve is already answered without it.
+Deleting the app removes the store, the media directory, and everything in the
+App Group. That is a complete erase, it is a familiar gesture, it lives outside
+the app's own emotional context, and it cannot be reached by tapping through a
+settings screen at 2am.
+
+The "no silent deletes" half comes from the same place. An app that quietly
+removes things — or quietly fails to — is not trustworthy with a journal,
+whichever direction the error runs.
+
+### Consequences
+
+- Per-record and per-category deletion stay. Those are deliberate, scoped, and
+  reversible in the ways that matter.
+- The audit's release blocker RB-4 is **rejected as a product decision**, not
+  deferred. It should not reappear in a later review as an open item.
+- The ten-plus `try? await …delete(…)` call sites in feature screens now violate
+  a locked decision rather than merely being untidy. They must surface failure.
+  Tracked as open work; they cannot be verified until the app target compiles.
+- Journal deletion keeps its thirty-day restore window, but the app must **say
+  so** — the current screens do not, which is its own quiet form of the same
+  problem.
+
+### Alternatives considered
+
+**Build it with a strong confirmation.** Rejected. Confirmation dialogs are
+friction, not protection, and friction is what someone in a bad moment pushes
+through. The failure mode is not accidental taps.
+
+**Build it, but require typing a phrase.** Rejected for the same reason, plus it
+imports a hostile pattern from services that use it to discourage cancellation.
+
+**Leave the promise in the docs and never build it.** Rejected outright — a
+specification that promises a control the product has decided against is worse
+than either honest answer.
+
+### Documents/tests affected
+
+`PRIVACY_SECURITY_AND_DATA_LIFECYCLE.md` §7 — promise removed, rule stated.
+`ONBOARDING_SETTINGS_AND_PERMISSIONS.md` — same.
+`Documentation/Claude_Audit_Package/CLAUDE_RESPONSE.md` — RB-4 re-marked as
+rejected on product grounds rather than deferred.

@@ -15,10 +15,10 @@ starting state.
 | RB-1 | The full app has never been built | **Correct** |
 | RB-2 | Migration from older stores never proven | **Correct** |
 | RB-3 | Apple-service promises don't match the default setup | **Correct**, and deliberate (ADR-012) |
-| RB-4 | No erase-all in Settings | **Correct** — and it contradicts a written promise |
+| RB-4 | No erase-all in Settings | **Rejected on product grounds** (ADR-033) — the spec was wrong, not the code |
 | RB-5 | No locked-device rule for private files | **Correct** — now partly fixed |
 | HP-1 | Export leaves temp copies; failure is silent | **Correct on both halves** — fixed |
-| HP-2 | Delete buttons hide failures | **Correct** — 10+ sites, not fixed |
+| HP-2 | Delete buttons hide failures | **Correct**, and now a locked rule (ADR-033) — sites listed below |
 | HP-3 | Journal deletion is a hidden soft delete with no purge | **Mostly wrong** |
 | HP-4 | Photo-library permission unnecessary | **Correct** — fixed |
 | HP-5 | Camera permission unused | **Wrong, and acting on it would crash the app** |
@@ -69,8 +69,9 @@ Both run at launch, from `AppDependencies.performLaunchHousekeeping()`.
 The salvageable part of the finding is the user-facing wording: nothing on the
 journal screen tells the user that "delete" means thirty days of recoverability.
 That is a real gap, and it is a copy change rather than the data-retention defect
-the audit describes. Left for the same pass that adds erase-all, since the two
-belong in one conversation with the user.
+the audit describes. It also sits directly under ADR-033: a thirty-day window the
+user is never told about is its own quiet form of a silent delete. Tracked with
+the HP-2 sites below.
 
 ## Changed in this pass
 
@@ -99,21 +100,45 @@ Fixed, with the reasoning recorded at each site:
 
 ## Deliberately not changed
 
-**Erase-all (RB-4) was not built.** The audit is right that it is missing and
-right that `PRIVACY_SECURITY_AND_DATA_LIFECYCLE.md` §74–77 promises "delete
-individual record / delete category / delete all app data."
+**Erase-all (RB-4) will not be built — the specification was wrong.**
 
-It was not attempted because it is a destructive, irreversible feature spanning
-every repository, the media store, and Health, and **the app target cannot be
-compiled here.** Writing an untested delete-everything path is how someone loses
-their journal for real. This needs a compiler, a populated store to test against,
-and a decision from the owner about what "erase" means for data already written
-to Apple Health — which the app cannot reach back into.
+The audit correctly observed that `PRIVACY_SECURITY_AND_DATA_LIFECYCLE.md` §7
+promised a "delete all app data" control that does not exist. The owner's
+decision is that the promise was the error: there is to be no erase-everything
+button, and deleting the app is the erase-everything path. Recorded as
+**ADR-033**, with both specifications corrected.
 
-**The 10+ `try? await …delete(…)` sites (HP-2) were not changed.** The finding is
-correct, but the fix is a per-screen error-presentation pattern across nine
-files, and none of it can be compiled or seen. It is mechanical work that belongs
-with the first real build, not before it.
+The reasoning is in the ADR, but the short form: this is a companion built for
+one person around mood and a journal, on a premise that nothing is ever taken
+away. A control that destroys years of entries, one confirmation away, has the
+same worst-case user as its intended user. Uninstalling is a complete erase, it
+is familiar, and it sits outside the app's emotional context.
+
+This finding should not reappear in a future review as an open item.
+
+**The silent-delete sites (HP-2) are now a rule violation, not untidiness.**
+ADR-033's second half — no deletion is silent, in either direction — makes these
+ten call sites non-compliant:
+
+| File | Line |
+|---|---|
+| `Travel/Screens/TripEditorAndPacking.swift` | 348, 577 |
+| `Travel/Screens/ChecklistAndMapScreens.swift` | 120, 799 |
+| `Jungle/Components/ScheduleEditorSheet.swift` | 199 |
+| `Jungle/Screens/GrowthTimelineScreen.swift` | 222 |
+| `Jungle/Screens/PlantDetailScreen.swift` | 113 |
+| `Meals/Screens/MealDetailScreens.swift` | 315 |
+| `Meals/Screens/GroceryAndPantryScreens.swift` | 118, 434 |
+
+They were **not** converted in this pass, and the reason is specific rather than
+general caution: every one sits inside a `.swipeActions` block on a row view.
+Presenting an alert from a recycled row is a known-awkward corner of SwiftUI, and
+the likely correct shape is a screen-level error surface that rows report into —
+which is a design decision that needs to be made while looking at the screen
+running, not inferred from source. Guessing at nine screens blind would more
+likely add compile errors to an already-uncompiled target than deliver the rule.
+
+This is the first work item for whoever gets the app compiling.
 
 ## Not verifiable here
 

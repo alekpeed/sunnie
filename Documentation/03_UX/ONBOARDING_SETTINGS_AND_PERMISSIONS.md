@@ -104,7 +104,8 @@ Request only when starting the first voice note.
 - Sync status
 - Export
 - Delete categories
-- Delete all data
+- (No "delete all data" control — see ADR-033. Removing the app is the
+  erase-everything path.)
 - Reset onboarding
 
 ## Denied-permission behavior
