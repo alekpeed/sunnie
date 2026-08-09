@@ -132,11 +132,17 @@ jobs:
       - name: Build and test the iPhone app
         run: |
           set -o pipefail
+          # Several integration tests construct native audio/Watch services.
+          # Running those test processes in parallel can deadlock the simulator's
+          # RPC service and abort an otherwise green suite, so keep one Apple
+          # test process at a time. The shared package remains parallel on both
+          # Linux and macOS.
           xcodebuild test \
             -project SunnieDays.xcodeproj \
             -scheme SunnieDays \
             -destination "id=${{ steps.destination.outputs.udid }}" \
             -resultBundlePath TestResults.xcresult \
+            -parallel-testing-enabled NO \
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee xcodebuild-iphone.log | xcbeautify --renderer github-actions
 
