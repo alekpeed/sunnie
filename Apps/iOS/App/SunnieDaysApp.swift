@@ -8,6 +8,7 @@ struct SunnieDaysApp: App {
     @State private var dependencies: AppDependencies
     @State private var appState: AppState
     @State private var router = AppRouter()
+    @State private var backgroundMaintenance: BackgroundMaintenanceCoordinator
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -18,7 +19,12 @@ struct SunnieDaysApp: App {
             isEphemeralStorage: storage.isEphemeral
         )
         _dependencies = State(initialValue: dependencies)
-        _appState = State(initialValue: AppState(dependencies: dependencies))
+        let appState = AppState(dependencies: dependencies)
+        _appState = State(initialValue: appState)
+        _backgroundMaintenance = State(initialValue: BackgroundMaintenanceCoordinator(
+            dependencies: dependencies,
+            appState: appState
+        ))
     }
 
     private static func makeStorage() -> (container: ModelContainer, isEphemeral: Bool) {
@@ -41,6 +47,7 @@ struct SunnieDaysApp: App {
                 .environment(\.sunnieTheme, appState.theme)
                 .modelContainer(dependencies.modelContainer)
                 .task {
+                    backgroundMaintenance.register()
                     dependencies.configureNotifications { route in
                         router.handle(route)
                     }
@@ -52,6 +59,9 @@ struct SunnieDaysApp: App {
                     // AppState's initial load, so publish one authoritative
                     // context only after launch housekeeping has settled.
                     await appState.refreshCurrentContext()
+                    await dependencies.favorites.rebuild()
+                    await dependencies.unifiedSearch.rebuild()
+                    backgroundMaintenance.schedule()
                     if let route = IntentRouteBox.take() { router.handle(route) }
                 }
                 .onOpenURL { url in
@@ -129,6 +139,7 @@ struct RootTabView: View {
         case .plantGrowth(let id): GrowthTimelineScreen(plantID: id)
         case .themes: ThemesScreen()
         case .settings: SettingsScreen()
+        case .search: UnifiedSearchScreen()
         case .checkIn: WellnessScreen()
         case .meals: MealsScreen()
         case .mealPlanner: MealsScreen()

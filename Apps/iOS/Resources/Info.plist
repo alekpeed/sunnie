@@ -49,6 +49,11 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
+		<string>fetch</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.sunniedays.app.refresh</string>
 	</array>
 
 	<!--
@@ -110,6 +115,8 @@
 	<string>Sunnie can save your mindful minutes and the water you log to Health, so they appear alongside the rest of your day. Only what you record here is written.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Sunnie can listen while you speak to Tell Sunnie or record a voice note. You can always type instead.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Sunnie can help you choose a photo for a plant, trip, or memory. Photos stay on your devices, and you can use Sunnie Days without sharing any.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Sunnie can turn what you say in Tell Sunnie into text so the app can route your request. You can always type instead.</string>
 </dict>

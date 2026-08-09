@@ -64,6 +64,65 @@ enum IntentFailure: Error, CustomLocalizedStringResourceConvertible {
     }
 }
 
+// MARK: - Shared context and Tell Sunnie
+
+struct TellSunnieIntentEntry: AppIntent {
+    static var title: LocalizedStringResource { "Tell Sunnie" }
+    static var description: IntentDescription { IntentDescription("Opens Sunnie's safe, local-first command router with your words ready.") }
+    static var openAppWhenRun: Bool { true }
+
+    @Parameter(title: "What would you like to do?") var text: String
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        TellSunnieCaptureBox.pendingText = text
+        IntentRouteBox.pending = .today
+        return .result()
+    }
+}
+
+struct ShowCurrentContextIntent: AppIntent {
+    static var title: LocalizedStringResource { "What's happening in Sunnie Days?" }
+    static var description: IntentDescription { IntentDescription("Summarizes the most relevant current context without changing anything.") }
+    static var openAppWhenRun: Bool { false }
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let dependencies = IntentDependencies.resolve() else { throw IntentFailure.storageUnavailable }
+        let context = await ContextEngine(dependencies: dependencies).currentContext()
+        guard let item = context.items.first else { return .result(dialog: "Everything is quietly in place.") }
+        return .result(dialog: "\(item.title): \(item.detail)")
+    }
+}
+
+struct AddFlightPackingItemIntent: AppIntent {
+    static var title: LocalizedStringResource { "Add to Flight Mode packing" }
+    static var description: IntentDescription { IntentDescription("Adds an item only when one unambiguous work trip is in Flight Mode.") }
+    static var openAppWhenRun: Bool { false }
+
+    @Parameter(title: "Item") var itemName: String
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let dependencies = IntentDependencies.resolve() else { throw IntentFailure.storageUnavailable }
+        let context = await ContextEngine(dependencies: dependencies).currentContext()
+        guard let flight = context.flightMode else {
+            return .result(dialog: "There isn't a work trip in Flight Mode, so nothing was changed.")
+        }
+        let name = itemName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { throw IntentFailure.notFound }
+        _ = try await dependencies.managePacking.save(PackingItem(tripID: flight.tripID, name: name, category: .other))
+        await dependencies.publishWidgetSnapshot()
+        return .result(dialog: "Added \(name) to \(flight.tripTitle) packing.")
+    }
+}
+
+@MainActor
+enum TellSunnieCaptureBox {
+    static var pendingText: String?
+    static func take() -> String? { defer { pendingText = nil }; return pendingText }
+}
+
 // MARK: - Plants
 
 /// One of the user's plants, as Shortcuts sees it.
@@ -314,6 +373,18 @@ enum IntentRouteBox {
 /// The shortcuts offered without the user having to build one.
 struct SunnieShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: TellSunnieIntentEntry(),
+            phrases: ["Tell \(.applicationName) something"],
+            shortTitle: "Tell Sunnie",
+            systemImageName: "bubble.left.and.bubble.right"
+        )
+        AppShortcut(
+            intent: ShowCurrentContextIntent(),
+            phrases: ["What's happening in \(.applicationName)"],
+            shortTitle: "Current context",
+            systemImageName: "sun.max"
+        )
         AppShortcut(
             intent: StartCheckInIntent(),
             phrases: ["Check in with \(.applicationName)"],

@@ -60,6 +60,10 @@ final class AppDependencies {
     let calendarProvider: any CalendarProviding
     let haptics: HapticService
     let healthService: any HealthProviding
+    let capabilityBroker: any CapabilityProviding
+
+    @ObservationIgnored lazy private(set) var unifiedSearch = UnifiedSearchService(dependencies: self)
+    @ObservationIgnored lazy private(set) var favorites = PersonalFavoritesService(dependencies: self)
 
     let logPlantCare: LogPlantCare
     let logBulkCare: LogBulkCare
@@ -166,6 +170,7 @@ final class AppDependencies {
         self.weatherProvider = SunnieWeatherService()
         self.calendarProvider = SunnieCalendarService()
         self.haptics = HapticService()
+        self.capabilityBroker = CapabilityBroker()
         // A real Health store on iOS, and the unavailable stand-in everywhere
         // else — previews, tests, and any device with no Health at all. Every
         // path already checks availability, so the two behave identically to

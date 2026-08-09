@@ -53,6 +53,7 @@ struct MoreScreen: View {
 }
 
 enum MoreDestination: String, CaseIterable, Identifiable {
+    case search
     case meals
     case games
     case journal
@@ -65,6 +66,7 @@ enum MoreDestination: String, CaseIterable, Identifiable {
 
     var route: AppRoute {
         switch self {
+        case .search: .search
         case .meals: .meals
         case .games: .games
         case .journal: .journal
@@ -80,6 +82,7 @@ enum MoreDestination: String, CaseIterable, Identifiable {
 
     var titleKey: String.LocalizationValue {
         switch self {
+        case .search: "Search Sunnie Days"
         case .meals: "more.meals"
         case .games: "more.games"
         case .journal: "more.journal"
@@ -92,6 +95,7 @@ enum MoreDestination: String, CaseIterable, Identifiable {
 
     var symbolName: String {
         switch self {
+        case .search: "magnifyingglass"
         case .meals: "fork.knife"
         case .games: "puzzlepiece"
         case .journal: "book"

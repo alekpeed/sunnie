@@ -410,6 +410,10 @@ struct TellSunnieScreen: View {
     @State private var speech = TellSunnieSpeechController()
     @State private var input = ""
 
+    init(initialText: String = "") {
+        _input = State(initialValue: initialText)
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {

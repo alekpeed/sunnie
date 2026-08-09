@@ -14,6 +14,7 @@ struct TodayScreen: View {
 
     @State private var model: TodayModel?
     @State private var isTellingSunnie = false
+    @State private var pendingTellText = ""
 
     var body: some View {
         ScrollView {
@@ -53,12 +54,16 @@ struct TodayScreen: View {
                 model = TodayModel(dependencies: dependencies, appState: appState)
             }
             await model?.onAppear()
+            if let text = TellSunnieCaptureBox.take() {
+                pendingTellText = text
+                isTellingSunnie = true
+            }
         }
         .onDisappear {
             Task { await model?.onDisappear() }
         }
         .sheet(isPresented: $isTellingSunnie) {
-            TellSunnieScreen()
+            TellSunnieScreen(initialText: pendingTellText)
         }
     }
 

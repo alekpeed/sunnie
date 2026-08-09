@@ -20,6 +20,7 @@ struct SettingsScreen: View {
     /// the system to feel like reclaiming it.
     @State private var exportDirectory: URL?
     @State private var exportFailed = false
+    @State private var capabilitySnapshot = CapabilitySnapshot(generatedAt: .distantPast, states: [:])
 
     var body: some View {
         Form {
@@ -34,6 +35,8 @@ struct SettingsScreen: View {
             dietarySection
             healthSection
             rhythmSection
+            favoritesSection
+            capabilitiesSection
             exportSection
             privacySection
         }
@@ -43,10 +46,41 @@ struct SettingsScreen: View {
         .task {
             notificationStatus = await dependencies.notificationService.authorizationStatus()
             enabledHealthTypes = await dependencies.manageHealth.enabledTypes()
+            capabilitySnapshot = await dependencies.capabilityBroker.snapshot()
+            await dependencies.favorites.rebuild()
         }
     }
 
     // MARK: - Sections
+
+    private var favoritesSection: some View {
+        Section("Favorites intelligence") {
+            if dependencies.favorites.signals.isEmpty {
+                Text("No explicit or repeated preferences are being used yet.")
+                    .foregroundStyle(theme.color.textSecondary)
+            } else {
+                ForEach(dependencies.favorites.signals) { signal in
+                    Label(signal.title, systemImage: signal.strength == .explicit ? "heart.fill" : "sparkles")
+                }
+            }
+            Toggle("Use repeated choices for recall", isOn: Binding(
+                get: { dependencies.favorites.isInferenceEnabled },
+                set: { enabled in Task { await dependencies.favorites.setInferenceEnabled(enabled) } }
+            ))
+        } footer: {
+            Text("Explicit favorites always win. Repeated choices stay on this device, only improve ranking and recall, and never change your records.")
+        }
+    }
+
+    private var capabilitiesSection: some View {
+        Section("Optional capabilities") {
+            ForEach(SunnieCapability.allCases, id: \.self) { capability in
+                LabeledContent(capability.rawValue.capitalized, value: capabilitySnapshot[capability].rawValue.capitalized)
+            }
+        } footer: {
+            Text("Sunnie Days asks for access only when you choose a feature that needs it. Unavailable capabilities never block the core app.")
+        }
+    }
 
     private var dayCycleSection: some View {
         Section {

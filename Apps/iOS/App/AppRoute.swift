@@ -62,6 +62,7 @@ enum AppRoute: Hashable {
     case sunnieHome
     case themes
     case settings
+    case search
 
     /// The tab this route belongs to, so a deep link switches tabs before
     /// pushing.
@@ -74,7 +75,7 @@ enum AppRoute: Hashable {
         case .wellness, .checkIn: .wellness
         case .meals, .mealPlanner, .recipes, .grocery, .pantry,
              .games, .game, .journal,
-             .collections, .sunnieHome, .themes, .settings: .more
+             .collections, .sunnieHome, .themes, .settings, .search: .more
         }
     }
 
@@ -131,6 +132,7 @@ enum DeepLinkParser {
         case ("home", _): return .sunnieHome
         case ("themes", _): return .themes
         case ("settings", _): return .settings
+        case ("search", _): return .search
         default: return nil
         }
     }
