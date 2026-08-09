@@ -6,11 +6,9 @@ import SunnieShared
 /// Small global state: the things genuinely shared across every feature
 /// (TECHNICAL_ARCHITECTURE.md §7).
 ///
-/// The revamp adds one more genuinely global value: `currentContext`. It is a
-/// read-only synthesis of feature summaries, not another data store. That lets
-/// Today, Sunnie Home, Flight Mode, widgets, Watch and Tell Sunnie agree about
-/// what is happening without giving any of them permission to mutate another
-/// feature directly.
+/// The revamp adds genuinely global read-only values: `currentContext` and
+/// `worldContext`. They synthesize existing feature state without becoming
+/// another persistence layer.
 @MainActor
 @Observable
 final class AppState {
@@ -20,6 +18,7 @@ final class AppState {
     private(set) var theme: SunnieTheme = .placeholder
     private(set) var timeContext: TimeContext
     private(set) var currentContext: CurrentContext
+    private(set) var worldContext: SunnieWorldSnapshot
 
     /// A phase the user is previewing in Settings. Overrides the live phase for
     /// display only and is never persisted (THEMES_AND_TIME_OF_DAY.md §7).
@@ -42,6 +41,7 @@ final class AppState {
         self.dependencies = dependencies
         self.contextEngine = ContextEngine(dependencies: dependencies)
         self.currentContext = .empty(at: dependencies.clock.now)
+        self.worldContext = .empty(at: dependencies.clock.now)
         self.timeContext = dependencies.timeEngine.resolve(
             at: dependencies.clock.now,
             preferences: .default,
@@ -87,11 +87,12 @@ final class AppState {
         await refreshCurrentContext()
     }
 
-    /// Rebuilds the shared read-only context after a meaningful change or when a
-    /// surface becomes active. Failure in one optional subsystem is handled by
-    /// `ContextEngine`; callers always receive the best partial picture available.
+    /// Rebuilds the shared read-only context and world snapshot after a
+    /// meaningful change or when a surface becomes active.
     func refreshCurrentContext() async {
-        currentContext = await contextEngine.currentContext()
+        let context = await contextEngine.currentContext()
+        currentContext = context
+        worldContext = await contextEngine.currentWorldSnapshot(from: context)
     }
 
     /// Recomputes the phase. Called on a timer and when the app returns to the
