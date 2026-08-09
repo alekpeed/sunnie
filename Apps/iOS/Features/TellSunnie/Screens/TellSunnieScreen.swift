@@ -328,6 +328,10 @@ final class TellSunnieSpeechController {
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
+        // Prefer the device-local recognizer whenever this language/device
+        // supports it. Text remains the complete fallback if recognition is not
+        // available at all.
+        request.requiresOnDeviceRecognition = recognizer.supportsOnDeviceRecognition
         recognitionRequest = request
 
         do {
