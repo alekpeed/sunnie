@@ -54,7 +54,7 @@ struct SettingsScreen: View {
     // MARK: - Sections
 
     private var favoritesSection: some View {
-        Section("Favorites intelligence") {
+        Section {
             if dependencies.favorites.signals.isEmpty {
                 Text("No explicit or repeated preferences are being used yet.")
                     .foregroundStyle(theme.color.textSecondary)
@@ -67,16 +67,20 @@ struct SettingsScreen: View {
                 get: { dependencies.favorites.isInferenceEnabled },
                 set: { enabled in Task { await dependencies.favorites.setInferenceEnabled(enabled) } }
             ))
+        } header: {
+            Text("Favorites intelligence")
         } footer: {
             Text("Explicit favorites always win. Repeated choices stay on this device, only improve ranking and recall, and never change your records.")
         }
     }
 
     private var capabilitiesSection: some View {
-        Section("Optional capabilities") {
+        Section {
             ForEach(SunnieCapability.allCases, id: \.self) { capability in
                 LabeledContent(capability.displayName, value: capabilitySnapshot[capability].rawValue.capitalized)
             }
+        } header: {
+            Text("Optional capabilities")
         } footer: {
             Text("Sunnie Days asks for access only when you choose a feature that needs it. Unavailable capabilities never block the core app.")
         }
