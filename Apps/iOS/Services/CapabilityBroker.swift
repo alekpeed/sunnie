@@ -49,7 +49,7 @@ final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
     }
 
     private static var microphoneState: CapabilityState {
-        switch AVAudioApplication.shared.recordPermission {
+        return switch AVAudioApplication.shared.recordPermission {
         case .granted: CapabilityState.authorized
         case .denied: CapabilityState.denied
         case .undetermined: CapabilityState.notRequested
@@ -58,7 +58,7 @@ final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
     }
 
     private static var speechState: CapabilityState {
-        switch SFSpeechRecognizer.authorizationStatus() {
+        return switch SFSpeechRecognizer.authorizationStatus() {
         case .authorized: CapabilityState.authorized
         case .denied: CapabilityState.denied
         case .restricted: CapabilityState.restricted
@@ -68,7 +68,7 @@ final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
     }
 
     private static var photoState: CapabilityState {
-        switch PHPhotoLibrary.authorizationStatus(for: .readWrite) {
+        return switch PHPhotoLibrary.authorizationStatus(for: .readWrite) {
         case .authorized: CapabilityState.authorized
         case .limited: CapabilityState.limited
         case .denied: CapabilityState.denied
@@ -80,7 +80,7 @@ final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
 
     private static var cameraState: CapabilityState {
         guard UIImagePickerController.isSourceTypeAvailable(.camera) else { return .unavailable }
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        return switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized: CapabilityState.authorized
         case .denied: CapabilityState.denied
         case .restricted: CapabilityState.restricted
@@ -92,7 +92,7 @@ final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
     private static var notificationState: CapabilityState {
         get async {
             let settings = await UNUserNotificationCenter.current().notificationSettings()
-            switch settings.authorizationStatus {
+            return switch settings.authorizationStatus {
             case .authorized, .provisional, .ephemeral: CapabilityState.authorized
             case .denied: CapabilityState.denied
             case .notDetermined: CapabilityState.notRequested
@@ -115,7 +115,7 @@ final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
     }
 
     private static var calendarState: CapabilityState {
-        switch EKEventStore.authorizationStatus(for: .event) {
+        return switch EKEventStore.authorizationStatus(for: .event) {
         case .fullAccess, .writeOnly: CapabilityState.authorized
         case .denied: CapabilityState.denied
         case .restricted: CapabilityState.restricted
@@ -126,7 +126,7 @@ final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
 
     private static var locationState: CapabilityState {
         guard CLLocationManager.locationServicesEnabled() else { return .unavailable }
-        switch CLLocationManager().authorizationStatus {
+        return switch CLLocationManager().authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse: CapabilityState.authorized
         case .denied: CapabilityState.denied
         case .restricted: CapabilityState.restricted
@@ -146,7 +146,7 @@ final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
 
     @MainActor private static var backgroundState: CapabilityState {
         get async {
-            switch UIApplication.shared.backgroundRefreshStatus {
+            return switch UIApplication.shared.backgroundRefreshStatus {
             case .available: CapabilityState.authorized
             case .denied: CapabilityState.denied
             case .restricted: CapabilityState.restricted
