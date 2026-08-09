@@ -51,24 +51,74 @@ final class ContextEngine {
     /// this snapshot instead of maintaining another reward or travel database.
     func currentWorldSnapshot(from context: CurrentContext) async -> SunnieWorldSnapshot {
         let now = dependencies.clock.now
-        let trips = (try? await dependencies.manageTrip.dashboardTrips()) ?? []
+        let trips = (try? await dependencies.manageTrip.dashboardTrips(includingArchived: true)) ?? []
+        let places = (try? await dependencies.manageTrip.places()) ?? []
 
         let memories = trips.compactMap { trip -> MemoryChapter? in
             guard let occurredAt = trip.startsAt, occurredAt <= now else { return nil }
+            let destination = places.first { trip.placeIDs.contains($0.id) }?.name
             return MemoryChapter(
                 id: "trip.\(trip.id.uuidString)",
                 title: trip.title,
-                subtitle: "Travel chapter",
+                subtitle: destination.map { "Travel chapter · \($0)" } ?? "Travel chapter",
                 occurredAt: occurredAt,
-                symbol: "airplane"
+                symbol: "airplane",
+                tripID: trip.id,
+                destinationName: destination
             )
         }
 
+        let environment = worldEnvironment(for: context)
+        let curios = CurioCatalog.unlocked(atLevel: context.progression.level)
+        let languageMoment = LanguageMomentCatalog.moment(
+            for: context.flightMode?.destinationName
+        )
+        let preferenceHint = repeatedDestinationHint(from: memories)
+        let presentationPacks = PresentationPackCatalog.unlocked(
+            atLevel: context.progression.level
+        )
+        let surprise = WorldSurpriseResolver.resolve(
+            environment: environment,
+            curios: curios,
+            memories: memories,
+            languageMoment: languageMoment
+        )
+
         return SunnieWorldSnapshot(
             generatedAt: now,
-            environment: worldEnvironment(for: context),
-            curios: CurioCatalog.unlocked(atLevel: context.progression.level),
-            memories: memories
+            environment: environment,
+            curios: curios,
+            memories: memories,
+            languageMoment: languageMoment,
+            preferenceHint: preferenceHint,
+            presentationPacks: presentationPacks,
+            surprise: surprise
+        )
+    }
+
+    private func repeatedDestinationHint(from memories: [MemoryChapter]) -> WorldPreferenceHint? {
+        let names = memories.compactMap(\.destinationName)
+        guard !names.isEmpty else { return nil }
+
+        let grouped = Dictionary(grouping: names) { name in
+            name.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+                .lowercased()
+        }
+        guard let winner = grouped.max(by: { left, right in
+            if left.value.count != right.value.count {
+                return left.value.count < right.value.count
+            }
+            return left.key > right.key
+        }), winner.value.count >= 2, let displayName = winner.value.first else {
+            return nil
+        }
+
+        let count = winner.value.count
+        return WorldPreferenceHint(
+            id: "preference.destination.\(winner.key)",
+            title: "A familiar place",
+            detail: "\(displayName) appears in \(count) of your trip chapters. Sunnie can use that history for recall without treating it as a permanent favorite.",
+            symbol: "location.circle.fill"
         )
     }
 

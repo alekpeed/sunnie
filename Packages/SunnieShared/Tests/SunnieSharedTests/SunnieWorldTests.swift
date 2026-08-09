@@ -17,6 +17,15 @@ final class SunnieWorldTests: XCTestCase {
         )
     }
 
+    func testPresentationUnlocksAreMonotonic() {
+        let levelOne = PresentationPackCatalog.unlocked(atLevel: 1)
+        let levelTen = PresentationPackCatalog.unlocked(atLevel: 10)
+
+        XCTAssertFalse(levelOne.isEmpty)
+        XCTAssertTrue(Set(levelOne.map(\.id)).isSubset(of: Set(levelTen.map(\.id))))
+        XCTAssertEqual(levelTen.last?.id, "presentation-traveler")
+    }
+
     func testMemoryChaptersSortNewestFirst() {
         let older = MemoryChapter(
             id: "older",
@@ -37,5 +46,36 @@ final class SunnieWorldTests: XCTestCase {
         )
 
         XCTAssertEqual(snapshot.memories.map(\.id), ["newer", "older"])
+    }
+
+    func testLanguageMomentUsesKnownDestination() {
+        let moment = LanguageMomentCatalog.moment(for: "Tokyo")
+
+        XCTAssertEqual(moment?.id, "language.ja.otsukaresama")
+        XCTAssertEqual(moment?.destination, "Tokyo")
+    }
+
+    func testLanguageMomentStaysSilentForUnknownDestination() {
+        XCTAssertNil(LanguageMomentCatalog.moment(for: "Somewhere Else"))
+    }
+
+    func testTravelSurpriseDoesNotDependOnPreciseTime() {
+        let curio = CurioItem(
+            id: "travel",
+            title: "Travel",
+            detail: "Travel curio",
+            symbol: "airplane",
+            kind: .travel,
+            unlockedAtLevel: 1
+        )
+
+        let surprise = WorldSurpriseResolver.resolve(
+            environment: .tripAway(destination: "Tokyo"),
+            curios: [curio],
+            memories: [],
+            languageMoment: nil
+        )
+
+        XCTAssertEqual(surprise?.id, "surprise.travel.curio")
     }
 }
