@@ -18,8 +18,17 @@ struct SunnieHomeAssistantContainer<Content: View>: View {
 
     var body: some View {
         content
+            // The shared world can now change Sunnie's actual semantic pose in
+            // Home, not merely the labels around him. Other app surfaces do not
+            // receive this value and therefore keep their own visual contracts.
+            .environment(\.sunnieWorldEnvironment, appState.worldContext.environment)
             .safeAreaInset(edge: .top) {
-                worldBar
+                VStack(spacing: 0) {
+                    worldBar
+                    if let ambient = ambientLine {
+                        ambientBar(ambient)
+                    }
+                }
             }
             .safeAreaInset(edge: .bottom, alignment: .trailing) {
                 HStack(spacing: Space.s) {
@@ -57,21 +66,29 @@ struct SunnieHomeAssistantContainer<Content: View>: View {
 
     private var worldBar: some View {
         HStack(spacing: Space.s) {
-            Image(systemName: environmentSymbol)
+            Image(systemName: appState.worldContext.environment.symbol)
+                .foregroundStyle(theme.color.accentSunnie)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(appState.worldContext.environment.title)
                     .font(SunnieFont.caption)
                     .fontWeight(.semibold)
+                    .foregroundStyle(theme.color.textPrimary)
 
                 Text(worldDetail)
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.color.textSecondary)
                     .lineLimit(1)
             }
 
             Spacer(minLength: Space.s)
+
+            if let pack = appState.worldContext.activePresentationPack {
+                Image(systemName: pack.symbol)
+                    .foregroundStyle(theme.color.textSecondary)
+                    .accessibilityLabel("Active Sunnie presentation: \(pack.title)")
+            }
 
             Button {
                 router.handle(.collections)
@@ -90,9 +107,47 @@ struct SunnieHomeAssistantContainer<Content: View>: View {
         .background(.ultraThinMaterial)
     }
 
+    private func ambientBar(_ ambient: AmbientLine) -> some View {
+        HStack(spacing: Space.xs) {
+            Image(systemName: ambient.symbol)
+                .font(.caption)
+                .foregroundStyle(theme.color.accentSunnie)
+                .accessibilityHidden(true)
+            Text(ambient.text)
+                .font(.caption2)
+                .foregroundStyle(theme.color.textSecondary)
+                .lineLimit(2)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, Space.m)
+        .padding(.vertical, Space.xxs)
+        .frame(maxWidth: .infinity)
+        .background(.ultraThinMaterial)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var ambientLine: AmbientLine? {
+        if let language = appState.worldContext.languageMoment {
+            return AmbientLine(
+                symbol: "character.bubble.fill",
+                text: "\(language.phrase) · \(language.translation)"
+            )
+        }
+
+        if let surprise = appState.worldContext.surprise {
+            return AmbientLine(symbol: surprise.symbol, text: surprise.detail)
+        }
+
+        return nil
+    }
+
     private var worldDetail: String {
         let memories = appState.worldContext.memories.count
         let curios = appState.worldContext.curios.count
+
+        if appState.worldContext.environment != .ordinary {
+            return appState.worldContext.environment.detail
+        }
 
         switch (memories, curios) {
         case (0, 0): return "Your world will collect memories and keepsakes here."
@@ -102,14 +157,9 @@ struct SunnieHomeAssistantContainer<Content: View>: View {
             return "\(memories) memory chapter\(memories == 1 ? "" : "s") · \(curios) keepsake\(curios == 1 ? "" : "s")"
         }
     }
+}
 
-    private var environmentSymbol: String {
-        switch appState.worldContext.environment {
-        case .ordinary: return "house.fill"
-        case .plantDay: return "leaf.fill"
-        case .tripPreparing: return "suitcase.fill"
-        case .tripAway: return "airplane"
-        case .tripReturning: return "house.and.flag.fill"
-        }
-    }
+private struct AmbientLine {
+    let symbol: String
+    let text: String
 }

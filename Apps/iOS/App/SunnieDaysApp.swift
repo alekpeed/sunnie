@@ -143,7 +143,10 @@ struct RootTabView: View {
                 GamesHomeScreen()
             }
         case .journal: JournalScreen()
-        case .collections: CollectionsScreen()
+        case .collections:
+            SunnieWorldCollectionContainer {
+                CollectionsScreen()
+            }
         case .sunnieHome:
             SunnieHomeAssistantContainer {
                 SunnieHomeScreen()
