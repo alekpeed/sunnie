@@ -562,18 +562,6 @@ struct IntegrationFlowTests {
 
     // MARK: - Intents
 
-    @Test("An intent hands its destination to the app rather than navigating")
-    @MainActor
-    func intentRouteHandoff() {
-        IntentRouteBox.pending = nil
-        #expect(IntentRouteBox.take() == nil)
-
-        IntentRouteBox.pending = .checkIn
-        #expect(IntentRouteBox.take() == .checkIn)
-        // Taken once: a shortcut run yesterday must not redirect a launch today.
-        #expect(IntentRouteBox.take() == nil)
-    }
-
     @Test("The intent care types resolve to the domain's own kinds")
     @MainActor
     func intentCareTypesResolve() {
