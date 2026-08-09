@@ -63,16 +63,6 @@ struct ManageCollection: TravelKeepsakeAwarding {
         return Set(grants.map(\.rewardID))
     }
 
-    /// The additive progression profile for shared surfaces such as Today.
-    ///
-    /// Exposed through this use case rather than letting those surfaces reach
-    /// directly into progression storage. `experience` and `level` can only move
-    /// forward through normal progression; nothing here provides a subtraction,
-    /// revoke, decay, or missed-day path.
-    func progressionProfile() async -> ProgressionProfile {
-        (try? await progressionRepository.profile()) ?? ProgressionProfile()
-    }
-
     /// The whole collection, owned and locked (S-21).
     func items(filter: CollectionFilter = .everything) async throws -> [CollectionItem] {
         let grants = try await progressionRepository.allGrants()
@@ -228,51 +218,53 @@ struct ManageCollection: TravelKeepsakeAwarding {
     /// screen has nothing useful to do with the list, and the collection screen
     /// will show what arrived next time it is opened.
     func awardKeepsakes(for memory: TravelMemory) async {
-        guard let destination = await destination(for: memory) else { return }
-        await awardKeepsakes(destinationID: destination.id, sourceEventID: nil)
+        _ = await grantKeepsakes(for: memory)
     }
 
-    /// Awards all travel keepsakes tied to a destination. The deterministic key
-    /// is per reward + destination, so a second memory from the same destination
-    /// is safely a no-op.
-    private func awardKeepsakes(
-        destinationID: ContentID,
-        sourceEventID: UUID?
-    ) async {
-        let due = pack.rewards.filter { reward in
-            switch reward.unlock {
-            case .visitedDestination(let id): return id == destinationID
-            case .firstTravelMemory(let id): return id == destinationID
-            default: return false
-            }
-        }
+    @discardableResult
+    func grantKeepsakes(for memory: TravelMemory) async -> [RewardDefinition] {
+        guard let destination = await destination(for: memory) else { return [] }
 
-        guard !due.isEmpty else { return }
-        let owned = await ownedRewardIDs()
-        let now = clock.now
-        for reward in due where !owned.contains(reward.id) {
-            let grant = RewardUnlockPlanner.grant(
-                for: reward,
-                at: now,
-                sourceEventID: sourceEventID
-            )
-            _ = try? await progressionRepository.save(grant)
+        var granted: [RewardDefinition] = []
+        for grant in TravelKeepsakes.grants(for: destination, at: clock.now) {
+            guard let outcome = try? await progressionRepository.save(grant),
+                  outcome.wasCreated,
+                  let definition = pack.reward(id: grant.rewardID)
+            else { continue }
+            granted.append(definition)
         }
+        return granted
+    }
+
+    // MARK: - What's next
+
+    /// The nearest level-gated reward above the current level.
+    func nextUnlock() async -> (reward: RewardDefinition, level: Int)? {
+        guard let profile = try? await progressionRepository.profile() else { return nil }
+        return RewardUnlockPlanner.nextLevelUnlock(rewards: pack.rewards, level: profile.level)
     }
 
     // MARK: - Rhythm
 
-    func rhythmSummary() async -> RhythmSummary? {
-        guard (try? await preferencesRepository.preferences().showsActivityRhythm) == true else {
-            return nil
-        }
-        let dates = (try? await progressionRepository.eventDates(
-            since: clock.calendar.date(byAdding: .day, value: -56, to: clock.now) ?? clock.now
-        )) ?? []
+    /// Caring days, described without a streak (§5).
+    ///
+    /// The visibility preference is read here rather than passed in, so there is
+    /// one place that decides whether this is shown and no screen can display it
+    /// after the user turned it off.
+    func rhythm() async -> RhythmSummary {
+        let isVisible = ((try? await preferencesRepository.preferences()) ?? .default).showsRhythm
+        let calendar = clock.calendar
+        // Eight weeks back: enough for a personal best to be a real one, short
+        // enough that the query stays small on a long-lived install.
+        let since = clock.now.addingTimeInterval(-8 * 7 * 24 * 3600)
+        let dates = (try? await progressionRepository.eventDates(since: since)) ?? []
+
         return RhythmCalculator.summary(
-            dates: dates,
-            now: clock.now,
-            calendar: clock.calendar
+            eventDates: dates, now: clock.now, calendar: calendar, isVisible: isVisible
         )
+    }
+
+    func profile() async -> ProgressionProfile {
+        (try? await progressionRepository.profile()) ?? ProgressionProfile()
     }
 }
