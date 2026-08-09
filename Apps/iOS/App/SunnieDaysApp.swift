@@ -144,7 +144,10 @@ struct RootTabView: View {
             }
         case .journal: JournalScreen()
         case .collections: CollectionsScreen()
-        case .sunnieHome: SunnieHomeScreen()
+        case .sunnieHome:
+            SunnieHomeAssistantContainer {
+                SunnieHomeScreen()
+            }
         case .trip(let id): TripOverviewScreen(tripID: id)
         case .packing(let id): PackingScreen(tripID: id)
         case .tripChecklist(let id, let phase):
