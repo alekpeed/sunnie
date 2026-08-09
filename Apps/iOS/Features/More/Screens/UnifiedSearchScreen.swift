@@ -12,8 +12,7 @@ struct UnifiedSearchScreen: View {
     var body: some View {
         List(results) { result in
             Button {
-                guard let url = URL(string: result.route) else { return }
-                router.handle(url: url)
+                router.handle(url: result.destination.routeURL)
             } label: {
                 Label {
                     VStack(alignment: .leading, spacing: Space.xxs) {

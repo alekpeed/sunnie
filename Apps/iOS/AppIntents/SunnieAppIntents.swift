@@ -75,8 +75,10 @@ struct TellSunnieIntentEntry: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        TellSunnieCaptureBox.pendingText = text
-        IntentRouteBox.pending = .today
+        try IntentHandoffStore.live.save(
+            routeURL: URL(string: "sunniedays://today")!,
+            tellSunnieText: text
+        )
         return .result()
     }
 }
@@ -245,7 +247,7 @@ struct StartCheckInIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        IntentRouteBox.pending = .checkIn
+        try IntentHandoffStore.live.save(routeURL: URL(string: "sunniedays://wellness/checkin")!)
         return .result()
     }
 }
@@ -259,7 +261,7 @@ struct StartBreathingIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        IntentRouteBox.pending = .wellness
+        try IntentHandoffStore.live.save(routeURL: URL(string: "sunniedays://wellness")!)
         return .result()
     }
 }
@@ -316,7 +318,8 @@ struct OpenCurrentTripIntent: AppIntent {
 
         // No trip opens the travel tab rather than failing: "there isn't one"
         // is better said by the screen than by an error dialog.
-        IntentRouteBox.pending = candidate.map { .trip($0.0.id) } ?? .travel
+        let route = candidate.map { "sunniedays://trip/\($0.0.id)" } ?? "sunniedays://travel"
+        try IntentHandoffStore.live.save(routeURL: URL(string: route)!)
         return .result()
     }
 }
@@ -330,7 +333,7 @@ struct AddJournalEntryIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        IntentRouteBox.pending = .journal
+        try IntentHandoffStore.live.save(routeURL: URL(string: "sunniedays://journal")!)
         return .result()
     }
 }
@@ -344,29 +347,8 @@ struct ShowDailyPuzzleIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        IntentRouteBox.pending = .games
+        try IntentHandoffStore.live.save(routeURL: URL(string: "sunniedays://games")!)
         return .result()
-    }
-}
-
-/// Where an intent leaves the route it wants the app to open.
-///
-/// An intent that launches the app cannot navigate it — the two are separate
-/// processes and the app decides its own state. This is a handoff: the intent
-/// records where it was going, and the app checks on becoming active.
-///
-/// Deliberately not a deep link. A `sunniedays://` URL would work, but it would
-/// mean building and parsing a string to move a value between two pieces of the
-/// same app, and every parse is a way to be wrong.
-@MainActor
-enum IntentRouteBox {
-    /// Cleared by the app once handled, so a shortcut run yesterday does not
-    /// redirect a launch today.
-    static var pending: AppRoute?
-
-    static func take() -> AppRoute? {
-        defer { pending = nil }
-        return pending
     }
 }
 

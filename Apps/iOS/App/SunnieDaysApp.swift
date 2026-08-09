@@ -21,10 +21,12 @@ struct SunnieDaysApp: App {
         _dependencies = State(initialValue: dependencies)
         let appState = AppState(dependencies: dependencies)
         _appState = State(initialValue: appState)
-        _backgroundMaintenance = State(initialValue: BackgroundMaintenanceCoordinator(
+        let backgroundMaintenance = BackgroundMaintenanceCoordinator(
             dependencies: dependencies,
             appState: appState
-        ))
+        )
+        backgroundMaintenance.register()
+        _backgroundMaintenance = State(initialValue: backgroundMaintenance)
     }
 
     private static func makeStorage() -> (container: ModelContainer, isEphemeral: Bool) {
@@ -47,7 +49,6 @@ struct SunnieDaysApp: App {
                 .environment(\.sunnieTheme, appState.theme)
                 .modelContainer(dependencies.modelContainer)
                 .task {
-                    backgroundMaintenance.register()
                     dependencies.configureNotifications { route in
                         router.handle(route)
                     }
@@ -59,10 +60,12 @@ struct SunnieDaysApp: App {
                     // AppState's initial load, so publish one authoritative
                     // context only after launch housekeeping has settled.
                     await appState.refreshCurrentContext()
-                    await dependencies.favorites.rebuild()
-                    await dependencies.unifiedSearch.rebuild()
                     backgroundMaintenance.schedule()
-                    if let route = IntentRouteBox.take() { router.handle(route) }
+                    consumeIntentHandoff()
+                    Task {
+                        await dependencies.favorites.rebuild()
+                        await dependencies.unifiedSearch.rebuild()
+                    }
                 }
                 .onOpenURL { url in
                     router.handle(url: url)
@@ -71,7 +74,7 @@ struct SunnieDaysApp: App {
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             appState.refreshTimeContext()
-            if let route = IntentRouteBox.take() { router.handle(route) }
+            consumeIntentHandoff()
             Task {
                 await dependencies.processPendingWatchActions()
                 await appState.refreshCurrentContext()
@@ -79,6 +82,12 @@ struct SunnieDaysApp: App {
                 await dependencies.publishWidgetSnapshot()
             }
         }
+    }
+
+    private func consumeIntentHandoff() {
+        guard let handoff = IntentHandoffStore.live.take() else { return }
+        if let text = handoff.tellSunnieText { TellSunnieCaptureBox.pendingText = text }
+        router.handle(url: handoff.routeURL)
     }
 }
 

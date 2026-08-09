@@ -1,5 +1,7 @@
 import AVFoundation
 import BackgroundTasks
+import CoreLocation
+import EventKit
 import Foundation
 import Photos
 import Speech
@@ -18,6 +20,12 @@ import WatchConnectivity
 /// stable capability vocabulary. Reading never prompts; features still own the
 /// just-in-time request that follows a user action.
 final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
+    private let health: any HealthProviding
+
+    init(health: any HealthProviding) {
+        self.health = health
+    }
+
     func snapshot() async -> CapabilitySnapshot {
         var states: [SunnieCapability: CapabilityState] = [:]
         states[.microphone] = Self.microphoneState
@@ -25,9 +33,14 @@ final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
         states[.photoLibrary] = Self.photoState
         states[.camera] = Self.cameraState
         states[.notifications] = await Self.notificationState
-        states[.health] = Self.healthState
-        states[.location] = .notRequested
+        states[.health] = await healthState
+        states[.calendar] = Self.calendarState
+        states[.location] = Self.locationState
+        #if canImport(WeatherKit)
         states[.weather] = .authorized
+        #else
+        states[.weather] = .unavailable
+        #endif
         states[.watchConnectivity] = Self.watchState
         states[.backgroundRefresh] = await Self.backgroundState
         states[.widgets] = Self.appGroupState
@@ -88,12 +101,38 @@ final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
         }
     }
 
-    private static var healthState: CapabilityState {
-        #if canImport(HealthKit) && !targetEnvironment(macCatalyst)
-        return HKHealthStore.isHealthDataAvailable() ? .notRequested : .unavailable
-        #else
-        return .unavailable
-        #endif
+    private var healthState: CapabilityState {
+        get async {
+            guard health.isAvailable else { return .unavailable }
+            var statuses: [HealthAuthorization] = []
+            for type in HealthDataType.writeOnlyDefaults {
+                statuses.append(await health.authorization(for: type))
+            }
+            if statuses.contains(.sharingAuthorized) { return .authorized }
+            if statuses.allSatisfy({ $0 == .sharingDenied }) { return .denied }
+            return .notRequested
+        }
+    }
+
+    private static var calendarState: CapabilityState {
+        switch EKEventStore.authorizationStatus(for: .event) {
+        case .fullAccess, .writeOnly: .authorized
+        case .denied: .denied
+        case .restricted: .restricted
+        case .notDetermined: .notRequested
+        @unknown default: .unavailable
+        }
+    }
+
+    private static var locationState: CapabilityState {
+        guard CLLocationManager.locationServicesEnabled() else { return .unavailable }
+        switch CLLocationManager().authorizationStatus {
+        case .authorizedAlways, .authorizedWhenInUse: .authorized
+        case .denied: .denied
+        case .restricted: .restricted
+        case .notDetermined: .notRequested
+        @unknown default: .unavailable
+        }
     }
 
     private static var watchState: CapabilityState {
@@ -117,6 +156,8 @@ final class CapabilityBroker: CapabilityProviding, @unchecked Sendable {
     }
 
     private static var appGroupState: CapabilityState {
-        UserDefaults(suiteName: "group.com.sunniedays.shared") == nil ? .unavailable : .authorized
+        FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: WidgetSnapshotStore.appGroupIdentifier
+        ) == nil ? .unavailable : .authorized
     }
 }

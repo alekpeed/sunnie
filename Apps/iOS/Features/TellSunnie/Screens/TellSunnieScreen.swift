@@ -304,10 +304,19 @@ final class TellSunnieSpeechController {
     @ObservationIgnored private var recognitionTask: SFSpeechRecognitionTask?
     @ObservationIgnored private var hasInstalledTap = false
 
-    func toggle() async {
+    func toggle(capabilities: CapabilitySnapshot) async {
         if isListening {
             stop()
         } else {
+            guard capabilities[.microphone] != .denied,
+                  capabilities[.microphone] != .restricted,
+                  capabilities[.microphone] != .unavailable,
+                  capabilities[.speechRecognition] != .denied,
+                  capabilities[.speechRecognition] != .restricted,
+                  capabilities[.speechRecognition] != .unavailable else {
+                statusText = "Voice input isn’t available with the current access settings. You can still type here."
+                return
+            }
             await start()
         }
     }
@@ -447,7 +456,10 @@ struct TellSunnieScreen: View {
 
                         HStack(spacing: Space.s) {
                             Button {
-                                Task { await speech.toggle() }
+                                Task {
+                                    let capabilities = await dependencies.capabilityBroker.snapshot()
+                                    await speech.toggle(capabilities: capabilities)
+                                }
                             } label: {
                                 Label(
                                     speech.isListening ? "Stop listening" : "Speak",

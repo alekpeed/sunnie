@@ -75,7 +75,7 @@ struct SettingsScreen: View {
     private var capabilitiesSection: some View {
         Section("Optional capabilities") {
             ForEach(SunnieCapability.allCases, id: \.self) { capability in
-                LabeledContent(capability.rawValue.capitalized, value: capabilitySnapshot[capability].rawValue.capitalized)
+                LabeledContent(capability.displayName, value: capabilitySnapshot[capability].rawValue.capitalized)
             }
         } footer: {
             Text("Sunnie Days asks for access only when you choose a feature that needs it. Unavailable capabilities never block the core app.")

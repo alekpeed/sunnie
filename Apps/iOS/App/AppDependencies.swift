@@ -170,16 +170,17 @@ final class AppDependencies {
         self.weatherProvider = SunnieWeatherService()
         self.calendarProvider = SunnieCalendarService()
         self.haptics = HapticService()
-        self.capabilityBroker = CapabilityBroker()
         // A real Health store on iOS, and the unavailable stand-in everywhere
         // else — previews, tests, and any device with no Health at all. Every
         // path already checks availability, so the two behave identically to
         // callers (HEALTH_WATCH_WIDGETS_AND_INTENTS.md §1).
         #if canImport(HealthKit) && !targetEnvironment(macCatalyst)
-        self.healthService = SunnieHealthService()
+        let healthService: any HealthProviding = SunnieHealthService()
         #else
-        self.healthService = UnavailableHealthService()
+        let healthService: any HealthProviding = UnavailableHealthService()
         #endif
+        self.healthService = healthService
+        self.capabilityBroker = CapabilityBroker(health: healthService)
 
         self.reminderScheduler = ReminderScheduler(
             repository: reminders,

@@ -1,13 +1,67 @@
 import Foundation
 
+// MARK: - Cross-process intent handoff
+
+public struct IntentHandoffEnvelope: Codable, Hashable, Sendable {
+    public static let currentVersion = 1
+    public let version: Int
+    public let id: UUID
+    public let createdAt: Date
+    public let expiresAt: Date
+    public let routeURL: URL
+    public let tellSunnieText: String?
+
+    public init(
+        id: UUID = UUID(),
+        createdAt: Date,
+        lifetime: TimeInterval = 5 * 60,
+        routeURL: URL,
+        tellSunnieText: String? = nil
+    ) {
+        self.version = Self.currentVersion
+        self.id = id
+        self.createdAt = createdAt
+        self.expiresAt = createdAt.addingTimeInterval(lifetime)
+        self.routeURL = routeURL
+        self.tellSunnieText = tellSunnieText
+    }
+
+    public func isConsumable(at date: Date, allowedScheme: String = DeepLinkScheme.scheme) -> Bool {
+        version == Self.currentVersion
+            && createdAt <= date
+            && date < expiresAt
+            && routeURL.scheme?.lowercased() == allowedScheme
+    }
+}
+
 // MARK: - Capabilities
 
 /// A stable vocabulary for optional system integrations. Features consume this
 /// value instead of importing the framework that happens to provide it.
 public enum SunnieCapability: String, CaseIterable, Codable, Hashable, Sendable {
     case microphone, speechRecognition, photoLibrary, camera, notifications
-    case health, location, weather, watchConnectivity, backgroundRefresh
+    case health, calendar, location, weather, watchConnectivity, backgroundRefresh
     case widgets, foundationModels
+}
+
+public extension SunnieCapability {
+    var displayName: String {
+        switch self {
+        case .microphone: "Microphone"
+        case .speechRecognition: "Speech recognition"
+        case .photoLibrary: "Photo library"
+        case .camera: "Camera"
+        case .notifications: "Notifications"
+        case .health: "Health"
+        case .calendar: "Calendar"
+        case .location: "Location"
+        case .weather: "Weather"
+        case .watchConnectivity: "Apple Watch"
+        case .backgroundRefresh: "Background refresh"
+        case .widgets: "Widgets"
+        case .foundationModels: "On-device intelligence"
+        }
+    }
 }
 
 public enum CapabilityState: String, Codable, Hashable, Sendable {
@@ -46,6 +100,26 @@ public enum SearchEntityKind: String, CaseIterable, Codable, Hashable, Sendable 
     case plant, trip, place, memory, recipe, game, curio
 }
 
+public enum SearchDestination: Codable, Hashable, Sendable {
+    case plant(UUID)
+    case trip(UUID)
+    case travel
+    case recipes
+    case game(String)
+    case collections
+
+    public var routeURL: URL {
+        switch self {
+        case .plant(let id): URL(string: "sunniedays://plant/\(id)")!
+        case .trip(let id): URL(string: "sunniedays://trip/\(id)")!
+        case .travel: URL(string: "sunniedays://travel")!
+        case .recipes: URL(string: "sunniedays://meals/recipes")!
+        case .game(let id): URL(string: "sunniedays://games/\(id)")!
+        case .collections: URL(string: "sunniedays://collections")!
+        }
+    }
+}
+
 /// Reconstructable search projection. It contains no journal or wellness kind
 /// by design: adding either requires an explicit privacy-policy decision.
 public struct SearchEntity: Identifiable, Codable, Hashable, Sendable {
@@ -54,7 +128,7 @@ public struct SearchEntity: Identifiable, Codable, Hashable, Sendable {
     public let title: String
     public let subtitle: String?
     public let keywords: [String]
-    public let route: String
+    public let destination: SearchDestination
 
     public init(
         id: String,
@@ -62,14 +136,14 @@ public struct SearchEntity: Identifiable, Codable, Hashable, Sendable {
         title: String,
         subtitle: String? = nil,
         keywords: [String] = [],
-        route: String
+        destination: SearchDestination
     ) {
         self.id = id
         self.kind = kind
         self.title = title
         self.subtitle = subtitle
         self.keywords = Array(Set(keywords.map(Self.normalize))).sorted()
-        self.route = route
+        self.destination = destination
     }
 
     public func matches(_ query: String) -> Bool {
@@ -84,6 +158,18 @@ public struct SearchEntity: Identifiable, Codable, Hashable, Sendable {
             .lowercased()
             .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
             .joined(separator: " ")
+    }
+}
+
+public enum SearchRanking {
+    public static func rank(_ entities: [SearchEntity], favorites: [FavoriteSignal]) -> [SearchEntity] {
+        let strengths = Dictionary(uniqueKeysWithValues: favorites.map { ($0.id, $0.strength) })
+        return entities.sorted { left, right in
+            let leftStrength = strengths[left.id]?.rawValue ?? 0
+            let rightStrength = strengths[right.id]?.rawValue ?? 0
+            if leftStrength != rightStrength { return leftStrength > rightStrength }
+            return left.title.localizedCaseInsensitiveCompare(right.title) == .orderedAscending
+        }
     }
 }
 
@@ -147,5 +233,17 @@ public struct MaintenancePlan: Hashable, Sendable {
     public init(operations: [MaintenanceOperation] = MaintenanceOperation.allCases) {
         var seen: Set<MaintenanceOperation> = []
         self.operations = operations.filter { seen.insert($0).inserted }
+    }
+}
+
+public struct MaintenanceReport: Hashable, Sendable {
+    public let completed: [MaintenanceOperation]
+    public let failed: [MaintenanceOperation]
+    public let wasCancelled: Bool
+
+    public init(completed: [MaintenanceOperation], failed: [MaintenanceOperation], wasCancelled: Bool) {
+        self.completed = completed
+        self.failed = failed
+        self.wasCancelled = wasCancelled
     }
 }

@@ -18,6 +18,21 @@ struct IntegrationFlowTests {
     /// local day whatever zone the test machine is set to.
     private static let referenceDate = Date(timeIntervalSince1970: 1_770_033_600)
 
+    @Test("Intent handoff is durable, expiring, and consumed once")
+    func intentHandoffIsOneShot() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = IntentHandoffStore(directory: directory)
+        let route = try #require(URL(string: "sunniedays://today"))
+
+        try store.save(routeURL: route, tellSunnieText: "Watered Fern", now: Self.referenceDate)
+        let handoff = try #require(store.take(now: Self.referenceDate.addingTimeInterval(1)))
+        #expect(handoff.routeURL == route)
+        #expect(handoff.tellSunnieText == "Watered Fern")
+        #expect(store.take(now: Self.referenceDate.addingTimeInterval(2)) == nil)
+    }
+
     @MainActor
     private func makeDependencies(
         now: Date = IntegrationFlowTests.referenceDate

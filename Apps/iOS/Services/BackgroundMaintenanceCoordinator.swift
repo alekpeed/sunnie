@@ -36,31 +36,50 @@ final class BackgroundMaintenanceCoordinator {
         catch { SunnieLog(category: .integrations).debug("Background refresh was not scheduled.") }
     }
 
-    func perform(_ plan: MaintenancePlan = MaintenancePlan()) async {
+    @discardableResult
+    func perform(_ plan: MaintenancePlan = MaintenancePlan()) async -> MaintenanceReport {
+        var completed: [MaintenanceOperation] = []
+        var failed: [MaintenanceOperation] = []
+        var refreshedContext = false
         for operation in plan.operations {
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled else {
+                return MaintenanceReport(completed: completed, failed: failed, wasCancelled: true)
+            }
             switch operation {
             case .context, .world:
-                await appState?.refreshCurrentContext()
+                if !refreshedContext {
+                    await appState?.refreshCurrentContext()
+                    refreshedContext = true
+                }
+                completed.append(operation)
             case .widgets:
                 await dependencies.publishWidgetSnapshot(force: true)
+                completed.append(operation)
             case .rewards:
                 _ = await dependencies.manageCollection.sweep()
+                completed.append(operation)
             case .searchIndex:
                 await dependencies.unifiedSearch.rebuild()
+                completed.append(operation)
             case .housekeeping:
-                _ = try? await dependencies.manageJournalEntry.purgeExpired()
-                _ = try? await dependencies.mediaRepository.deleteOrphans()
-                await dependencies.favorites.rebuild()
+                do {
+                    _ = try await dependencies.manageJournalEntry.purgeExpired()
+                    _ = try await dependencies.mediaRepository.deleteOrphans()
+                    await dependencies.favorites.rebuild()
+                    completed.append(operation)
+                } catch {
+                    failed.append(operation)
+                }
             }
         }
+        return MaintenanceReport(completed: completed, failed: failed, wasCancelled: false)
     }
 
     private func handle(_ task: BGAppRefreshTask) async {
         schedule()
         let work = Task { @MainActor in await perform() }
         task.expirationHandler = { work.cancel() }
-        await work.value
-        task.setTaskCompleted(success: !work.isCancelled)
+        let report = await work.value
+        task.setTaskCompleted(success: !report.wasCancelled && report.failed.isEmpty)
     }
 }
