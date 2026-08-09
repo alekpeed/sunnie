@@ -94,13 +94,13 @@ struct TodayScreen: View {
         } label: {
             SunnieCard {
                 HStack(spacing: Space.s) {
-                    Image(systemName: "bubble.left.and.text.bubble.right")
+                    Image(systemName: "bubble.left.and.bubble.right")
                         .font(.title2)
                         .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: Space.xxs) {
                         Text("Tell Sunnie")
-                            .font(SunnieFont.title)
+                            .font(SunnieFont.sectionTitle)
                             .foregroundStyle(theme.color.textPrimary)
                         Text("Type it or say it. Sunnie Days will work out where it belongs.")
                             .font(SunnieFont.secondary)
@@ -137,13 +137,28 @@ struct TodayScreen: View {
                 .foregroundStyle(theme.color.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+            if let localTime = destinationLocalTime(flight) {
+                Label(localTime, systemImage: "clock")
+                    .font(SunnieFont.secondary)
+                    .foregroundStyle(theme.color.textSecondary)
+            }
+
             if let weather = flight.weather {
                 Label(
-                    "\(String(localized: .init(weather.condition.localizationKey))) · \(Int(weather.temperatureCelsius.rounded()))°C",
+                    weatherSummary(weather),
                     systemImage: weather.condition.symbolName
                 )
                 .font(SunnieFont.secondary)
                 .foregroundStyle(theme.color.textSecondary)
+
+                if let url = weather.attributionURL {
+                    Link(weather.attributionText, destination: url)
+                        .font(SunnieFont.caption)
+                } else {
+                    Text(weather.attributionText)
+                        .font(SunnieFont.caption)
+                        .foregroundStyle(theme.color.textSecondary)
+                }
             }
 
             HStack(spacing: Space.s) {
@@ -377,5 +392,28 @@ struct TodayScreen: View {
         }
 
         return facts.isEmpty ? "Your work trip is in context." : facts.joined(separator: " · ")
+    }
+
+    private func destinationLocalTime(_ flight: FlightContext) -> String? {
+        guard
+            let zoneID = flight.destinationTimeZoneID,
+            let zone = TimeZone(identifier: zoneID)
+        else { return nil }
+
+        let formatter = DateFormatter()
+        formatter.timeZone = zone
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        let place = flight.destinationName ?? "Destination"
+        return "\(place) · \(formatter.string(from: dependencies.clock.now))"
+    }
+
+    private func weatherSummary(_ weather: WeatherSummary) -> String {
+        let condition = String(localized: .init(weather.condition.localizationKey))
+        let temperature = "\(Int(weather.temperatureCelsius.rounded()))°C"
+        if weather.isStale(now: dependencies.clock.now) {
+            return "\(condition) · \(temperature) · Earlier"
+        }
+        return "\(condition) · \(temperature)"
     }
 }
