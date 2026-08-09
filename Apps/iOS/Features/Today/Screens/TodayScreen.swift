@@ -206,6 +206,21 @@ struct TodayScreen: View {
                 )
             )
 
+            let profile = model?.progressionProfile ?? ProgressionProfile()
+            HStack(spacing: Space.s) {
+                Image(systemName: "sparkles")
+                    .accessibilityHidden(true)
+                Text(String(
+                    localized: "today.world.progression",
+                    defaultValue: "Level \(profile.level) · \(profile.experience) points",
+                    comment: "Additive Sunnie Days progression; points never decrease"
+                ))
+                    .font(SunnieFont.body)
+                    .foregroundStyle(theme.color.textPrimary)
+                Spacer()
+            }
+            .accessibilityElement(children: .combine)
+
             VStack(spacing: Space.s) {
                 HStack(spacing: Space.s) {
                     SunnieSecondaryButton(
