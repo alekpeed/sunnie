@@ -99,9 +99,6 @@
 		fine, because it genuinely is: none of these is required to use the app.
 
 		Only the permissions the current build can actually request are listed.
-		HealthKit, calendar, and location descriptions are added in the phase
-		that introduces them, so the App Store never sees a declared purpose the
-		app does not use.
 	-->
 	<key>NSCameraUsageDescription</key>
 	<string>Sunnie can add photos of your plants to their growth history. Photos stay on your devices.</string>
@@ -112,6 +109,8 @@
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Sunnie can save your mindful minutes and the water you log to Health, so they appear alongside the rest of your day. Only what you record here is written.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Sunnie can record a short voice note for your journal. Recordings stay on your devices.</string>
+	<string>Sunnie can listen while you speak to Tell Sunnie or record a voice note. You can always type instead.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Sunnie can turn what you say in Tell Sunnie into text so the app can route your request. You can always type instead.</string>
 </dict>
 </plist>

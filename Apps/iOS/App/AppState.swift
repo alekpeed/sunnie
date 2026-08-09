@@ -6,8 +6,11 @@ import SunnieShared
 /// Small global state: the things genuinely shared across every feature
 /// (TECHNICAL_ARCHITECTURE.md §7).
 ///
-/// Everything else belongs to a feature model. This holds the active profile,
-/// preferences, resolved theme, and current time phase — and nothing more.
+/// The revamp adds one more genuinely global value: `currentContext`. It is a
+/// read-only synthesis of feature summaries, not another data store. That lets
+/// Today, Sunnie Home, Flight Mode, widgets, Watch and Tell Sunnie agree about
+/// what is happening without giving any of them permission to mutate another
+/// feature directly.
 @MainActor
 @Observable
 final class AppState {
@@ -16,6 +19,7 @@ final class AppState {
     private(set) var preferences: UserPreferences = .default
     private(set) var theme: SunnieTheme = .placeholder
     private(set) var timeContext: TimeContext
+    private(set) var currentContext: CurrentContext
 
     /// A phase the user is previewing in Settings. Overrides the live phase for
     /// display only and is never persisted (THEMES_AND_TIME_OF_DAY.md §7).
@@ -32,9 +36,12 @@ final class AppState {
     }
 
     private let dependencies: AppDependencies
+    @ObservationIgnored private let contextEngine: ContextEngine
 
     init(dependencies: AppDependencies) {
         self.dependencies = dependencies
+        self.contextEngine = ContextEngine(dependencies: dependencies)
+        self.currentContext = .empty(at: dependencies.clock.now)
         self.timeContext = dependencies.timeEngine.resolve(
             at: dependencies.clock.now,
             preferences: .default,
@@ -56,6 +63,7 @@ final class AppState {
         refreshTheme()
         await dependencies.audioService.apply(preferences: preferences.audio)
         dependencies.haptics.setEnabled(preferences.hapticsEnabled)
+        await refreshCurrentContext()
     }
 
     func update(preferences newValue: UserPreferences) async {
@@ -76,6 +84,14 @@ final class AppState {
         } catch {
             SunnieLog(category: .persistence).error("Could not save preferences.")
         }
+        await refreshCurrentContext()
+    }
+
+    /// Rebuilds the shared read-only context after a meaningful change or when a
+    /// surface becomes active. Failure in one optional subsystem is handled by
+    /// `ContextEngine`; callers always receive the best partial picture available.
+    func refreshCurrentContext() async {
+        currentContext = await contextEngine.currentContext()
     }
 
     /// Recomputes the phase. Called on a timer and when the app returns to the

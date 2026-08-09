@@ -21,13 +21,6 @@ struct SunnieDaysApp: App {
         _appState = State(initialValue: AppState(dependencies: dependencies))
     }
 
-    /// Chooses the store for this launch.
-    ///
-    /// UI tests run against a fresh in-memory store so a run never depends on
-    /// what the previous one left behind. `isEphemeral` stays false in that case:
-    /// it is deliberate, not a storage failure, so the warning banner must not
-    /// appear. Otherwise storage falls back to memory rather than crashing if the
-    /// on-disk store cannot be opened, and the UI surfaces that.
     private static func makeStorage() -> (container: ModelContainer, isEphemeral: Bool) {
         let isUITesting = ProcessInfo.processInfo
             .arguments.contains("-SunnieUITesting")
@@ -55,9 +48,10 @@ struct SunnieDaysApp: App {
                     await SampleData.seedIfNeeded(dependencies: dependencies)
                     await dependencies.processPendingWatchActions()
                     await dependencies.performLaunchHousekeeping()
-                    // A shortcut that launched the app left its destination
-                    // behind; the app navigates rather than the intent, because
-                    // they are separate processes.
+                    // Seeding and queued Watch actions can change the world after
+                    // AppState's initial load, so publish one authoritative
+                    // context only after launch housekeeping has settled.
+                    await appState.refreshCurrentContext()
                     if let route = IntentRouteBox.take() { router.handle(route) }
                 }
                 .onOpenURL { url in
@@ -66,12 +60,11 @@ struct SunnieDaysApp: App {
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
-            // Returning to the foreground may cross a phase boundary or bring
-            // actions the Watch queued while the app was away.
             appState.refreshTimeContext()
             if let route = IntentRouteBox.take() { router.handle(route) }
             Task {
                 await dependencies.processPendingWatchActions()
+                await appState.refreshCurrentContext()
                 await dependencies.publishWatchContext()
                 await dependencies.publishWidgetSnapshot()
             }
@@ -144,9 +137,6 @@ struct RootTabView: View {
         case .pantry: PantryScreen()
         case .games: GamesHomeScreen()
         case .game(let id):
-            // The identifier comes from a route this app built, so a value that
-            // does not parse means a stale saved navigation path rather than user
-            // input. Falling back to the games home beats a blank screen.
             if let sessionID = UUID(uuidString: id) {
                 GameSessionScreen(sessionID: sessionID)
             } else {
@@ -154,13 +144,13 @@ struct RootTabView: View {
             }
         case .journal: JournalScreen()
         case .collections: CollectionsScreen()
-        case .sunnieHome: SunnieHomeScreen()
+        case .sunnieHome:
+            SunnieHomeAssistantContainer {
+                SunnieHomeScreen()
+            }
         case .trip(let id): TripOverviewScreen(tripID: id)
         case .packing(let id): PackingScreen(tripID: id)
         case .tripChecklist(let id, let phase):
-            // An unrecognised phase falls back to the leaving checklist rather
-            // than failing: the route is only ever built from the enum, so this
-            // is a guard against a stale saved navigation path, not user input.
             TripChecklistScreen(
                 tripID: id,
                 phase: ChecklistKind.Phase(rawValue: phase) ?? .leaving
@@ -169,9 +159,6 @@ struct RootTabView: View {
         case .plantCoverage(let id): PlantCoverageScreen(tripID: id)
         case .worldMap: WorldMapScreen()
         case .today, .jungle, .travel, .wellness:
-            // Tab roots are never pushed; `AppRouter.handle` selects the tab
-            // instead. Reaching here would be a routing bug, so show the root
-            // rather than an empty screen.
             root(for: route.tab)
         }
     }

@@ -5,15 +5,9 @@ import SunnieShared
 /// (HEALTH_WATCH_WIDGETS_AND_INTENTS.md §6, §7).
 ///
 /// One place builds the context, so the five Watch destinations cannot disagree
-/// about what "now" is, and so the resolution work — choosing an affirmation,
-/// prioritising a task, picking the practices — happens on the phone exactly
-/// once. The Watch is a thin client: it has no content pack, no schedule maths,
-/// and no message selection.
-///
-/// Sent as application context rather than a message: §7 assigns
-/// `updateApplicationContext` to "latest replaceable summary state", which is
-/// precisely what this is. A newer snapshot should replace an older one, never
-/// queue behind it.
+/// about what "now" is, and so the resolution work happens on the phone exactly
+/// once. Flight Mode uses the same conservative selector as Today: an explicitly
+/// marked work trip in its active/preparation window leads the Watch travel panel.
 @MainActor
 struct WatchContextPublisher {
 
@@ -87,8 +81,6 @@ struct WatchContextPublisher {
 
     private func checkInPanel(now: Date) async -> WatchFeatureContext.CheckInPanel {
         let start = dependencies.clock.calendar.startOfDay(for: now)
-        // Limit 1: the panel only needs to know whether there is one, and a
-        // day with twenty check-ins should not cost twenty rows to find out.
         let today = (try? await dependencies.wellnessRepository.checkIns(
             from: start, to: now, limit: 1
         )) ?? []
@@ -99,9 +91,6 @@ struct WatchContextPublisher {
     }
 
     private func calmPanel(preferences: UserPreferences) -> WatchFeatureContext.CalmPanel {
-        // Breathing patterns only. A meditation on the wrist is a timer with no
-        // guidance, and the phone's meditations expect a screen — offering them
-        // here would be offering something that does not work.
         let patterns = dependencies.contentRegistry.wellnessPack.breathingPatterns
             .filter(\.isWellFormed)
             .prefix(WatchFeatureContext.CalmPanel.maximumPractices)
@@ -110,8 +99,6 @@ struct WatchContextPublisher {
             practices: patterns.map { pattern in
                 WatchFeatureContext.CalmPanel.Practice(
                     pattern: pattern,
-                    // Resolved to text on the phone, because the Watch has no
-                    // access to the app's localization catalogue.
                     displayName: String(localized: .init(pattern.displayNameKey))
                 )
             },
@@ -123,15 +110,24 @@ struct WatchContextPublisher {
         let calendar = dependencies.clock.calendar
         let trips = (try? await dependencies.travelRepository.trips(includingArchived: false)) ?? []
 
-        let candidates = trips
-            .map { ($0, TripStatusCalculator.status(for: $0, now: now, calendar: calendar)) }
-            .filter { $0.1.isCurrent || $0.1 == .upcoming }
-            .sorted { left, right in
-                if left.1.isCurrent != right.1.isCurrent { return left.1.isCurrent }
-                return (left.0.startsAt ?? .distantFuture) < (right.0.startsAt ?? .distantFuture)
-            }
+        let selected: (Trip, TripStatus)?
+        if let flight = FlightModeSelector.select(from: trips, now: now, calendar: calendar) {
+            selected = (
+                flight.trip,
+                TripStatusCalculator.status(for: flight.trip, now: now, calendar: calendar)
+            )
+        } else {
+            selected = trips
+                .map { ($0, TripStatusCalculator.status(for: $0, now: now, calendar: calendar)) }
+                .filter { $0.1.isCurrent || $0.1 == .upcoming }
+                .sorted { left, right in
+                    if left.1.isCurrent != right.1.isCurrent { return left.1.isCurrent }
+                    return (left.0.startsAt ?? .distantFuture) < (right.0.startsAt ?? .distantFuture)
+                }
+                .first
+        }
 
-        guard let (trip, status) = candidates.first else { return nil }
+        guard let (trip, status) = selected else { return nil }
 
         let items = (try? await dependencies.travelRepository.checklistItems(
             forTripID: trip.id
