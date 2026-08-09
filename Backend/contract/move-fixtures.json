@@ -1,0 +1,112 @@
+{
+  "wireVersion": 1,
+  "purpose": "Canonical encodings of every GameMove action. Both clients decode these and re-encode them, so a difference between Swift and Kotlin fails a test rather than a game (ADR-035).",
+  "canonicalForm": "JSON object keys sorted lexicographically, no whitespace, optional fields omitted rather than null.",
+  "cases": [
+    {
+      "name": "answer",
+      "encoded": "{\"action\":{\"kind\":\"answer\",\"text\":\"lisbon\"},\"atMillis\":1786000000000,\"ordinal\":0,\"step\":0,\"v\":1}",
+      "ordinal": 0,
+      "step": 0,
+      "atMillis": 1786000000000,
+      "kind": "answer"
+    },
+    {
+      "name": "answer with punctuation and accents",
+      "encoded": "{\"action\":{\"kind\":\"answer\",\"text\":\"café — ok?\"},\"atMillis\":1786000000000,\"ordinal\":1,\"step\":0,\"v\":1}",
+      "ordinal": 1,
+      "step": 0,
+      "atMillis": 1786000000000,
+      "kind": "answer"
+    },
+    {
+      "name": "choose",
+      "encoded": "{\"action\":{\"index\":2,\"kind\":\"choose\"},\"atMillis\":1786000000000,\"ordinal\":2,\"step\":1,\"v\":1}",
+      "ordinal": 2,
+      "step": 1,
+      "atMillis": 1786000000000,
+      "kind": "choose"
+    },
+    {
+      "name": "assign",
+      "encoded": "{\"action\":{\"item\":3,\"kind\":\"assign\",\"slot\":4},\"atMillis\":1786000000000,\"ordinal\":3,\"step\":2,\"v\":1}",
+      "ordinal": 3,
+      "step": 2,
+      "atMillis": 1786000000000,
+      "kind": "assign"
+    },
+    {
+      "name": "unassign",
+      "encoded": "{\"action\":{\"item\":3,\"kind\":\"unassign\"},\"atMillis\":1786000000000,\"ordinal\":4,\"step\":2,\"v\":1}",
+      "ordinal": 4,
+      "step": 2,
+      "atMillis": 1786000000000,
+      "kind": "unassign"
+    },
+    {
+      "name": "toggle on",
+      "encoded": "{\"action\":{\"item\":5,\"kind\":\"toggle\",\"selected\":true},\"atMillis\":1786000000000,\"ordinal\":5,\"step\":3,\"v\":1}",
+      "ordinal": 5,
+      "step": 3,
+      "atMillis": 1786000000000,
+      "kind": "toggle"
+    },
+    {
+      "name": "toggle off",
+      "encoded": "{\"action\":{\"item\":5,\"kind\":\"toggle\",\"selected\":false},\"atMillis\":1786000000000,\"ordinal\":6,\"step\":3,\"v\":1}",
+      "ordinal": 6,
+      "step": 3,
+      "atMillis": 1786000000000,
+      "kind": "toggle"
+    },
+    {
+      "name": "reveal",
+      "encoded": "{\"action\":{\"clue\":1,\"kind\":\"reveal\"},\"atMillis\":1786000000000,\"ordinal\":7,\"step\":4,\"v\":1}",
+      "ordinal": 7,
+      "step": 4,
+      "atMillis": 1786000000000,
+      "kind": "reveal"
+    },
+    {
+      "name": "hint",
+      "encoded": "{\"action\":{\"kind\":\"hint\"},\"atMillis\":1786000000000,\"ordinal\":8,\"step\":4,\"v\":1}",
+      "ordinal": 8,
+      "step": 4,
+      "atMillis": 1786000000000,
+      "kind": "hint"
+    },
+    {
+      "name": "skip",
+      "encoded": "{\"action\":{\"kind\":\"skip\"},\"atMillis\":1786000000000,\"ordinal\":9,\"step\":5,\"v\":1}",
+      "ordinal": 9,
+      "step": 5,
+      "atMillis": 1786000000000,
+      "kind": "skip"
+    },
+    {
+      "name": "advance",
+      "encoded": "{\"action\":{\"kind\":\"advance\"},\"atMillis\":1786000000000,\"ordinal\":10,\"step\":5,\"v\":1}",
+      "ordinal": 10,
+      "step": 5,
+      "atMillis": 1786000000000,
+      "kind": "advance"
+    }
+  ],
+  "rejected": [
+    {
+      "name": "unknown wire version",
+      "encoded": "{\"action\":{\"kind\":\"hint\"},\"atMillis\":1786000000000,\"ordinal\":0,\"step\":0,\"v\":2}",
+      "why": "A reader must refuse a version it does not know rather than decode part of it."
+    },
+    {
+      "name": "unknown action kind",
+      "encoded": "{\"action\":{\"kind\":\"teleport\"},\"atMillis\":1786000000000,\"ordinal\":0,\"step\":0,\"v\":1}",
+      "why": "A kind added by a newer client is not guessable."
+    },
+    {
+      "name": "known kind missing its field",
+      "encoded": "{\"action\":{\"kind\":\"choose\"},\"atMillis\":1786000000000,\"ordinal\":0,\"step\":0,\"v\":1}",
+      "why": "A choose with no index must not be salvaged into choosing option zero. Playing a turn nobody made is worse than refusing the payload."
+    }
+  ]
+}
