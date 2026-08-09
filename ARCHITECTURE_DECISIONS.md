@@ -1511,3 +1511,100 @@ than either honest answer.
 `ONBOARDING_SETTINGS_AND_PERMISSIONS.md` — same.
 `Documentation/Claude_Audit_Package/CLAUDE_RESPONSE.md` — RB-4 re-marked as
 rejected on product grounds rather than deferred.
+
+## ADR-035: Turn-based play with Android, and the boundary it must not cross
+
+**Status:** Accepted
+**Date:** Post-first-green-build
+**Amends:** ADR-007 (no custom backend initially)
+
+### Context
+
+ADR-007 declined a backend and gave its reason in one line: "Android
+multiplayer, caretaker sharing, and LifeOS contracts are not yet defined." That
+was never a rejection of the idea — it was a refusal to build infrastructure for
+an undefined requirement. One of the three is now defined: two people, on an
+iPhone and an Android phone, want to play the games together.
+
+`GAMES_AND_FUTURE_MULTIPLAYER.md` §9 anticipated exactly this and shaped the
+domain for it. `PlayerID`, `GameMove`, and `GameSessionState` are already
+serializable, deterministic, and free of CloudKit types, and the app composes a
+`NoMultiplayer` that no-ops rather than a stub that lies. The seam exists; what
+does not exist is anything behind it.
+
+Nothing in the existing stack can carry this. CloudKit is the only sync the app
+has, it is Apple-only, and it is scoped to one person's private database — which
+is correct for a journal and useless for a shared game.
+
+### Decision
+
+**A backend exists now, and it carries game moves and nothing else.**
+
+- **Transport:** Supabase (Postgres, row-level security, realtime). Chosen over
+  a hand-written service because the requirement is two players and a move
+  queue, and that does not justify operating a server.
+- **Identity:** anonymous auth per device. Neither player creates an account,
+  supplies an email, or is asked for a real name. A display name is a nickname
+  the player types, defaulted rather than required.
+- **Idempotency:** every move carries an `action_key`, unique per session, in the
+  same discipline as care events and Watch actions (ADR-011). A redelivered move
+  is one move. This is not optional — a flaky phone connection redelivering a
+  turn must not play it twice.
+- **Ordering:** a monotonic `sequence` per session. Moves are append-only;
+  nothing is ever updated in place, so replay is deterministic.
+- **Android client:** native Kotlin/Compose, in `Apps/Android/`, distributed as
+  an APK built by CI and installed directly. No Play Store, no developer machine
+  required at either end.
+- **Scope of play:** one mechanic first, not seven games. The mechanics are
+  already modelled separately (`answerChain`, `gridAssignment`, `studyThenQuiz`,
+  `constrainedSelection`, `branchingChoice`), so one can ship without the rest.
+
+**The boundary, which is the load-bearing half of this decision.**
+
+The following never reach the network, under any circumstance, for any feature
+that might later seem to want them: journal entries, wellness check-ins, health
+figures, plants and care history, meals, trips, photos, audio, preferences, and
+Sunnie's own state. The app is local-first and private, and a games backend is
+not a reason to renegotiate that. What crosses is a session identifier, a
+pseudonymous player identifier, a nickname, a game and puzzle identifier, and
+the moves themselves.
+
+Anything that would widen this needs its own ADR, and the widening is the
+decision — not an implementation detail of whatever feature wants it.
+
+### Alternatives considered
+
+**A web app instead of a native Android client.** Recommended and not chosen.
+It needs no Android toolchain, no APK, and no install step, and it would have
+reached the same shared games for materially less machinery. The owner chose a
+native app; this is recorded because the cost difference is real and should be
+visible if it is ever revisited.
+
+**Moves exchanged as codes over ordinary messaging, with no backend.** Rejected
+for this use, though it remains the cheapest possible answer. A move is small
+enough to send as a short string, which would have meant no server, no hosting,
+and no privacy surface at all. It loses turn notification and any sense of a
+live game, and it makes a mis-pasted code a support problem.
+
+**CloudKit Web Services.** Rejected. It can be reached from Android over HTTP,
+but authentication is Apple-account shaped, and it would put shared game state
+in the same private database as the journal — exactly the boundary above, made
+structurally hard to hold.
+
+**Making the server authoritative for game rules.** Deferred, not rejected. It
+would remove the rules duplication between Swift and Kotlin, which is the main
+ongoing cost here. It also turns a move queue into a game engine, and that is a
+much larger thing to own. Revisit if a second mechanic proves the duplication
+painful rather than merely inelegant.
+
+### Consequences
+
+- The rules for the shipped mechanic exist twice, in Swift and in Kotlin, and
+  can drift. Mitigated by a shared fixture set both sides run against, so a
+  divergence fails a test rather than a game.
+- The app gains a network dependency for one feature. It must degrade the way
+  everything else here does: multiplayer unavailable is an ordinary state, not
+  an error, and no other part of the app may fail because a game server is
+  unreachable.
+- `NoMultiplayer` stays. It is what the app composes when the feature is off,
+  which must remain a supported configuration rather than a legacy path.
