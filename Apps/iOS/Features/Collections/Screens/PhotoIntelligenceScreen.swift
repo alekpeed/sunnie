@@ -2,6 +2,7 @@ import SwiftUI
 import PhotosUI
 import Vision
 import UIKit
+import ImageIO
 
 /// Advisory, on-device photo interpretation. The selected image is not written
 /// anywhere by this screen; it only proposes which existing Sunnie Days feature
@@ -132,11 +133,18 @@ struct PhotoIntelligenceScreen: View {
             }
 
             guard generation == analysisGeneration else { return }
-            let suggestion = try classify(image)
+
+            // Vision inference is synchronous, so run it away from the main
+            // actor. The background task receives only Data, which is Sendable,
+            // and returns strings; UIImage never crosses actor boundaries.
+            let labels = try await Self.classifyLabels(data: data)
             guard generation == analysisGeneration else { return }
 
             selectedImage = image
-            result = suggestion
+            result = PhotoSuggestion.resolve(
+                labels: labels,
+                hasActiveTrip: appState.currentContext.flightMode != nil
+            )
             isAnalyzing = false
         } catch {
             guard generation == analysisGeneration else { return }
@@ -145,28 +153,37 @@ struct PhotoIntelligenceScreen: View {
         }
     }
 
-    private func classify(_ image: UIImage) throws -> PhotoSuggestion {
-        guard let cgImage = image.cgImage else {
-            throw PhotoIntelligenceError.unreadableImage
-        }
+    private nonisolated static func classifyLabels(data: Data) async throws -> [String] {
+        try await Task.detached(priority: .userInitiated) {
+            guard
+                let source = CGImageSourceCreateWithData(data as CFData, nil),
+                let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil)
+            else {
+                throw PhotoIntelligenceError.unreadableImage
+            }
 
-        let request = VNClassifyImageRequest()
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        try handler.perform([request])
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil)
+                as? [CFString: Any]
+            let rawOrientation = (properties?[kCGImagePropertyOrientation] as? NSNumber)?.uint32Value ?? 1
+            let orientation = CGImagePropertyOrientation(rawValue: rawOrientation) ?? .up
 
-        let labels = (request.results ?? [])
-            .filter { $0.confidence >= 0.05 }
-            .prefix(8)
-            .map(\.identifier)
+            let request = VNClassifyImageRequest()
+            let handler = VNImageRequestHandler(
+                cgImage: cgImage,
+                orientation: orientation,
+                options: [:]
+            )
+            try handler.perform([request])
 
-        return PhotoSuggestion.resolve(
-            labels: labels,
-            hasActiveTrip: appState.currentContext.flightMode != nil
-        )
+            return (request.results ?? [])
+                .filter { $0.confidence >= 0.05 }
+                .prefix(8)
+                .map(\.identifier)
+        }.value
     }
 }
 
-private enum PhotoIntelligenceError: LocalizedError {
+private enum PhotoIntelligenceError: LocalizedError, Sendable {
     case unreadableImage
 
     var errorDescription: String? {
@@ -263,8 +280,6 @@ private struct PhotoSuggestion {
         )
     }
 
-    /// Matches aliases as token sequences rather than arbitrary substrings.
-    /// This keeps labels such as "street" from accidentally matching "tree".
     private static func matches(_ labels: [String], aliases: [String]) -> Bool {
         let labelTokens = labels.map(tokens)
         let aliasTokens = aliases.map(tokens)
