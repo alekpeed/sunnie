@@ -20,8 +20,12 @@ final class ContextEngine {
         let progression = (try? await dependencies.progressionRepository.profile())
             ?? ProgressionProfile()
         let trips = (try? await dependencies.manageTrip.dashboardTrips()) ?? []
-        let flightMode = await buildFlightContext(from: trips, now: now)
         let mealsToday = await mealCountToday(now: now)
+        let flightMode = await buildFlightContext(
+            from: trips,
+            now: now,
+            mealsToday: mealsToday
+        )
 
         let items = buildItems(
             plantSummary: plantSummary,
@@ -42,7 +46,11 @@ final class ContextEngine {
         )
     }
 
-    private func buildFlightContext(from trips: [Trip], now: Date) async -> FlightContext? {
+    private func buildFlightContext(
+        from trips: [Trip],
+        now: Date,
+        mealsToday: Int
+    ) async -> FlightContext? {
         guard let selection = FlightModeSelector.select(
             from: trips,
             now: now,
@@ -68,8 +76,6 @@ final class ContextEngine {
             )) ?? []
         }
 
-        let mealCount = await mealCountToday(now: now)
-
         return FlightContext(
             tripID: trip.id,
             tripTitle: trip.title,
@@ -89,7 +95,7 @@ final class ContextEngine {
             checklistCount: checklist.count,
             plantCoverageUndecidedCount: coverageRows.filter(\.isUndecided).count,
             plantsNeedingTripCareCount: coverageRows.filter { $0.need.needsAnything }.count,
-            plannedMealsTodayCount: mealCount,
+            plannedMealsTodayCount: mealsToday,
             weather: weather
         )
     }
@@ -140,10 +146,11 @@ final class ContextEngine {
         if let plantSummary {
             let count = plantSummary.actionableTasks.count
             if count > 0 {
+                let hasTripCoverageToDecide = (flightMode?.plantCoverageUndecidedCount ?? 0) > 0
                 items.append(ContextItem(
                     id: "plants.actionable",
                     kind: .actionable,
-                    priority: flightMode?.plantCoverageUndecidedCount ?? 0 > 0 ? 88 : 70,
+                    priority: hasTripCoverageToDecide ? 88 : 70,
                     title: "Plant care",
                     detail: count == 1
                         ? "1 care item is ready in your jungle."
@@ -205,8 +212,7 @@ final class ContextEngine {
             title: "Flight Mode\(place)",
             detail: detail,
             primaryAction: .openTrip(flight.tripID),
-            secondaryAction: .openPacking(flight.tripID),
-            expiresAt: flight.endsAt
+            secondaryAction: .openPacking(flight.tripID)
         )
     }
 
