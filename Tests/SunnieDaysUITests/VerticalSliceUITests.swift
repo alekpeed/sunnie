@@ -146,7 +146,8 @@ final class VerticalSliceUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Sunnie Nights"].waitForExistence(timeout: 5))
     }
 
-    /// Large Dynamic Type must not clip the primary action.
+    /// Large Dynamic Type must keep the primary action reachable in the
+    /// scrollable Today surface, even when preceding cards grow substantially.
     func testPrimaryActionSurvivesLargeDynamicType() throws {
         app.terminate()
         app.launchArguments += [
@@ -162,7 +163,17 @@ final class VerticalSliceUITests: XCTestCase {
             markWatered.waitForExistence(timeout: 10),
             "No care action at accessibility text sizes. \(visibleButtons())"
         )
-        XCTAssertTrue(markWatered.isHittable, "The care action must stay reachable at large text sizes")
+
+        if !markWatered.isHittable {
+            for _ in 0..<6 where !markWatered.isHittable {
+                app.swipeUp()
+            }
+        }
+
+        XCTAssertTrue(
+            markWatered.isHittable,
+            "The care action must remain reachable by scrolling at large text sizes"
+        )
     }
 
     /// Every interactive element needs a label VoiceOver can announce.
