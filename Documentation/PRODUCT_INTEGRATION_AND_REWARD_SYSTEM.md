@@ -151,6 +151,107 @@ Bad:
 
 Consumers decide how to react.
 
+## Behind-the-scenes native infrastructure
+
+The revamp should also improve Sunnie Days through system-wide infrastructure that Vanessa does not need to think about as a separate feature. These utilities should make every surface more intelligent, current, searchable, and integrated while preserving the local-first privacy model.
+
+### 1. Unified Context Engine
+
+This is the highest-priority infrastructure addition.
+
+The engine should assemble a read-only `CurrentContext` from the existing summary providers, typed events, time engine, preferences, travel state, plant state, meals, wellness, games, progression, calendar/weather availability, and device capabilities.
+
+Today, Sunnie Home, Sunnie dialogue, widgets, Watch, App Intents, and notifications should consume this shared context rather than independently reconstructing what is happening.
+
+The context engine must produce facts and ranked opportunities, not silently perform user actions.
+
+### 2. Native Foundation Models integration
+
+Where the operating system and device support Apple's Foundation Models framework, Sunnie Days should be able to use it as an optional intelligence layer behind the existing deterministic systems.
+
+Appropriate uses include:
+
+- turning natural-language input into structured app data;
+- summarizing several already-known facts into concise contextual copy;
+- interpreting what the user is asking Sunnie to find or do;
+- selecting among explicitly exposed app tools/actions;
+- generating structured output for a deterministic feature to validate before use.
+
+The model must not become the source of truth for schedules, health facts, progression, permissions, rewards, or persisted records. Existing deterministic engines and repositories remain authoritative.
+
+The model must never silently mutate user data. Any action it selects must pass through the same use case and confirmation rules as a manually initiated action.
+
+Foundation Models support is capability-gated. Core Sunnie Days behavior must remain fully functional without it.
+
+### 3. Background refresh and maintenance orchestration
+
+Use the native background-task system to opportunistically keep derived state current while the app is not foregrounded.
+
+Suitable background work includes:
+
+- refreshing the shared context snapshot;
+- rebuilding widget snapshots;
+- reconciling additive reward unlocks;
+- maintaining search indexes;
+- refreshing noncritical derived travel information when permitted;
+- performing safe local housekeeping already designed to be idempotent.
+
+Background execution is best-effort and scheduled by iOS. No critical deadline or safety-sensitive behavior may depend on a background task running at an exact time.
+
+### 4. Core Spotlight as a private universal index
+
+Sunnie Days should expose appropriate local entities to Core Spotlight so the user's information can behave like one searchable personal space rather than several databases.
+
+Candidate entities include plants, trips, places, memories, recipes, games, collections, and other non-sensitive records that are appropriate for system search.
+
+The app should also maintain its own unified in-app search surface using the same entity vocabulary. Search results should deep-link directly to the relevant record or action.
+
+Sensitive categories such as journal and wellness content require a deliberately stricter indexing policy and should not be indexed merely because the framework permits it.
+
+### 5. Expanded App Intents layer
+
+The existing App Intents implementation should become the common system-facing action layer for useful Sunnie Days capabilities.
+
+Where appropriate, the same intents and entities should support Siri, Shortcuts, Spotlight actions, widgets, Watch handoff, and hardware/system entry points exposed by iOS.
+
+This prevents each Apple integration from inventing a parallel action API and makes system integrations another presentation of the same underlying Sunnie Days use cases.
+
+### 6. Central Capability and Permission Broker
+
+Introduce one capability service that describes what the current device and user configuration can actually provide.
+
+It should normalize availability and authorization state for capabilities such as HealthKit, Watch connectivity, notifications, calendar, location, weather, Foundation Models, background refresh, widgets/App Groups, camera/photos, and other optional native integrations.
+
+Feature code should ask the broker for capability state rather than independently duplicating availability logic.
+
+The broker should support graceful substitution. An unavailable integration removes or simplifies the related enhancement; it must not make the underlying Sunnie Days function unusable.
+
+### Infrastructure principles
+
+These utilities are infrastructure, not new product silos.
+
+They must follow these rules:
+
+- no new top-level tab merely because an infrastructure service exists;
+- local-first and offline-capable core behavior remains mandatory;
+- intelligence assists deterministic systems rather than replacing their rules;
+- optional Apple integrations degrade cleanly when unavailable or declined;
+- no background system may create pressure, nagging, or artificial urgency;
+- derived caches and indexes must always be reconstructable from authoritative data;
+- permissions are requested only when the user reaches a capability that genuinely needs them;
+- privacy-sensitive data receives stricter treatment than ordinary app entities.
+
+### Infrastructure implementation priority
+
+1. Unified Context Engine and `CurrentContext` contract.
+2. Central Capability/Permission Broker.
+3. Background context/widget/reward maintenance.
+4. Core Spotlight + unified entity/search vocabulary.
+5. Deeper App Intents coverage using the same use cases.
+6. Foundation Models integration after the deterministic context/tool boundaries are established.
+
+Foundation Models deliberately comes after the context and action contracts. The AI layer should plug into a coherent Sunnie Days architecture, not become the architecture.
+
 ## Product-wide screen test
 
 Every screen should be reviewed with this question:
@@ -165,9 +266,12 @@ A screen that feels separate should be improved through shared visual language, 
 2. Add a unified Today/context summary layer rather than having Today directly query feature storage.
 3. Surface positive progression and recent unlocks in Today/Sunnie Home.
 4. Expand cross-feature context beginning with Travel + Jungle, Travel + Meals, and progression + Sunnie Home.
-5. Enrich Sunnie's reactive behavior and environmental state.
-6. Perform a screen-by-screen integration pass.
-7. Only after this work should a new major feature category be considered.
+5. Add the central capability broker and background context maintenance.
+6. Add unified entity search/Spotlight and deepen App Intents.
+7. Add Foundation Models only after its tools and deterministic boundaries are defined.
+8. Enrich Sunnie's reactive behavior and environmental state.
+9. Perform a screen-by-screen integration pass.
+10. Only after this work should a new major feature category be considered.
 
 ## Acceptance criteria
 
@@ -180,4 +284,6 @@ The integration effort is successful when:
 - inactivity produces no negative state or messaging;
 - multiple feature systems can contribute to a single coherent context item;
 - Sunnie's behavior reflects the current world without becoming needy or intrusive;
-- the application still works offline for all core personal data and functions.
+- the application still works offline for all core personal data and functions;
+- optional native intelligence and system integrations improve the app without becoming prerequisites;
+- system search, widgets, Watch, Siri/Shortcuts, and Today increasingly expose the same underlying entities and actions rather than parallel implementations.
