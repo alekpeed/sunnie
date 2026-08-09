@@ -1,12 +1,11 @@
 import SwiftUI
 import SunnieShared
 
-/// The daily operational centre and primary contextual surface of Sunnie Days.
+/// The daily operating layer for Sunnie Days.
 ///
-/// Today is intentionally not a mirror of the navigation hierarchy. It brings
-/// together the parts of the user's world that are useful now and provides
-/// direct routes into already-built systems. Richer cross-feature prioritisation
-/// belongs in summary/context providers rather than in this view.
+/// Today consumes one `CurrentContext`, so Travel, Jungle, Meals, Wellness,
+/// progression and Flight Mode are ranked as one situation rather than rendered
+/// as equally important mini-apps. Tell Sunnie is the universal capture path.
 struct TodayScreen: View {
     @Environment(AppState.self) private var appState
     @Environment(AppRouter.self) private var router
@@ -14,14 +13,20 @@ struct TodayScreen: View {
     @Environment(\.sunnieTheme) private var theme
 
     @State private var model: TodayModel?
+    @State private var isTellingSunnie = false
 
     var body: some View {
         ScrollView {
             LazyVStack(spacing: Space.m) {
                 greetingCard
+                tellSunnieCard
 
                 if dependencies.isEphemeralStorage {
                     ephemeralStorageNotice
+                }
+
+                if let flight = model?.flightMode {
+                    flightModeCard(flight)
                 }
 
                 plantSection
@@ -34,7 +39,7 @@ struct TodayScreen: View {
                     .transition(.opacity)
                 }
 
-                worldSection
+                contextSection
             }
             .padding(Space.m)
         }
@@ -52,9 +57,12 @@ struct TodayScreen: View {
         .onDisappear {
             Task { await model?.onDisappear() }
         }
+        .sheet(isPresented: $isTellingSunnie) {
+            TellSunnieScreen()
+        }
     }
 
-    // MARK: - Cards
+    // MARK: - Primary OS surfaces
 
     private var greetingCard: some View {
         SunnieCard {
@@ -80,6 +88,87 @@ struct TodayScreen: View {
         }
     }
 
+    private var tellSunnieCard: some View {
+        Button {
+            isTellingSunnie = true
+        } label: {
+            SunnieCard {
+                HStack(spacing: Space.s) {
+                    Image(systemName: "bubble.left.and.text.bubble.right")
+                        .font(.title2)
+                        .accessibilityHidden(true)
+
+                    VStack(alignment: .leading, spacing: Space.xxs) {
+                        Text("Tell Sunnie")
+                            .font(SunnieFont.title)
+                            .foregroundStyle(theme.color.textPrimary)
+                        Text("Type it or say it. Sunnie Days will work out where it belongs.")
+                            .font(SunnieFont.secondary)
+                            .foregroundStyle(theme.color.textSecondary)
+                            .multilineTextAlignment(.leading)
+                    }
+
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(theme.color.textSecondary)
+                        .accessibilityHidden(true)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Tell Sunnie")
+        .accessibilityHint("Opens text and voice capture")
+    }
+
+    private func flightModeCard(_ flight: FlightContext) -> some View {
+        SunnieCard {
+            HStack(alignment: .firstTextBaseline) {
+                SectionHeader(
+                    title: "Flight Mode",
+                    subtitle: flight.destinationName ?? flight.tripTitle
+                )
+                Spacer()
+                Image(systemName: "airplane")
+                    .accessibilityHidden(true)
+            }
+
+            Text(flightModeSummary(flight))
+                .font(SunnieFont.body)
+                .foregroundStyle(theme.color.textPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if let weather = flight.weather {
+                Label(
+                    "\(String(localized: .init(weather.condition.localizationKey))) · \(Int(weather.temperatureCelsius.rounded()))°C",
+                    systemImage: weather.condition.symbolName
+                )
+                .font(SunnieFont.secondary)
+                .foregroundStyle(theme.color.textSecondary)
+            }
+
+            HStack(spacing: Space.s) {
+                SunnieSecondaryButton(
+                    title: "Open Trip",
+                    systemImage: "airplane",
+                    action: { router.handle(.trip(flight.tripID)) }
+                )
+                SunnieSecondaryButton(
+                    title: "Packing",
+                    systemImage: "suitcase",
+                    action: { router.handle(.packing(flight.tripID)) }
+                )
+            }
+
+            if flight.plantCoverageUndecidedCount > 0 {
+                SunnieSecondaryButton(
+                    title: "Plant Coverage",
+                    systemImage: "leaf",
+                    action: { router.handle(.plantCoverage(flight.tripID)) }
+                )
+            }
+        }
+    }
+
     /// Shown only when the on-disk store could not be opened. The user must know
     /// their work is not being kept.
     private var ephemeralStorageNotice: some View {
@@ -91,6 +180,8 @@ struct TodayScreen: View {
             )
         )
     }
+
+    // MARK: - Existing feature actions, fed by CurrentContext
 
     @ViewBuilder
     private var plantSection: some View {
@@ -115,23 +206,20 @@ struct TodayScreen: View {
                 retry: { Task { await model?.load() } }
             )
 
-        case .loaded(let summary):
-            PlantTaskCard(
-                summary: summary,
-                onOpenDueList: { router.handle(.jungleDue) },
-                onComplete: { task in
-                    Task { await model?.completeCare(task: task) }
-                },
-                onOpenPlant: { plantID in router.handle(.plant(plantID)) }
-            )
+        case .loaded:
+            if let summary = model?.plantSummary {
+                PlantTaskCard(
+                    summary: summary,
+                    onOpenDueList: { router.handle(.jungleDue) },
+                    onComplete: { task in
+                        Task { await model?.completeCare(task: task) }
+                    },
+                    onOpenPlant: { plantID in router.handle(.plant(plantID)) }
+                )
+            }
         }
     }
 
-    /// The wellness slice of Today.
-    ///
-    /// Reads from the summary provider, so Today stays independent of the
-    /// Wellness feature. Phrased as an offer in both states — having checked in
-    /// is stated as fact, not as a reason to be pleased or to do it again.
     private var wellnessSection: some View {
         SunnieCard {
             SectionHeader(
@@ -185,95 +273,109 @@ struct TodayScreen: View {
         return nil
     }
 
-    /// Direct access to systems that are already part of Sunnie Days.
-    ///
-    /// This replaces the old "Coming soon" placeholders. It is deliberately a
-    /// temporary, non-prioritised bridge: the next integration slice will feed
-    /// these systems through a shared context summary so Today can show what is
-    /// relevant rather than presenting every module equally.
-    private var worldSection: some View {
-        SunnieCard {
-            SectionHeader(
-                title: String(
-                    localized: "today.world.title",
-                    defaultValue: "Your world",
-                    comment: "Integrated Sunnie Days actions on Today"
-                ),
-                subtitle: String(
-                    localized: "today.world.subtitle",
-                    defaultValue: "Everything here is part of the same Sunnie Days world.",
-                    comment: "Explains integrated shortcuts without implying required activity"
-                )
-            )
+    /// Lower-priority context that remains after Flight Mode and the dedicated
+    /// plant/wellness actions have been shown. There is intentionally no fixed
+    /// row for every module.
+    @ViewBuilder
+    private var contextSection: some View {
+        let visible = (model?.contextItems ?? []).filter {
+            !$0.id.hasPrefix("flightMode.") && $0.id != "plants.actionable"
+        }
 
-            let profile = model?.progressionProfile ?? ProgressionProfile()
-            HStack(spacing: Space.s) {
-                Image(systemName: "sparkles")
-                    .accessibilityHidden(true)
-                Text(String(
-                    localized: "today.world.progression",
-                    defaultValue: "Level \(profile.level) · \(profile.experience) points",
-                    comment: "Additive Sunnie Days progression; points never decrease"
-                ))
-                    .font(SunnieFont.body)
-                    .foregroundStyle(theme.color.textPrimary)
-                Spacer()
-            }
-            .accessibilityElement(children: .combine)
-
-            VStack(spacing: Space.s) {
-                HStack(spacing: Space.s) {
-                    SunnieSecondaryButton(
-                        title: String(
-                            localized: "today.world.travel",
-                            defaultValue: "Travel",
-                            comment: "Opens travel"
-                        ),
-                        systemImage: "airplane",
-                        action: { router.handle(.travel) }
-                    )
-                    SunnieSecondaryButton(
-                        title: String(
-                            localized: "today.world.meals",
-                            defaultValue: "Meals",
-                            comment: "Opens meals"
-                        ),
-                        systemImage: "fork.knife",
-                        action: { router.handle(.meals) }
-                    )
-                }
+        ForEach(visible) { item in
+            SunnieCard {
+                SectionHeader(title: item.title, subtitle: item.detail)
 
                 HStack(spacing: Space.s) {
-                    SunnieSecondaryButton(
-                        title: String(
-                            localized: "today.world.games",
-                            defaultValue: "Play",
-                            comment: "Opens games without streak framing"
-                        ),
-                        systemImage: "puzzlepiece",
-                        action: { router.handle(.games) }
-                    )
-                    SunnieSecondaryButton(
-                        title: String(
-                            localized: "today.world.home",
-                            defaultValue: "Sunnie's Home",
-                            comment: "Opens Sunnie's Home"
-                        ),
-                        systemImage: "house",
-                        action: { router.handle(.sunnieHome) }
-                    )
+                    if let action = item.primaryAction {
+                        contextButton(action, fallbackTitle: "Open")
+                    }
+                    if let action = item.secondaryAction {
+                        contextButton(action, fallbackTitle: "More")
+                    }
                 }
-
-                SunnieSecondaryButton(
-                    title: String(
-                        localized: "today.world.collection",
-                        defaultValue: "Rewards & Collection",
-                        comment: "Opens permanently earned rewards and collectibles"
-                    ),
-                    systemImage: "sparkles",
-                    action: { router.handle(.collections) }
-                )
             }
         }
+    }
+
+    @ViewBuilder
+    private func contextButton(_ action: ContextAction, fallbackTitle: String) -> some View {
+        if action == .tellSunnie {
+            SunnieSecondaryButton(
+                title: "Tell Sunnie",
+                systemImage: "bubble.left",
+                action: { isTellingSunnie = true }
+            )
+        } else if let route = action.appRoute {
+            SunnieSecondaryButton(
+                title: contextActionTitle(action, fallback: fallbackTitle),
+                systemImage: contextActionSymbol(action),
+                action: { router.handle(route) }
+            )
+        }
+    }
+
+    private func contextActionTitle(_ action: ContextAction, fallback: String) -> String {
+        switch action {
+        case .openTravel, .openTrip: "Travel"
+        case .openPacking: "Packing"
+        case .openChecklist: "Checklist"
+        case .openPlantCoverage: "Plant Coverage"
+        case .openJungle, .openJungleDue: "Jungle"
+        case .openMeals: "Meals"
+        case .openGames: "Play"
+        case .openWellness: "Wellness"
+        case .openJournal: "Journal"
+        case .openSunnieHome: "Sunnie's Home"
+        case .openCollections: "Collection"
+        case .tellSunnie: "Tell Sunnie"
+        }
+    }
+
+    private func contextActionSymbol(_ action: ContextAction) -> String {
+        switch action {
+        case .openTravel, .openTrip: "airplane"
+        case .openPacking: "suitcase"
+        case .openChecklist: "checklist"
+        case .openPlantCoverage, .openJungle, .openJungleDue: "leaf"
+        case .openMeals: "fork.knife"
+        case .openGames: "puzzlepiece"
+        case .openWellness: "heart"
+        case .openJournal: "square.and.pencil"
+        case .openSunnieHome: "house"
+        case .openCollections: "sparkles"
+        case .tellSunnie: "bubble.left"
+        }
+    }
+
+    private func flightModeSummary(_ flight: FlightContext) -> String {
+        var facts: [String] = []
+        switch flight.phase {
+        case .preparing:
+            if let days = flight.daysUntilDeparture {
+                if days == 0 { facts.append("Work trip starts today") }
+                else if days == 1 { facts.append("Work trip starts tomorrow") }
+                else { facts.append("Work trip starts in \(days) days") }
+            }
+        case .away:
+            facts.append("Work trip active")
+        case .returning:
+            facts.append("Return part of the work trip")
+        }
+
+        if flight.packingCount > 0 {
+            facts.append("\(flight.packedCount) of \(flight.packingCount) packed")
+        }
+        if flight.checklistCount > 0 {
+            facts.append("\(flight.checklistDoneCount) of \(flight.checklistCount) personal checklist items checked")
+        }
+        if flight.plantCoverageUndecidedCount > 0 {
+            let count = flight.plantCoverageUndecidedCount
+            facts.append(count == 1
+                ? "1 plant coverage decision undecided"
+                : "\(count) plant coverage decisions undecided")
+        }
+
+        return facts.isEmpty ? "Your work trip is in context." : facts.joined(separator: " · ")
     }
 }
