@@ -1,11 +1,12 @@
 import SwiftUI
 import SunnieShared
 
-/// The daily operational centre.
+/// The daily operational centre and primary contextual surface of Sunnie Days.
 ///
-/// **Placeholder presentation.** Card order follows the documented hierarchy
-/// (INFORMATION_ARCHITECTURE.md §2), but only the greeting and plant cards carry
-/// real behaviour in this slice. The remaining cards arrive in Phases 3 and after.
+/// Today is intentionally not a mirror of the navigation hierarchy. It brings
+/// together the parts of the user's world that are useful now and provides
+/// direct routes into already-built systems. Richer cross-feature prioritisation
+/// belongs in summary/context providers rather than in this view.
 struct TodayScreen: View {
     @Environment(AppState.self) private var appState
     @Environment(AppRouter.self) private var router
@@ -33,7 +34,7 @@ struct TodayScreen: View {
                     .transition(.opacity)
                 }
 
-                comingSoonCards
+                worldSection
             }
             .padding(Space.m)
         }
@@ -184,53 +185,80 @@ struct TodayScreen: View {
         return nil
     }
 
-    /// Structural stand-ins for the cards that arrive in later phases. They are
-    /// present so the hierarchy is visible and so no card silently goes missing
-    /// when its feature lands.
-    private var comingSoonCards: some View {
-        ForEach(UpcomingCard.allCases) { card in
-            SunnieCard {
-                SectionHeader(
-                    title: String(localized: card.titleKey),
-                    subtitle: String(localized: card.subtitleKey)
+    /// Direct access to systems that are already part of Sunnie Days.
+    ///
+    /// This replaces the old "Coming soon" placeholders. It is deliberately a
+    /// temporary, non-prioritised bridge: the next integration slice will feed
+    /// these systems through a shared context summary so Today can show what is
+    /// relevant rather than presenting every module equally.
+    private var worldSection: some View {
+        SunnieCard {
+            SectionHeader(
+                title: String(
+                    localized: "today.world.title",
+                    defaultValue: "Your world",
+                    comment: "Integrated Sunnie Days actions on Today"
+                ),
+                subtitle: String(
+                    localized: "today.world.subtitle",
+                    defaultValue: "Everything here is part of the same Sunnie Days world.",
+                    comment: "Explains integrated shortcuts without implying required activity"
                 )
-                StatusChip(
-                    text: String(
-                        localized: "common.comingSoon",
-                        defaultValue: "Coming soon",
-                        comment: "Marks a feature that is not built yet"
+            )
+
+            VStack(spacing: Space.s) {
+                HStack(spacing: Space.s) {
+                    SunnieSecondaryButton(
+                        title: String(
+                            localized: "today.world.travel",
+                            defaultValue: "Travel",
+                            comment: "Opens travel"
+                        ),
+                        systemImage: "airplane",
+                        action: { router.handle(.travel) }
+                    )
+                    SunnieSecondaryButton(
+                        title: String(
+                            localized: "today.world.meals",
+                            defaultValue: "Meals",
+                            comment: "Opens meals"
+                        ),
+                        systemImage: "fork.knife",
+                        action: { router.handle(.meals) }
+                    )
+                }
+
+                HStack(spacing: Space.s) {
+                    SunnieSecondaryButton(
+                        title: String(
+                            localized: "today.world.games",
+                            defaultValue: "Play",
+                            comment: "Opens games without streak framing"
+                        ),
+                        systemImage: "puzzlepiece",
+                        action: { router.handle(.games) }
+                    )
+                    SunnieSecondaryButton(
+                        title: String(
+                            localized: "today.world.home",
+                            defaultValue: "Sunnie's Home",
+                            comment: "Opens Sunnie's Home"
+                        ),
+                        systemImage: "house",
+                        action: { router.handle(.sunnieHome) }
+                    )
+                }
+
+                SunnieSecondaryButton(
+                    title: String(
+                        localized: "today.world.collection",
+                        defaultValue: "Rewards & Collection",
+                        comment: "Opens permanently earned rewards and collectibles"
                     ),
-                    style: .neutral
+                    systemImage: "sparkles",
+                    action: { router.handle(.collections) }
                 )
             }
-        }
-    }
-}
-
-/// Cards whose features are not implemented yet, in the documented Today order.
-private enum UpcomingCard: String, CaseIterable, Identifiable {
-    case travel
-    case meals
-    case dailyPuzzle
-    case progression
-
-    var id: String { rawValue }
-
-    var titleKey: String.LocalizationValue {
-        switch self {
-        case .travel: "today.card.travel.title"
-        case .meals: "today.card.meals.title"
-        case .dailyPuzzle: "today.card.puzzle.title"
-        case .progression: "today.card.progression.title"
-        }
-    }
-
-    var subtitleKey: String.LocalizationValue {
-        switch self {
-        case .travel: "today.card.travel.subtitle"
-        case .meals: "today.card.meals.subtitle"
-        case .dailyPuzzle: "today.card.puzzle.subtitle"
-        case .progression: "today.card.progression.subtitle"
         }
     }
 }
