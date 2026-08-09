@@ -4,11 +4,9 @@ import SunnieShared
 
 /// Feature model for Today.
 ///
-/// Holds screen state, invokes use cases, and maps results to display values. It
-/// contains no persistence calls of its own — plant and wellness data arrive
-/// through summary providers, while progression arrives through the collection
-/// use case. That keeps Today a consumer of shared context rather than an owner
-/// of another feature's storage.
+/// Today no longer assembles plant, wellness, progression and travel state on its
+/// own. It consumes the same `CurrentContext` as the rest of the Sunnie OS layer.
+/// Mutations still go through the feature use cases that own them.
 @MainActor
 @Observable
 final class TodayModel {
@@ -16,20 +14,13 @@ final class TodayModel {
     enum LoadState: Equatable {
         case idle
         case loading
-        case loaded(PlantTodaySummary)
-        /// Carries copy that is already user-safe: what happened and what is
-        /// still fine. Never a raw framework error.
+        case loaded
         case failed(String)
     }
 
     private(set) var state: LoadState = .idle
     private(set) var greeting: SunnieMessage?
-    /// The wellness slice, from its own provider. Today never queries wellness
-    /// storage directly (TECHNICAL_ARCHITECTURE.md §6).
-    private(set) var wellnessSummary: WellnessSummary?
     private(set) var affirmation: AffirmationDefinition?
-    /// Additive progression only. There is no missed-day, decay, or loss state.
-    private(set) var progressionProfile = ProgressionProfile()
     /// Sunnie's reaction to the most recent completion, shown briefly.
     private(set) var lastReaction: SunnieMessage?
 
@@ -42,13 +33,17 @@ final class TodayModel {
         self.appState = appState
     }
 
+    var currentContext: CurrentContext { appState.currentContext }
+    var plantSummary: PlantTodaySummary? { currentContext.plantSummary }
+    var wellnessSummary: WellnessSummary? { currentContext.wellnessSummary }
+    var progressionProfile: ProgressionProfile { currentContext.progression }
+    var flightMode: FlightContext? { currentContext.flightMode }
+    var contextItems: [ContextItem] { currentContext.items }
+
     func onAppear() async {
         greeting = appState.greeting()
-        // Subscribed before the first read, not after it. Loading first leaves a
-        // window in which something can change the jungle, publish, and be
-        // missed entirely — which is exactly what first-launch seeding does
-        // (see SampleData). Subscribing first means the worst case is one
-        // redundant rebuild rather than a screen that stays wrong.
+        // Subscribe before the first rebuild so a change during loading causes a
+        // second rebuild rather than leaving a stale contextual surface.
         await subscribeToChanges()
         await load()
     }
@@ -60,65 +55,38 @@ final class TodayModel {
     }
 
     func load() async {
-        if case .loaded = state {} else {
-            state = .loading
-        }
+        if state != .loaded { state = .loading }
+        await appState.refreshCurrentContext()
+        refreshPresentationFromContext()
+        state = .loaded
+    }
 
-        // These slices are best-effort: one optional subsystem failing must not
-        // take the rest of Today down with it.
-        wellnessSummary = try? await dependencies.wellnessSummaryProvider.summary()
-        progressionProfile = await dependencies.manageCollection.progressionProfile()
+    private func refreshPresentationFromContext() {
         affirmation = dependencies.affirmationService.affirmation(for: .init(
             phase: appState.timeContext.phase,
             isSensitiveMoment: wellnessSummary?.mostRecentCheckIn?.suggestsSensitiveMoment ?? false
         ))
-
-        do {
-            let summary = try await dependencies.summaryProvider.summary()
-            state = .loaded(summary)
-        } catch {
-            state = .failed(String(
-                localized: "today.error.summary",
-                defaultValue: "I couldn't put today's list together just now. Everything you've saved is still here.",
-                comment: "Shown when the Today summary cannot be built"
-            ))
-        }
     }
 
-    /// Refreshes when another feature reports something that changes Today.
+    /// Rebuild Today for any event that can change shared context.
     ///
-    /// Today learns that care was logged without ever importing the Jungle
-    /// feature — it hears about a typed event and re-reads its own summary.
+    /// Rebuilding from the context engine is deliberately cheap conceptually:
+    /// consumers no longer need their own event-to-feature dependency map.
     private func subscribeToChanges() async {
         guard eventToken == nil else { return }
 
-        eventToken = await dependencies.eventBus.subscribe { [weak self] event in
-            // The set a plant card can be wrong about: care logged elsewhere,
-            // a plant added or archived. `plantAdded` covers first-launch
-            // seeding as well as the Phase 4 editor, since both mean the same
-            // thing to this screen — the jungle is not what Today last read.
-            guard event.type == .plantCareLogged
-                || event.type == .plantAdded
-                || event.type == .plantArchived
-                || event.type == .wellnessCheckInRecorded else { return }
+        eventToken = await dependencies.eventBus.subscribe { [weak self] _ in
             await self?.reload()
         }
     }
 
     private func reload() async {
-        wellnessSummary = try? await dependencies.wellnessSummaryProvider.summary()
-        progressionProfile = await dependencies.manageCollection.progressionProfile()
-        do {
-            let summary = try await dependencies.summaryProvider.summary()
-            state = .loaded(summary)
-        } catch {
-            // A refresh failing leaves the previous summary on screen, which is
-            // better than replacing good data with an error.
-            SunnieLog(category: .ui).debug("Today summary refresh failed; keeping the previous list.")
-        }
+        await appState.refreshCurrentContext()
+        refreshPresentationFromContext()
+        state = .loaded
     }
 
-    /// Logs care straight from the Today card.
+    /// Logs care straight from the Today card through the Jungle use case.
     func completeCare(task: DueCareTask) async {
         do {
             let result = try await dependencies.logPlantCare(
