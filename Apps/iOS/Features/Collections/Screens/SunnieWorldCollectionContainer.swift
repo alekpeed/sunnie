@@ -6,9 +6,11 @@ import SunnieShared
 /// `AppState.worldContext`; it never creates its own copy of reward or travel data.
 struct SunnieWorldCollectionContainer<Content: View>: View {
     @Environment(AppState.self) private var appState
+    @Environment(AppRouter.self) private var router
     @Environment(\.sunnieTheme) private var theme
 
     @State private var showsWorld = false
+    @State private var pendingRoute: AppRoute?
 
     private let content: Content
 
@@ -57,14 +59,25 @@ struct SunnieWorldCollectionContainer<Content: View>: View {
                     "Open Sunnie's World. \(appState.worldContext.curios.count) curios and \(appState.worldContext.memories.count) memory chapters."
                 )
             }
-            .sheet(isPresented: $showsWorld) {
+            .sheet(isPresented: $showsWorld, onDismiss: routeAfterWorldDismisses) {
                 NavigationStack {
-                    SunnieWorldScreen()
+                    SunnieWorldScreen(openRoute: openRouteFromWorld)
                 }
             }
             .task {
                 await appState.refreshCurrentContext()
             }
+    }
+
+    private func openRouteFromWorld(_ route: AppRoute) {
+        pendingRoute = route
+        showsWorld = false
+    }
+
+    private func routeAfterWorldDismisses() {
+        guard let route = pendingRoute else { return }
+        pendingRoute = nil
+        router.handle(route)
     }
 
     private var worldSummary: String {
@@ -81,6 +94,8 @@ struct SunnieWorldScreen: View {
     @Environment(AppState.self) private var appState
     @Environment(\.sunnieTheme) private var theme
     @Environment(\.dismiss) private var dismiss
+
+    let openRoute: (AppRoute) -> Void
 
     @State private var inspectingCurio: CurioItem?
     @State private var inspectingMemory: MemoryChapter?
@@ -128,11 +143,11 @@ struct SunnieWorldScreen: View {
             WorldCurioDetailSheet(curio: curio)
         }
         .sheet(item: $inspectingMemory) { memory in
-            WorldMemoryDetailSheet(memory: memory)
+            WorldMemoryDetailSheet(memory: memory, openRoute: openRoute)
         }
         .sheet(isPresented: $showsPhotoIntelligence) {
             NavigationStack {
-                PhotoIntelligenceScreen()
+                PhotoIntelligenceScreen(onOpenRoute: openRoute)
             }
         }
     }
@@ -398,11 +413,11 @@ private struct WorldCurioDetailSheet: View {
 }
 
 private struct WorldMemoryDetailSheet: View {
-    @Environment(AppRouter.self) private var router
     @Environment(\.sunnieTheme) private var theme
     @Environment(\.dismiss) private var dismiss
 
     let memory: MemoryChapter
+    let openRoute: (AppRoute) -> Void
 
     var body: some View {
         NavigationStack {
@@ -428,8 +443,7 @@ private struct WorldMemoryDetailSheet: View {
 
                     if let tripID = memory.tripID {
                         SunniePrimaryButton(title: "Open original trip") {
-                            dismiss()
-                            router.handle(.trip(tripID))
+                            openRoute(.trip(tripID))
                         }
                     }
                 }

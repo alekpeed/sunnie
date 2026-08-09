@@ -49,8 +49,6 @@ public struct SunnieWorldSnapshot: Hashable, Sendable {
         SunnieWorldSnapshot(generatedAt: date)
     }
 
-    /// The newest permanently unlocked presentation pack becomes the ambient
-    /// default. The pack itself remains owned forever; no inactivity can remove it.
     public var activePresentationPack: PresentationPack? {
         presentationPacks.last
     }
@@ -113,8 +111,6 @@ public enum CurioKind: String, Hashable, Sendable, Codable {
     case seasonal
 }
 
-/// A permanent positive unlock represented inside Sunnie's world.
-/// Unlocks are monotonic because they derive only from durable progression.
 public struct CurioItem: Identifiable, Hashable, Sendable {
     public let id: String
     public let title: String
@@ -140,8 +136,6 @@ public struct CurioItem: Identifiable, Hashable, Sendable {
     }
 }
 
-/// A read-only chapter composed from an authoritative source record.
-/// `tripID` lets the iPhone route back to the original trip without copying it.
 public struct MemoryChapter: Identifiable, Hashable, Sendable {
     public let id: String
     public let title: String
@@ -192,17 +186,14 @@ public struct LanguageMoment: Identifiable, Hashable, Sendable {
     }
 }
 
-/// Small deterministic phrase catalog. It is intentionally contextual rather
-/// than a course: there are no streaks, obligations, or missed lessons.
+/// Small deterministic phrase catalog. Destination aliases are matched as token
+/// sequences, never arbitrary substrings, so places such as Venice cannot collide
+/// with Nice.
 public enum LanguageMomentCatalog {
     public static func moment(for destination: String?) -> LanguageMoment? {
         guard let destination else { return nil }
-        let normalized = destination
-            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
-            .lowercased()
 
-        if ["japan", "tokyo", "osaka", "kyoto", "fukuoka", "sapporo", "naha"]
-            .contains(where: normalized.contains) {
+        if matches(destination, aliases: ["japan", "tokyo", "osaka", "kyoto", "fukuoka", "sapporo", "naha"]) {
             return LanguageMoment(
                 id: "language.ja.otsukaresama",
                 destination: destination,
@@ -211,8 +202,7 @@ public enum LanguageMomentCatalog {
                 note: "A common, warm Japanese expression after work or effort."
             )
         }
-        if ["brazil", "rio", "sao paulo", "são paulo", "salvador", "recife"]
-            .contains(where: normalized.contains) {
+        if matches(destination, aliases: ["brazil", "rio", "rio de janeiro", "sao paulo", "salvador", "recife"]) {
             return LanguageMoment(
                 id: "language.pt.fica-a-vontade",
                 destination: destination,
@@ -221,8 +211,7 @@ public enum LanguageMomentCatalog {
                 note: "A natural Brazilian Portuguese invitation to relax or help yourself."
             )
         }
-        if ["portugal", "lisbon", "lisboa", "porto"]
-            .contains(where: normalized.contains) {
+        if matches(destination, aliases: ["portugal", "lisbon", "lisboa", "porto"]) {
             return LanguageMoment(
                 id: "language.pt.obrigada",
                 destination: destination,
@@ -231,8 +220,7 @@ public enum LanguageMomentCatalog {
                 note: "The feminine form in Portuguese."
             )
         }
-        if ["france", "paris", "lyon", "nice", "marseille"]
-            .contains(where: normalized.contains) {
+        if matches(destination, aliases: ["france", "paris", "lyon", "nice", "marseille"]) {
             return LanguageMoment(
                 id: "language.fr.bonne-journee",
                 destination: destination,
@@ -240,8 +228,7 @@ public enum LanguageMomentCatalog {
                 translation: "Have a good day"
             )
         }
-        if ["spain", "madrid", "barcelona", "sevilla", "seville"]
-            .contains(where: normalized.contains) {
+        if matches(destination, aliases: ["spain", "madrid", "barcelona", "sevilla", "seville"]) {
             return LanguageMoment(
                 id: "language.es.que-aproveche",
                 destination: destination,
@@ -249,8 +236,7 @@ public enum LanguageMomentCatalog {
                 translation: "Enjoy your meal"
             )
         }
-        if ["thailand", "bangkok", "chiang mai", "phuket"]
-            .contains(where: normalized.contains) {
+        if matches(destination, aliases: ["thailand", "bangkok", "chiang mai", "phuket"]) {
             return LanguageMoment(
                 id: "language.th.sawasdee",
                 destination: destination,
@@ -259,8 +245,7 @@ public enum LanguageMomentCatalog {
                 note: "A polite feminine greeting in Thai."
             )
         }
-        if ["vietnam", "hanoi", "ho chi minh", "saigon", "da nang"]
-            .contains(where: normalized.contains) {
+        if matches(destination, aliases: ["vietnam", "hanoi", "ho chi minh", "ho chi minh city", "saigon", "da nang"]) {
             return LanguageMoment(
                 id: "language.vi.cam-on",
                 destination: destination,
@@ -270,10 +255,30 @@ public enum LanguageMomentCatalog {
         }
         return nil
     }
+
+    private static func matches(_ destination: String, aliases: [String]) -> Bool {
+        let haystack = tokens(destination)
+        return aliases.map(tokens).contains { containsSequence(haystack, $0) }
+    }
+
+    private static func tokens(_ text: String) -> [String] {
+        text
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+            .lowercased()
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+    }
+
+    private static func containsSequence(_ haystack: [String], _ needle: [String]) -> Bool {
+        guard !needle.isEmpty, haystack.count >= needle.count else { return false }
+        if needle.count == 1 { return haystack.contains(needle[0]) }
+        for start in 0...(haystack.count - needle.count) {
+            if Array(haystack[start..<(start + needle.count)]) == needle { return true }
+        }
+        return false
+    }
 }
 
-/// Conservative preference recall derived only from repeated history. It is a
-/// hint for ranking/recall, not a permanent claim about what the user likes.
 public struct WorldPreferenceHint: Identifiable, Hashable, Sendable {
     public let id: String
     public let title: String
@@ -354,8 +359,6 @@ public struct WorldSurprise: Identifiable, Hashable, Sendable {
     }
 }
 
-/// Harmless contextual discoveries. Resolution is based on durable context, not
-/// on opening the app at a precise time, so nothing can be "missed".
 public enum WorldSurpriseResolver {
     public static func resolve(
         environment: WorldEnvironment,

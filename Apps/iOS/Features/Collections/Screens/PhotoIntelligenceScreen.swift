@@ -8,15 +8,17 @@ import UIKit
 /// is the right place to continue.
 struct PhotoIntelligenceScreen: View {
     @Environment(AppState.self) private var appState
-    @Environment(AppRouter.self) private var router
     @Environment(\.sunnieTheme) private var theme
     @Environment(\.dismiss) private var dismiss
+
+    let onOpenRoute: (AppRoute) -> Void
 
     @State private var selectedItem: PhotosPickerItem?
     @State private var selectedImage: UIImage?
     @State private var result: PhotoSuggestion?
     @State private var isAnalyzing = false
     @State private var errorMessage: String?
+    @State private var analysisGeneration = UUID()
 
     var body: some View {
         ScrollView {
@@ -83,7 +85,9 @@ struct PhotoIntelligenceScreen: View {
         }
         .onChange(of: selectedItem) { _, item in
             guard let item else { return }
-            Task { await loadAndAnalyze(item) }
+            let generation = UUID()
+            analysisGeneration = generation
+            Task { await loadAndAnalyze(item, generation: generation) }
         }
     }
 
@@ -106,15 +110,15 @@ struct PhotoIntelligenceScreen: View {
 
             if let route = suggestion.route {
                 SunniePrimaryButton(title: suggestion.actionTitle) {
-                    router.handle(route)
-                    dismiss()
+                    onOpenRoute(route)
                 }
             }
         }
     }
 
     @MainActor
-    private func loadAndAnalyze(_ item: PhotosPickerItem) async {
+    private func loadAndAnalyze(_ item: PhotosPickerItem, generation: UUID) async {
+        guard generation == analysisGeneration else { return }
         isAnalyzing = true
         errorMessage = nil
         result = nil
@@ -127,13 +131,18 @@ struct PhotoIntelligenceScreen: View {
                 throw PhotoIntelligenceError.unreadableImage
             }
 
-            selectedImage = image
-            result = try classify(image)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+            guard generation == analysisGeneration else { return }
+            let suggestion = try classify(image)
+            guard generation == analysisGeneration else { return }
 
-        isAnalyzing = false
+            selectedImage = image
+            result = suggestion
+            isAnalyzing = false
+        } catch {
+            guard generation == analysisGeneration else { return }
+            errorMessage = error.localizedDescription
+            isAnalyzing = false
+        }
     }
 
     private func classify(_ image: UIImage) throws -> PhotoSuggestion {
@@ -177,9 +186,7 @@ private struct PhotoSuggestion {
     let labels: [String]
 
     static func resolve(labels: [String], hasActiveTrip: Bool) -> PhotoSuggestion {
-        let corpus = labels.joined(separator: " ").lowercased()
-
-        if containsAny(corpus, [
+        if matches(labels, aliases: [
             "plant", "flower", "leaf", "foliage", "houseplant", "tree", "succulent", "cactus"
         ]) {
             return PhotoSuggestion(
@@ -192,7 +199,7 @@ private struct PhotoSuggestion {
             )
         }
 
-        if containsAny(corpus, [
+        if matches(labels, aliases: [
             "food", "dish", "meal", "plate", "dessert", "bread", "fruit", "vegetable", "restaurant"
         ]) {
             return PhotoSuggestion(
@@ -205,7 +212,7 @@ private struct PhotoSuggestion {
             )
         }
 
-        if containsAny(corpus, [
+        if matches(labels, aliases: [
             "receipt", "document", "paper", "ticket", "passport", "booklet", "menu", "text"
         ]) {
             return PhotoSuggestion(
@@ -220,7 +227,7 @@ private struct PhotoSuggestion {
             )
         }
 
-        if containsAny(corpus, [
+        if matches(labels, aliases: [
             "luggage", "suitcase", "bag", "backpack", "clothing", "shoe", "electronics", "charger"
         ]), hasActiveTrip {
             return PhotoSuggestion(
@@ -233,7 +240,7 @@ private struct PhotoSuggestion {
             )
         }
 
-        if containsAny(corpus, [
+        if matches(labels, aliases: [
             "building", "architecture", "landmark", "city", "street", "bridge", "mountain", "beach", "landscape"
         ]) || hasActiveTrip {
             return PhotoSuggestion(
@@ -256,7 +263,33 @@ private struct PhotoSuggestion {
         )
     }
 
-    private static func containsAny(_ text: String, _ terms: [String]) -> Bool {
-        terms.contains(where: text.contains)
+    /// Matches aliases as token sequences rather than arbitrary substrings.
+    /// This keeps labels such as "street" from accidentally matching "tree".
+    private static func matches(_ labels: [String], aliases: [String]) -> Bool {
+        let labelTokens = labels.map(tokens)
+        let aliasTokens = aliases.map(tokens)
+        return labelTokens.contains { label in
+            aliasTokens.contains { alias in containsSequence(label, alias) }
+        }
+    }
+
+    private static func tokens(_ text: String) -> [String] {
+        text
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+            .lowercased()
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+    }
+
+    private static func containsSequence(_ haystack: [String], _ needle: [String]) -> Bool {
+        guard !needle.isEmpty, haystack.count >= needle.count else { return false }
+        if needle.count == 1 { return haystack.contains(needle[0]) }
+
+        for start in 0...(haystack.count - needle.count) {
+            if Array(haystack[start..<(start + needle.count)]) == needle {
+                return true
+            }
+        }
+        return false
     }
 }

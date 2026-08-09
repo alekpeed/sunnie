@@ -59,6 +59,14 @@ final class SunnieWorldTests: XCTestCase {
         XCTAssertNil(LanguageMomentCatalog.moment(for: "Somewhere Else"))
     }
 
+    func testLanguageMomentDoesNotUseSubstringCollision() {
+        XCTAssertNil(LanguageMomentCatalog.moment(for: "Venice"))
+        XCTAssertEqual(
+            LanguageMomentCatalog.moment(for: "Nice, France")?.id,
+            "language.fr.bonne-journee"
+        )
+    }
+
     func testTravelSurpriseDoesNotDependOnPreciseTime() {
         let curio = CurioItem(
             id: "travel",
