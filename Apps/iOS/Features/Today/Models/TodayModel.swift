@@ -5,9 +5,10 @@ import SunnieShared
 /// Feature model for Today.
 ///
 /// Holds screen state, invokes use cases, and maps results to display values. It
-/// contains no persistence calls of its own — the plant slice arrives from
-/// `PlantSummaryProvider`, which is what keeps Today independent of the Jungle
-/// feature (TECHNICAL_ARCHITECTURE.md §4).
+/// contains no persistence calls of its own — plant and wellness data arrive
+/// through summary providers, while progression arrives through the collection
+/// use case. That keeps Today a consumer of shared context rather than an owner
+/// of another feature's storage.
 @MainActor
 @Observable
 final class TodayModel {
@@ -27,6 +28,8 @@ final class TodayModel {
     /// storage directly (TECHNICAL_ARCHITECTURE.md §6).
     private(set) var wellnessSummary: WellnessSummary?
     private(set) var affirmation: AffirmationDefinition?
+    /// Additive progression only. There is no missed-day, decay, or loss state.
+    private(set) var progressionProfile = ProgressionProfile()
     /// Sunnie's reaction to the most recent completion, shown briefly.
     private(set) var lastReaction: SunnieMessage?
 
@@ -61,9 +64,10 @@ final class TodayModel {
             state = .loading
         }
 
-        // The wellness slice is best-effort: a failure there must not take the
-        // plant card down with it.
+        // These slices are best-effort: one optional subsystem failing must not
+        // take the rest of Today down with it.
         wellnessSummary = try? await dependencies.wellnessSummaryProvider.summary()
+        progressionProfile = await dependencies.manageCollection.progressionProfile()
         affirmation = dependencies.affirmationService.affirmation(for: .init(
             phase: appState.timeContext.phase,
             isSensitiveMoment: wellnessSummary?.mostRecentCheckIn?.suggestsSensitiveMoment ?? false
@@ -103,6 +107,7 @@ final class TodayModel {
 
     private func reload() async {
         wellnessSummary = try? await dependencies.wellnessSummaryProvider.summary()
+        progressionProfile = await dependencies.manageCollection.progressionProfile()
         do {
             let summary = try await dependencies.summaryProvider.summary()
             state = .loaded(summary)
