@@ -18,6 +18,10 @@ struct SunnieHomeAssistantContainer<Content: View>: View {
 
     var body: some View {
         content
+            // The shared world can now change Sunnie's actual semantic pose in
+            // Home, not merely the labels around him. Other app surfaces do not
+            // receive this value and therefore keep their own visual contracts.
+            .environment(\.sunnieWorldEnvironment, appState.worldContext.environment)
             .safeAreaInset(edge: .top) {
                 VStack(spacing: 0) {
                     worldBar

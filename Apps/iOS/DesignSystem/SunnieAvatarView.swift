@@ -1,6 +1,19 @@
 import SwiftUI
 import SunnieShared
 
+private struct SunnieWorldEnvironmentKey: EnvironmentKey {
+    static let defaultValue: WorldEnvironment? = nil
+}
+
+extension EnvironmentValues {
+    /// Set only by the Sunnie Home OS container. Other appearances of Sunnie
+    /// keep the semantic state supplied by their feature.
+    var sunnieWorldEnvironment: WorldEnvironment? {
+        get { self[SunnieWorldEnvironmentKey.self] }
+        set { self[SunnieWorldEnvironmentKey.self] = newValue }
+    }
+}
+
 /// Renders Sunnie from his semantic visual state.
 ///
 /// **Placeholder art.** No production Sunnie assets exist yet; this draws a
@@ -16,17 +29,54 @@ import SunnieShared
 struct SunnieAvatarView: View {
     @Environment(\.sunnieTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.sunnieWorldEnvironment) private var worldEnvironment
 
     let state: SunnieVisualState
 
     var body: some View {
         Group {
-            if state.presence == .hidden {
+            if effectiveState.presence == .hidden {
                 EmptyView()
             } else {
                 avatar
             }
         }
+    }
+
+    /// Home is allowed to react to the shared OS context without making the
+    /// underlying Home repository own travel or plant state. Outside Sunnie Home
+    /// the environment value is nil and the caller's state is untouched.
+    private var effectiveState: SunnieVisualState {
+        guard let worldEnvironment else { return state }
+
+        let expression: SunnieExpression
+        let pose: SunniePose
+
+        switch worldEnvironment {
+        case .ordinary:
+            return state
+        case .plantDay:
+            expression = .caringForPlant
+            pose = .holdingWateringCan
+        case .tripPreparing:
+            expression = .traveling
+            pose = .pullingSuitcase
+        case .tripAway:
+            expression = .traveling
+            pose = .wearingTravelUniform
+        case .tripReturning:
+            expression = .happyClosedEyed
+            pose = .holdingMug
+        }
+
+        return SunnieVisualState(
+            expression: expression,
+            pose: pose,
+            presence: state.presence,
+            outfitID: state.outfitID,
+            propID: state.propID,
+            animationIntensity: state.animationIntensity
+        )
     }
 
     private var avatar: some View {
@@ -44,14 +94,11 @@ struct SunnieAvatarView: View {
         .animation(breathingAnimation, value: breathing)
         .accessibilityElement()
         .accessibilityLabel(accessibilityLabel)
-        // Sunnie is companionship, not information. Anything he expresses is
-        // also available as text elsewhere on the screen, so VoiceOver users
-        // lose nothing by skipping him.
         .accessibilityAddTraits(.isImage)
     }
 
     private var size: CGFloat {
-        switch state.presence {
+        switch effectiveState.presence {
         case .prominent: 132
         case .medium: 88
         case .small: 56
@@ -60,10 +107,8 @@ struct SunnieAvatarView: View {
         }
     }
 
-    /// A stand-in mapping from expression to SF Symbol. Replaced wholesale by
-    /// the layered character art.
     private var symbolName: String {
-        switch state.expression {
+        switch effectiveState.expression {
         case .sleeping, .sleepyHalfLidded: "moon.zzz"
         case .calmBreathing: "wind"
         case .caringForPlant: "leaf"
@@ -77,10 +122,8 @@ struct SunnieAvatarView: View {
         }
     }
 
-    /// Motion stops entirely under Reduce Motion, and the time engine already
-    /// calms it down at night.
     private var breathing: Bool {
-        !reduceMotion && state.animationIntensity > 0.4
+        !reduceMotion && effectiveState.animationIntensity > 0.4
     }
 
     private var breathingAnimation: Animation? {
@@ -96,7 +139,7 @@ struct SunnieAvatarView: View {
                 comment: "Accessibility label for Sunnie's portrait; %@ is his current mood"
             ),
             NSLocalizedString(
-                "sunnie.expression.\(state.expression.rawValue)",
+                "sunnie.expression.\(effectiveState.expression.rawValue)",
                 value: expressionDescription,
                 comment: "Plain description of Sunnie's expression"
             )
@@ -104,7 +147,7 @@ struct SunnieAvatarView: View {
     }
 
     private var expressionDescription: String {
-        switch state.expression {
+        switch effectiveState.expression {
         case .happyOpenEyed, .happyClosedEyed: "looking happy"
         case .sleepyHalfLidded: "looking sleepy"
         case .sleeping: "fast asleep"
@@ -138,7 +181,6 @@ struct SunnieMessageView: View {
                 .foregroundStyle(theme.color.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        // Sunnie's words are the content; his portrait is decoration around it.
         .accessibilityElement(children: .combine)
     }
 }
