@@ -22,6 +22,17 @@ actor SwiftDataPlantCareEventRepository: PlantCareEventRepository {
             return .alreadyExisted(ModelMapping.domain(existing))
         }
 
+        // Minute buckets make action keys deterministic across devices, but a
+        // real-world action can straddle the exact bucket boundary. For example,
+        // Watch at 12:00:55 and phone at 12:01:07 are still one watering even
+        // though their keys contain adjacent minute buckets. Check the same
+        // plant/care pair inside the documented granularity window so that an
+        // arbitrary clock boundary cannot manufacture a duplicate event.
+        if let existing = try fetchNearbyEquivalent(event) {
+            log.debug("Equivalent care event already exists nearby; not duplicating.")
+            return .alreadyExisted(ModelMapping.domain(existing))
+        }
+
         do {
             let model = ModelMapping.model(event)
             modelContext.insert(model)
@@ -176,6 +187,25 @@ actor SwiftDataPlantCareEventRepository: PlantCareEventRepository {
     private func fetchEvent(actionKey: String) throws -> SDPlantCareEvent? {
         var descriptor = FetchDescriptor<SDPlantCareEvent>(
             predicate: #Predicate<SDPlantCareEvent> { $0.actionKey == actionKey }
+        )
+        descriptor.fetchLimit = 1
+        return try modelContext.fetch(descriptor).first
+    }
+
+    private func fetchNearbyEquivalent(_ event: PlantCareEvent) throws -> SDPlantCareEvent? {
+        let plantID = event.plantID
+        let careTypeKey = event.careType.storageKey
+        let lowerBound = event.performedAt.addingTimeInterval(-ActionKeyFactory.timestampGranularity)
+        let upperBound = event.performedAt.addingTimeInterval(ActionKeyFactory.timestampGranularity)
+
+        var descriptor = FetchDescriptor<SDPlantCareEvent>(
+            predicate: #Predicate<SDPlantCareEvent> {
+                $0.plantID == plantID &&
+                $0.careTypeKey == careTypeKey &&
+                $0.performedAt >= lowerBound &&
+                $0.performedAt <= upperBound
+            },
+            sortBy: [SortDescriptor(\.performedAt, order: .reverse)]
         )
         descriptor.fetchLimit = 1
         return try modelContext.fetch(descriptor).first
