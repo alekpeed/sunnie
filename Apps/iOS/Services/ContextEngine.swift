@@ -46,6 +46,51 @@ final class ContextEngine {
         )
     }
 
+    /// Builds the ambient/reward layer from the same authoritative systems used
+    /// by the unified context engine. Sunnie Home and memory surfaces consume
+    /// this snapshot instead of maintaining another reward or travel database.
+    func currentWorldSnapshot(from context: CurrentContext) async -> SunnieWorldSnapshot {
+        let now = dependencies.clock.now
+        let trips = (try? await dependencies.manageTrip.dashboardTrips()) ?? []
+
+        let memories = trips.compactMap { trip -> MemoryChapter? in
+            guard let occurredAt = trip.startsAt, occurredAt <= now else { return nil }
+            return MemoryChapter(
+                id: "trip.\(trip.id.uuidString)",
+                title: trip.title,
+                subtitle: "Travel chapter",
+                occurredAt: occurredAt,
+                symbol: "airplane"
+            )
+        }
+
+        return SunnieWorldSnapshot(
+            generatedAt: now,
+            environment: worldEnvironment(for: context),
+            curios: CurioCatalog.unlocked(atLevel: context.progression.level),
+            memories: memories
+        )
+    }
+
+    private func worldEnvironment(for context: CurrentContext) -> WorldEnvironment {
+        if let flight = context.flightMode {
+            switch flight.phase {
+            case .preparing:
+                return .tripPreparing(destination: flight.destinationName)
+            case .away:
+                return .tripAway(destination: flight.destinationName)
+            case .returning:
+                return .tripReturning(destination: flight.destinationName)
+            }
+        }
+
+        if let plants = context.plantSummary, !plants.actionableTasks.isEmpty {
+            return .plantDay
+        }
+
+        return .ordinary
+    }
+
     private func buildFlightContext(
         from trips: [Trip],
         now: Date,
