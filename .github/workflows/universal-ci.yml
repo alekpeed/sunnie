@@ -10,39 +10,139 @@ permissions:
 
 jobs:
   linux:
+    name: Linux
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        if: ${{ hashFiles('package.json') != '' }}
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect Linux project types
+        id: detect
+        shell: bash
+        run: |
+          [ -f package.json ] && echo "node=true" >> "$GITHUB_OUTPUT" || true
+          [ -f requirements.txt ] || [ -f pyproject.toml ] && echo "python=true" >> "$GITHUB_OUTPUT" || true
+          [ -f Cargo.toml ] && echo "rust=true" >> "$GITHUB_OUTPUT" || true
+          [ -f go.mod ] && echo "go=true" >> "$GITHUB_OUTPUT" || true
+          [ -f Package.swift ] && echo "swift=true" >> "$GITHUB_OUTPUT" || true
+
+      - name: Setup Node
+        if: steps.detect.outputs.node == 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Node
-        if: ${{ hashFiles('package.json') != '' }}
+
+      - name: Node install
+        if: steps.detect.outputs.node == 'true'
+        shell: bash
         run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          npm test --if-present
-          npm run lint --if-present
-          npm run build --if-present
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Node test
+        if: steps.detect.outputs.node == 'true'
+        run: npm test --if-present
+
+      - name: Node lint
+        if: steps.detect.outputs.node == 'true'
+        run: npm run lint --if-present
+
+      - name: Node build
+        if: steps.detect.outputs.node == 'true'
+        run: npm run build --if-present
+
+      - name: Setup Python
+        if: steps.detect.outputs.python == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Python dependencies
+        if: steps.detect.outputs.python == 'true'
+        shell: bash
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Python tests
+        if: steps.detect.outputs.python == 'true'
+        shell: bash
+        run: |
+          if command -v pytest >/dev/null 2>&1; then
+            pytest
+          fi
+
+      - name: Setup Rust
+        if: steps.detect.outputs.rust == 'true'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust tests
+        if: steps.detect.outputs.rust == 'true'
+        run: cargo test --all
+
+      - name: Rust clippy
+        if: steps.detect.outputs.rust == 'true'
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Setup Go
+        if: steps.detect.outputs.go == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Go tests
+        if: steps.detect.outputs.go == 'true'
+        run: go test ./...
+
+      - name: Swift package tests on Linux
+        if: steps.detect.outputs.swift == 'true'
+        run: swift test
 
   android:
-      runs-on: ubuntu-latest
+    name: Android
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect Android project
+        id: detect
+        shell: bash
+        run: |
+          if [ -f gradlew ]; then
+            echo "android=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Java
+        if: steps.detect.outputs.android == 'true'
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
-          cache: gradle
-      - name: Build/test/lint
-        if: ${{ hashFiles('gradlew') != '' }}
-        run: |
-          chmod +x ./gradlew
-          ./gradlew build
-          ./gradlew test
-          ./gradlew lint
-      - uses: actions/upload-artifact@v4
-        if: always()
+
+      - name: Make Gradle wrapper executable
+        if: steps.detect.outputs.android == 'true'
+        run: chmod +x ./gradlew
+
+      - name: Android build
+        if: steps.detect.outputs.android == 'true'
+        run: ./gradlew build
+
+      - name: Android tests
+        if: steps.detect.outputs.android == 'true'
+        run: ./gradlew test
+
+      - name: Android lint
+        if: steps.detect.outputs.android == 'true'
+        run: ./gradlew lint
+
+      - name: Upload Android outputs
+        if: always() && steps.detect.outputs.android == 'true'
+        uses: actions/upload-artifact@v4
         with:
           name: android-build
           path: |
@@ -52,85 +152,191 @@ jobs:
           if-no-files-found: ignore
 
   apple:
-       runs-on: macos-latest
+    name: Apple iOS/macOS
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Toolchain
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect Apple project
+        id: detect
+        shell: bash
+        run: |
+          PROJECT="$(find . -name '*.xcodeproj' -type d -print -quit)"
+          WORKSPACE="$(find . -name '*.xcworkspace' -type d -print -quit)"
+
+          if [ -n "$WORKSPACE" ]; then
+            echo "kind=workspace" >> "$GITHUB_OUTPUT"
+            echo "path=$WORKSPACE" >> "$GITHUB_OUTPUT"
+          elif [ -n "$PROJECT" ]; then
+            echo "kind=project" >> "$GITHUB_OUTPUT"
+            echo "path=$PROJECT" >> "$GITHUB_OUTPUT"
+          else
+            echo "kind=none" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -f Package.swift ]; then
+            echo "swift_package=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Show Xcode environment
+        if: steps.detect.outputs.kind != 'none'
         run: |
           xcodebuild -version
-          swift --version
           xcrun simctl list devices available
-      - name: Swift Package
-        if: ${{ hashFiles('Package.swift') != '' }}
+
+      - name: Swift package tests
+        if: steps.detect.outputs.swift_package == 'true'
         run: swift test
-      - name: Detect Xcode target
-        id: xcode
+
+      - name: Discover shared scheme
+        id: scheme
+        if: steps.detect.outputs.kind != 'none'
         shell: bash
         run: |
-          W="$(find . -name '*.xcworkspace' -type d -print -quit)"
-          P="$(find . -name '*.xcodeproj' -type d -print -quit)"
-          if [ -n "$W" ]; then
-            K=workspace; X="$W"; J="$(xcodebuild -workspace "$W" -list -json)"
-          elif [ -n "$P" ]; then
-            K=project; X="$P"; J="$(xcodebuild -project "$P" -list -json)"
+          if [ "${{ steps.detect.outputs.kind }}" = "workspace" ]; then
+            JSON="$(xcodebuild -workspace "${{ steps.detect.outputs.path }}" -list -json)"
           else
-            echo "kind=none" >> "$GITHUB_OUTPUT"; exit 0
+            JSON="$(xcodebuild -project "${{ steps.detect.outputs.path }}" -list -json)"
           fi
-          S="$(printf '%s' "$J" | python3 -c 'import json,sys; d=json.load(sys.stdin); r=next(iter(d.values())); s=r.get("schemes",[]); print(s[0] if s else "")')"
-          echo "kind=$K" >> "$GITHUB_OUTPUT"
-          echo "path=$X" >> "$GITHUB_OUTPUT"
-          echo "scheme=$S" >> "$GITHUB_OUTPUT"
-      - name: Build/test iOS simulator
-        if: steps.xcode.outputs.kind != 'none' && steps.xcode.outputs.scheme != ''
+
+          SCHEME="$(printf '%s' "$JSON" | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          root = next(iter(data.values()))
+          schemes = root.get("schemes", [])
+          print(schemes[0] if schemes else "")
+          ')"
+
+          echo "name=$SCHEME" >> "$GITHUB_OUTPUT"
+
+      - name: Build iOS Simulator target
+        if: steps.detect.outputs.kind != 'none' && steps.scheme.outputs.name != ''
         shell: bash
         run: |
-          if [ "${{ steps.xcode.outputs.kind }}" = workspace ]; then
-            T=(-workspace "${{ steps.xcode.outputs.path }}")
+          if [ "${{ steps.detect.outputs.kind }}" = "workspace" ]; then
+            TARGET=(-workspace "${{ steps.detect.outputs.path }}")
           else
-            T=(-project "${{ steps.xcode.outputs.path }}")
+            TARGET=(-project "${{ steps.detect.outputs.path }}")
           fi
-          D="$(xcrun simctl list devices available | grep -E 'iPhone' | head -1 | sed -E 's/^[[:space:]]*([^()]*) \(.*/\1/' | xargs)"
-          [ -n "$D" ] || { echo "No iPhone simulator"; exit 1; }
-          xcodebuild "${T[@]}" -scheme "${{ steps.xcode.outputs.scheme }}" -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
-          xcodebuild "${T[@]}" -scheme "${{ steps.xcode.outputs.scheme }}" -destination "platform=iOS Simulator,name=$D" CODE_SIGNING_ALLOWED=NO test
+
+          xcodebuild \
+            "${TARGET[@]}" \
+            -scheme "${{ steps.scheme.outputs.name }}" \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Run iOS Simulator tests
+        if: steps.detect.outputs.kind != 'none' && steps.scheme.outputs.name != ''
+        shell: bash
+        run: |
+          if [ "${{ steps.detect.outputs.kind }}" = "workspace" ]; then
+            TARGET=(-workspace "${{ steps.detect.outputs.path }}")
+          else
+            TARGET=(-project "${{ steps.detect.outputs.path }}")
+          fi
+
+          DEVICE="$(xcrun simctl list devices available \
+            | grep -E 'iPhone' \
+            | head -1 \
+            | sed -E 's/^[[:space:]]*([^()]*) \(.*/\1/' \
+            | xargs)"
+
+          if [ -z "$DEVICE" ]; then
+            echo "No available iPhone Simulator was found."
+            exit 1
+          fi
+
+          xcodebuild \
+            "${TARGET[@]}" \
+            -scheme "${{ steps.scheme.outputs.name }}" \
+            -destination "platform=iOS Simulator,name=$DEVICE" \
+            CODE_SIGNING_ALLOWED=NO \
+            test
 
   windows:
-       runs-on: windows-latest
+    name: Windows
+    runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect Windows/.NET project
+        id: detect
+        shell: pwsh
+        run: |
+          $solution = Get-ChildItem -Recurse -Filter *.sln | Select-Object -First 1
+          $project = Get-ChildItem -Recurse -Filter *.csproj | Select-Object -First 1
+
+          if ($solution -or $project) {
+            "dotnet=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
+
+      - name: Setup .NET
+        if: steps.detect.outputs.dotnet == 'true'
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
             8.0.x
             9.0.x
             10.0.x
-      - name: Restore/build/test
+
+      - name: Restore and build
+        if: steps.detect.outputs.dotnet == 'true'
         shell: pwsh
         run: |
-          $s = Get-ChildItem -Recurse -Filter *.sln | Select-Object -First 1
-          if ($s) {
-            dotnet restore $s.FullName
-            dotnet build $s.FullName --configuration Release --no-restore
-          } else {
+          $solution = Get-ChildItem -Recurse -Filter *.sln | Select-Object -First 1
+
+          if ($solution) {
+            dotnet restore $solution.FullName
+            dotnet build $solution.FullName --configuration Release --no-restore
+          }
+          else {
             Get-ChildItem -Recurse -Filter *.csproj | ForEach-Object {
               dotnet restore $_.FullName
               dotnet build $_.FullName --configuration Release --no-restore
             }
           }
+
+      - name: Run .NET tests
+        if: steps.detect.outputs.dotnet == 'true'
+        shell: pwsh
+        run: |
           $tests = Get-ChildItem -Recurse -Filter *.csproj | Where-Object {
             Select-String -Path $_.FullName -Pattern 'Microsoft.NET.Test.Sdk' -Quiet
           }
-          foreach ($t in $tests) { dotnet test $t.FullName --configuration Release --no-build }
+
+          foreach ($test in $tests) {
+            dotnet test $test.FullName --configuration Release
+          }
 
   binary-preflight:
+    name: Binary preflight
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout full history
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Report binary changes
+
+      - name: Report changed binary files
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = pull_request ]; then B="${{ github.event.pull_request.base.sha }}"; else B="${{ github.event.before }}"; fi
-          if [ -z "$B" ] || [ "$B" = 0000000000000000000000000000000000000000 ]; then exit 0; fi
-          git diff --numstat "$B" HEAD | awk '$1=="-" || $2=="-" {print "Binary change:",$3}'
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "No usable comparison base for this event."
+            exit 0
+          fi
+
+          git diff --numstat "$BASE" HEAD | awk '
+            $1 == "-" || $2 == "-" {
+              print "Binary change:", $3
+            }
+          '
