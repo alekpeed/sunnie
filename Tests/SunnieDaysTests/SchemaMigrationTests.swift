@@ -186,6 +186,39 @@ struct SchemaMigrationTests {
         #expect(try context.fetch(FetchDescriptor<SDPlant>()).isEmpty)
     }
 
+    @Test("A store from every prior schema version opens at the current version")
+    func everyReleasedSchemaHasAnUpgradePath() throws {
+        let priorSchemas: [any VersionedSchema.Type] = [
+            SunnieSchemaV1.self,
+            SunnieSchemaV2.self,
+            SunnieSchemaV3.self,
+            SunnieSchemaV4.self,
+            SunnieSchemaV5.self,
+            SunnieSchemaV6.self,
+            SunnieSchemaV7.self
+        ]
+
+        for schema in priorSchemas {
+            let url = makeStoreURL()
+            defer { removeStore(at: url) }
+
+            // Create exactly the store an app at this version would have left.
+            do {
+                _ = try ModelContainerFactory.make(
+                    storage: .onDiskAt(url),
+                    schemaVersion: schema,
+                    migrationPlan: nil
+                )
+            }
+
+            // Opening through the shipping plan must traverse every remaining
+            // stage without an incompatible-model or missing-stage failure.
+            let migrated = try ModelContainerFactory.make(storage: .onDiskAt(url))
+            let context = ModelContext(migrated)
+            #expect(try context.fetch(FetchDescriptor<SDPlant>()).isEmpty)
+        }
+    }
+
     // MARK: - The plan itself
 
     @Test("The migration plan lists every version in order, with a stage between each")

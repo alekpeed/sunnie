@@ -24,7 +24,11 @@ jobs:
           [ -f requirements.txt ] || [ -f pyproject.toml ] && echo "python=true" >> "$GITHUB_OUTPUT" || true
           [ -f Cargo.toml ] && echo "rust=true" >> "$GITHUB_OUTPUT" || true
           [ -f go.mod ] && echo "go=true" >> "$GITHUB_OUTPUT" || true
-          [ -f Package.swift ] && echo "swift=true" >> "$GITHUB_OUTPUT" || true
+          SWIFT_PACKAGE="$(find . -name Package.swift -type f -print -quit)"
+          if [ -n "$SWIFT_PACKAGE" ]; then
+            echo "swift=true" >> "$GITHUB_OUTPUT"
+            echo "swift_package_dir=$(dirname "$SWIFT_PACKAGE")" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Setup Node
         if: steps.detect.outputs.node == 'true'
@@ -100,7 +104,19 @@ jobs:
 
       - name: Swift package tests on Linux
         if: steps.detect.outputs.swift == 'true'
-        run: swift test
+        run: swift test --package-path "${{ steps.detect.outputs.swift_package_dir }}"
+
+      - name: Validate Sunnie project configuration
+        run: |
+          ./Scripts/validate-content.sh
+          python3 Tools/validate_permissions.py
+          python3 Tools/validate_audio_manifest.py CreatorAudioSource/audio.manifest.json
+          python3 Tools/validate_bundle_resources.py
+          python3 Tools/validate_shared_imports.py
+          python3 Tools/validate_localization_keys.py
+          python3 Tools/validate_info_plists.py
+          python3 Tools/validate_xcode_dependencies.py
+          ./Tools/parse_check.sh
 
   android:
     name: Android
@@ -163,7 +179,10 @@ jobs:
         shell: bash
         run: |
           PROJECT="$(find . -name '*.xcodeproj' -type d -print -quit)"
-          WORKSPACE="$(find . -name '*.xcworkspace' -type d -print -quit)"
+          # An .xcodeproj contains an internal project.xcworkspace. It is an
+          # implementation detail, not a workspace the workflow should select.
+          WORKSPACE="$(find . -name '*.xcworkspace' -type d \
+            -not -path '*.xcodeproj/*' -print -quit)"
 
           if [ -n "$WORKSPACE" ]; then
             echo "kind=workspace" >> "$GITHUB_OUTPUT"
@@ -175,9 +194,15 @@ jobs:
             echo "kind=none" >> "$GITHUB_OUTPUT"
           fi
 
-          if [ -f Package.swift ]; then
+          SWIFT_PACKAGE="$(find . -name Package.swift -type f -print -quit)"
+          if [ -n "$SWIFT_PACKAGE" ]; then
             echo "swift_package=true" >> "$GITHUB_OUTPUT"
+            echo "swift_package_dir=$(dirname "$SWIFT_PACKAGE")" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Select project Xcode version
+        if: steps.detect.outputs.kind != 'none'
+        run: ./Tools/select_xcode.sh
 
       - name: Show Xcode environment
         if: steps.detect.outputs.kind != 'none'
@@ -187,7 +212,7 @@ jobs:
 
       - name: Swift package tests
         if: steps.detect.outputs.swift_package == 'true'
-        run: swift test
+        run: swift test --package-path "${{ steps.detect.outputs.swift_package_dir }}"
 
       - name: Discover shared scheme
         id: scheme
@@ -205,10 +230,33 @@ jobs:
           data = json.load(sys.stdin)
           root = next(iter(data.values()))
           schemes = root.get("schemes", [])
-          print(schemes[0] if schemes else "")
+          print("SunnieDays" if "SunnieDays" in schemes else (schemes[0] if schemes else ""))
           ')"
 
           echo "name=$SCHEME" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve local Swift packages
+        if: steps.detect.outputs.kind != 'none' && steps.scheme.outputs.name != ''
+        shell: bash
+        run: |
+          if [ "${{ steps.detect.outputs.kind }}" = "workspace" ]; then
+            TARGET=(-workspace "${{ steps.detect.outputs.path }}")
+          else
+            TARGET=(-project "${{ steps.detect.outputs.path }}")
+          fi
+          xcodebuild -resolvePackageDependencies \
+            "${TARGET[@]}" \
+            -scheme "${{ steps.scheme.outputs.name }}"
+
+      - name: Build widget extension directly
+        if: steps.detect.outputs.kind == 'project'
+        run: |
+          xcodebuild build \
+            -project "${{ steps.detect.outputs.path }}" \
+            -target SunnieWidgets \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Build iOS Simulator target
         if: steps.detect.outputs.kind != 'none' && steps.scheme.outputs.name != ''
@@ -238,11 +286,17 @@ jobs:
             TARGET=(-project "${{ steps.detect.outputs.path }}")
           fi
 
-          DEVICE="$(xcrun simctl list devices available \
-            | grep -E 'iPhone' \
-            | head -1 \
-            | sed -E 's/^[[:space:]]*([^()]*) \(.*/\1/' \
-            | xargs)"
+          DEVICE="$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          for runtime in sorted(devices, reverse=True):
+              if "iOS" not in runtime:
+                  continue
+              for device in devices[runtime]:
+                  if device.get("isAvailable") and "iPhone" in device["name"]:
+                      print(device["udid"])
+                      raise SystemExit
+          ')"
 
           if [ -z "$DEVICE" ]; then
             echo "No available iPhone Simulator was found."
@@ -252,7 +306,7 @@ jobs:
           xcodebuild \
             "${TARGET[@]}" \
             -scheme "${{ steps.scheme.outputs.name }}" \
-            -destination "platform=iOS Simulator,name=$DEVICE" \
+            -destination "id=$DEVICE" \
             CODE_SIGNING_ALLOWED=NO \
             test
 

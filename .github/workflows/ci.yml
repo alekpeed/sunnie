@@ -77,6 +77,11 @@ jobs:
       # taking the whole app with it. No build catches this; this does.
       - name: Validate Info.plists
         run: python3 Tools/validate_info_plists.py
+      # A product name alone is not enough for a hand-authored Xcode package
+      # dependency: it must point to the local package and be linked by each
+      # independently compiled consumer, including extensions.
+      - name: Validate Xcode target dependencies
+        run: python3 Tools/validate_xcode_dependencies.py
 
   # Syntax-only, on Linux. The app targets cannot be type-checked without an
   # Apple SDK, but they can be parsed — which catches malformed Swift that
@@ -124,6 +129,27 @@ jobs:
           ")
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
           echo "Using simulator $UDID"
+
+      # Resolve the local graph before the parallel app/extension build starts.
+      # This gives package-wiring failures their own short diagnostic instead of
+      # burying them in Swift's dependency scan for the widget sources.
+      - name: Resolve local Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project SunnieDays.xcodeproj \
+            -scheme SunnieDays
+
+      # Compile the extension independently before asking the app to embed it.
+      # This is the exact target whose sources import SunnieShared.
+      - name: Build the widget extension
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project SunnieDays.xcodeproj \
+            -target SunnieWidgets \
+            -destination "id=${{ steps.destination.outputs.udid }}" \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee xcodebuild-widgets.log | xcbeautify --renderer github-actions
 
       # The raw log is teed to a file before xcbeautify sees it. xcbeautify is
       # for reading in the browser; the raw log is the one that contains every
@@ -218,6 +244,7 @@ jobs:
           name: iphone-build
           path: |
             xcodebuild-iphone.log
+            xcodebuild-widgets.log
             TestResults.xcresult
           if-no-files-found: ignore
 

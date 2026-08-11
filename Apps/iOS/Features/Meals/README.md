@@ -1,26 +1,17 @@
 # Meals
 
-Not implemented yet. Reserved for **Phase 6 — planner, recipes, egg-free filtering, grocery, pantry, prep, packed food**
-(`Documentation/06_Delivery/IMPLEMENTATION_ROADMAP.md`).
-
-The folder exists so the feature-first structure in
-`PROJECT_STRUCTURE_AND_CODING_STANDARDS.md` §1 is visible from the start, and so
-the placeholder screen this feature currently shows has an obvious home to grow
-into. Until then the tab or More entry routes to `PlaceholderFeatureScreen`.
-
-When building this out, follow the per-feature layout:
+Implemented in Phase 6. Meals includes the day planner, recipes, permanent
+egg-free filtering, grocery and pantry workflows, preparation tasks, durable
+kitchen timers, packed food, use-before-trip suggestions, and travel context.
 
 ```
 Meals/
-├── Screens/
-├── Components/
-├── Models/
-├── UseCases/
-├── Repositories/
-├── Summary/
-└── Routing/
+├── Screens/MealsScreen.swift
+├── Screens/MealDetailScreens.swift
+├── Screens/GroceryAndPantryScreens.swift
+├── UseCases/ManageMeals.swift
+└── UseCases/ManageGroceryAndPantry.swift
 ```
 
-The feature must not import another feature to mutate its state. Cross-feature
-behaviour goes through use cases, repositories, summary providers, and typed
-domain events (`TECHNICAL_ARCHITECTURE.md` §6).
+The feature never scores food, counts calories, or rewards restriction. Recipe
+eligibility is enforced in shared domain logic, not only hidden by the UI.

@@ -1,26 +1,16 @@
 # Journal
 
-Not implemented yet. Reserved for **Phase 3 — entries, drafts, editor, media and voice notes, calendar, search, tags**
-(`Documentation/06_Delivery/IMPLEMENTATION_ROADMAP.md`).
-
-The folder exists so the feature-first structure in
-`PROJECT_STRUCTURE_AND_CODING_STANDARDS.md` §1 is visible from the start, and so
-the placeholder screen this feature currently shows has an obvious home to grow
-into. Until then the tab or More entry routes to `PlaceholderFeatureScreen`.
-
-When building this out, follow the per-feature layout:
+Implemented in Phase 3. The Journal supports resumable drafts, text editing,
+gratitude items, tags, search, reversible deletion, photos, voice notes, and a
+local JSON export from Settings.
 
 ```
 Journal/
-├── Screens/
-├── Components/
-├── Models/
-├── UseCases/
-├── Repositories/
-├── Summary/
-└── Routing/
+├── Screens/JournalScreens.swift
+└── UseCases/JournalUseCases.swift     lifecycle and complete export
 ```
 
-The feature must not import another feature to mutate its state. Cross-feature
-behaviour goes through use cases, repositories, summary providers, and typed
-domain events (`TECHNICAL_ARCHITECTURE.md` §6).
+Attachment UI is shared with Wellness through the design-system component while
+storage remains behind `MediaRepository`. Deleted entries retain the documented
+restore window and launch housekeeping removes media only after its owner is no
+longer restorable.
