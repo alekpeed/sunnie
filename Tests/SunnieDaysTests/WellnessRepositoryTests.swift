@@ -357,4 +357,52 @@ struct WellnessRepositoryTests {
             .appendingPathComponent("escaped.jpg")
         #expect(!FileManager.default.fileExists(atPath: outside.path))
     }
+
+    @Test("Trip and meal media are retained only while their owner exists")
+    func tripAndMealOrphansAreRemoved() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SunnieMediaTest-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let trip = SDTrip(title: "Lisbon")
+        let meal = SDMealPlanEntry(customTitle: "Packed lunch")
+        context.insert(trip)
+        context.insert(meal)
+        try context.save()
+
+        let repository = SwiftDataMediaRepository(modelContainer: container)
+        let store = MediaFileStore(directory: directory)
+        await repository.useFileStore(store)
+
+        let tripAttachment = MediaAttachment(
+            owner: .trip(trip.id),
+            kind: .photo,
+            localToken: store.makeToken(for: .photo),
+            createdAt: Date()
+        )
+        let mealAttachment = MediaAttachment(
+            owner: .meal(meal.id),
+            kind: .photo,
+            localToken: store.makeToken(for: .photo),
+            createdAt: Date()
+        )
+        _ = try await repository.save(tripAttachment, data: Data([0x01]))
+        _ = try await repository.save(mealAttachment, data: Data([0x02]))
+
+        #expect(try await repository.deleteOrphans() == 0)
+        #expect(store.exists(token: tripAttachment.localToken))
+        #expect(store.exists(token: mealAttachment.localToken))
+
+        context.delete(trip)
+        context.delete(meal)
+        try context.save()
+
+        #expect(try await repository.deleteOrphans() == 2)
+        #expect(!store.exists(token: tripAttachment.localToken))
+        #expect(!store.exists(token: mealAttachment.localToken))
+        #expect(try await repository.attachment(id: tripAttachment.id) == nil)
+        #expect(try await repository.attachment(id: mealAttachment.id) == nil)
+    }
 }
