@@ -1,26 +1,18 @@
 # Wellness
 
-Not implemented yet. Reserved for **Phase 3 — check-in, affirmations, gratitude, breathing, meditation, calm sounds, wellness history**
-(`Documentation/06_Delivery/IMPLEMENTATION_ROADMAP.md`).
-
-The folder exists so the feature-first structure in
-`PROJECT_STRUCTURE_AND_CODING_STANDARDS.md` §1 is visible from the start, and so
-the placeholder screen this feature currently shows has an obvious home to grow
-into. Until then the tab or More entry routes to `PlaceholderFeatureScreen`.
-
-When building this out, follow the per-feature layout:
+Implemented in Phase 3. The Wellness tab provides multidimensional check-ins,
+affirmations, gratitude, breathing, meditation, calm audio, descriptive history,
+and optional Health integration.
 
 ```
 Wellness/
-├── Screens/
-├── Components/
-├── Models/
-├── UseCases/
-├── Repositories/
-├── Summary/
-└── Routing/
+├── Models/WellnessModel.swift
+├── Screens/WellnessScreen.swift
+├── Screens/PracticeScreens.swift
+├── UseCases/WellnessUseCases.swift
+└── UseCases/ManageHealthIntegration.swift
 ```
 
-The feature must not import another feature to mutate its state. Cross-feature
-behaviour goes through use cases, repositories, summary providers, and typed
-domain events (`TECHNICAL_ARCHITECTURE.md` §6).
+Views operate through `AppDependencies`; SwiftData and HealthKit remain behind
+repository and service boundaries. Permission refusal is an ordinary supported
+state, and history reports observations without diagnoses or moral conclusions.

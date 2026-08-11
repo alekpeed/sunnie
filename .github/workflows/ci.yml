@@ -82,6 +82,11 @@ jobs:
       # nothing on the side that never opens it.
       - name: Validate contract coverage
         run: python3 Tools/validate_contract_coverage.py
+      # A product name alone is not enough for a hand-authored Xcode package
+      # dependency: it must point to the local package and be linked by each
+      # independently compiled consumer, including extensions.
+      - name: Validate Xcode target dependencies
+        run: python3 Tools/validate_xcode_dependencies.py
 
   # The Kotlin half of the cross-language contracts (ADR-035).
   #
@@ -206,6 +211,15 @@ jobs:
           ")
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
           echo "Using simulator $UDID"
+
+      # Resolve the local graph before the parallel app/extension build starts.
+      # This gives package-wiring failures their own short diagnostic instead of
+      # burying them in Swift's dependency scan for the widget sources.
+      - name: Resolve local Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project SunnieDays.xcodeproj \
+            -scheme SunnieDays
 
       # The raw log is teed to a file before xcbeautify sees it. xcbeautify is
       # for reading in the browser; the raw log is the one that contains every

@@ -44,6 +44,21 @@ looked like features quietly doing nothing, with no error to explain why. That i
 the standing argument for running things over reasoning about them, and for
 `CLAUDE.md`'s rule against calling anything complete on an untested happy path.
 
+The hand-authored Xcode project now records the owning local package on every
+`SunnieShared` product dependency. This is significant for `SunnieWidgets`:
+the extension is an independent compiler/linker target and cannot inherit the
+app target's package linkage. `Tools/validate_xcode_dependencies.py` checks the
+package reference, per-target product dependency, Frameworks linkage, widget
+source membership, and app-to-extension target dependency before CI spends a
+macOS build.
+
+Apple CI resolves the package graph explicitly and then builds `SunnieWidgets`
+as a standalone target before the hosted app test. This separates three failure
+classes that an app-only build used to blend together: package resolution,
+extension compilation/linkage, and extension embedding. The universal workflow
+also ignores the `project.xcworkspace` stored inside the `.xcodeproj`; that file
+is an Xcode implementation detail, not this repository's build container.
+
 What *has* been verified, because it needs no Swift toolchain:
 
 - Every `.plist`, `.json`, `.xcscheme`, and `.xcworkspacedata` file parses.

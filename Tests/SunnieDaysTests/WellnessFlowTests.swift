@@ -296,6 +296,44 @@ struct WellnessFlowTests {
         #expect(unchanged.gratitudeItems.count == 1)
     }
 
+    @Test("Journal export includes published, draft, and restorable entries")
+    func journalExportIsCompleteAndReadable() async throws {
+        let dependencies = try makeDependencies()
+        let now = Self.referenceDate
+        let entries = [
+            JournalEntry(body: "Published", isDraft: false, createdAt: now, modifiedAt: now),
+            JournalEntry(body: "Draft", isDraft: true, createdAt: now, modifiedAt: now),
+            JournalEntry(
+                body: "Restorable",
+                isDraft: false,
+                createdAt: now,
+                modifiedAt: now,
+                deletedAt: now
+            )
+        ]
+        for entry in entries {
+            try await dependencies.journalRepository.save(entry)
+        }
+
+        let export = try await dependencies.exportJournal.build()
+        #expect(export.entries.count == 3)
+        #expect(Set(export.entries.map(\.body)) == ["Published", "Draft", "Restorable"])
+
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SunnieJournalExport-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = try dependencies.exportJournal.write(export, to: directory)
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let decoded = try decoder.decode(
+            JournalExport.self,
+            from: Data(contentsOf: url)
+        )
+        #expect(decoded.formatVersion == JournalExport.currentFormatVersion)
+        #expect(decoded.entries.count == 3)
+    }
+
     // MARK: - Reminders
 
     @Test("Reminders are not scheduled without permission")

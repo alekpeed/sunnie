@@ -696,18 +696,22 @@
 /* Begin XCSwiftPackageProductDependency section */
 		5D00000000000000000000E1 /* SunnieShared */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 5D00000000000000000000E0 /* XCLocalSwiftPackageReference "Packages/SunnieShared" */;
 			productName = SunnieShared;
 		};
 		5D00000000000000000000E2 /* SunnieShared */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 5D00000000000000000000E0 /* XCLocalSwiftPackageReference "Packages/SunnieShared" */;
 			productName = SunnieShared;
 		};
 		5D00000000000000000000E3 /* SunnieShared */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 5D00000000000000000000E0 /* XCLocalSwiftPackageReference "Packages/SunnieShared" */;
 			productName = SunnieShared;
 		};
 		5D00000000000000000000E5 /* SunnieShared */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 5D00000000000000000000E0 /* XCLocalSwiftPackageReference "Packages/SunnieShared" */;
 			productName = SunnieShared;
 		};
 /* End XCSwiftPackageProductDependency section */

@@ -5,7 +5,8 @@ import SunnieShared
 ///
 /// **Placeholder presentation** using standard native controls, which is what
 /// this screen should use anyway (VISUAL_DESIGN_SYSTEM.md §12). Present controls
-/// all work; export, deletion, and the full permission matrix are Phase 11.
+/// all work. Export includes both Jungle data and the private journal; the full
+/// permission matrix and category-level deletion controls remain Phase 11.
 struct SettingsScreen: View {
     @Environment(AppState.self) private var appState
     @Environment(AppDependencies.self) private var dependencies
@@ -562,6 +563,10 @@ struct SettingsScreen: View {
             exportDirectory = directory
             exportedFiles = try dependencies.exportJungle.write(
                 export, format: format, to: directory
+            )
+            let journal = try await dependencies.exportJournal.build()
+            exportedFiles.append(
+                try dependencies.exportJournal.write(journal, to: directory)
             )
         } catch {
             // Previously this failed silently: the button stopped spinning, no
