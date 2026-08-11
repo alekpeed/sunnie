@@ -4,7 +4,7 @@
 
 **Everything but the Watch is compiled, tested, and green on every push.**
 
-- `Packages/SunnieShared` **builds and passes 441 tests** on Linux with Swift
+- `Packages/SunnieShared` **builds and passes 460 tests** on Linux with Swift
   6.1.2 (ADR-032). Run it anywhere: `cd Packages/SunnieShared && swift test`.
 - The iPhone app and the widget extension **compile**, and the app **runs on a
   simulator**. 223 tests across 13 suites pass, and 7 UI tests drive the real
