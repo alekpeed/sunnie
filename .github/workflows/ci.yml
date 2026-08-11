@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     container: swift:6.1.2
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build
         working-directory: Packages/SunnieShared
         run: swift build
@@ -37,7 +37,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Select Xcode
         run: ./Tools/select_xcode.sh
 
@@ -52,7 +52,7 @@ jobs:
     name: Content and configuration validation
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate shipped content packs
         run: ./Scripts/validate-content.sh
       # Catches a permission requested without its Info.plist purpose string,
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-24.04
     container: swift:6.1.2
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Parse
         run: ./Tools/parse_check.sh
 
@@ -99,7 +99,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Select Xcode
         run: ./Tools/select_xcode.sh
 
@@ -213,7 +213,7 @@ jobs:
 
       - name: Upload logs and test results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: iphone-build
           path: |
@@ -232,7 +232,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Select Xcode
         run: ./Tools/select_xcode.sh
 
@@ -254,7 +254,7 @@ jobs:
 
       - name: Upload log
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: watch-build
           path: xcodebuild-watch.log

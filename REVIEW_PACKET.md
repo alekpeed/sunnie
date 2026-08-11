@@ -198,8 +198,8 @@ Ranked by consequence-if-wrong, not by size.
 
 Stated plainly so the review does not spend time rediscovering them.
 
-- The Watch target and physical-device-only behavior remain uncompiled or
-  untested. (§1)
+- The Watch target compiles for the watchOS Simulator, but physical-device-only
+  behavior remains untested. (§1)
 - Phase 11 — accessibility pass, CloudKit validation, migration suite,
   performance, onboarding, export and delete, release — is not started.
 - The schema namespace freeze owed by ADR-017 has not been done.

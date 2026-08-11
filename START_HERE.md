@@ -119,7 +119,7 @@ Modular monolith, one local SPM package, no third-party dependencies. iOS 18 /
 watchOS 11 deployment targets, Swift 5 language mode with
 `SWIFT_STRICT_CONCURRENCY = complete`.
 
-**The iPhone app and widget compile in CI; the Watch target remains uncompiled.**
+**The iPhone app, widget, and Watch target compile in CI.**
 
 **The shared package has**, on Linux with Swift 6.1.2 — `swift build && swift
 test`, 460 passing. Doing that found three real defects, now fixed: `ColorValue`
@@ -142,8 +142,8 @@ cd Packages/SunnieShared && swift build
 That's a third of the codebase, platform-neutral, no UI, no SwiftData — it builds
 in seconds on Linux or macOS and fails on domain logic rather than on a view
 hierarchy. Get it green (it already is), then `swift test` — 460 passing — then
-use the `SunnieDays` scheme for the iPhone simulator or dispatch the manual Watch
-job for the remaining uncompiled target.
+use the `SunnieDays` scheme for the iPhone simulator. Dispatch the manual Watch
+job when Watch-source changes need fresh compiler evidence.
 
 Signing is deliberately unconfigured and entitlements ship commented out, so the
 Simulator build needs no developer account. `Config/Shared.xcconfig` is where
