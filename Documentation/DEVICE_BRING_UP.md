@@ -46,7 +46,7 @@ swift build
 Then:
 
 ```bash
-swift test        # 441 tests, all passing
+swift test        # 460 tests, all passing
 ```
 
 Only then open the project:

@@ -4,7 +4,7 @@ A pass over the places most likely to need attention the first time this
 codebase meets a compiler, ordered so the ones that cascade come first.
 
 > **Update after the first real compile.** The shared package now builds and
-> passes 441 tests on Linux (ADR-032). That run found three genuine defects —
+> passes 460 tests on Linux (ADR-032). That run found three genuine defects —
 > `ColorValue` JSON encoding, travel coverage for already-overdue tasks, and a
 > `some`/`any RandomSource` mismatch — all now fixed with regression tests. It
 > also confirmed the biggest claim below: strict concurrency produced warnings,
@@ -243,7 +243,7 @@ is predicted — these are simply the widest blast radii.
 
 1. `cd Packages/SunnieShared && swift build` — a third of the code, seconds per
    cycle, no UI in the way.
-2. `swift test` there — 441 tests, all passing since ADR-032.
+2. `swift test` there — 460 tests, all passing since ADR-032.
 3. Open the project; build **SunnieDays** for the Simulator only.
 4. Fix by *shape*, not by file. Errors will cluster: fix one protocol signature
    and thirty errors go at once. Recompiling after each cluster beats working
@@ -258,8 +258,9 @@ Said plainly, so the list is not mistaken for coverage:
 - Whether any Apple API signature used here is real. Every one was written from
   memory, and §1 is the clearest example of where that goes wrong.
 - SwiftUI layout, and whether any view renders as intended.
-- Whether the **app-target** tests pass — only that they are syntactically
-  plausible. The shared package's 441 do pass.
+- The Watch target, which still needs the manual CI job's watchOS SDK download.
+  The shared package's 460 tests and the app target's 223 tests plus 7 UI tests
+  do pass.
 - Migration against real data. There is no V1 store in existence to migrate from,
   and ADR-017's namespace freeze is still owed. This remains the
   highest-consequence untested area in the project.
