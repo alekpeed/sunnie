@@ -26,8 +26,7 @@ jobs:
           npm run build --if-present
 
   android:
-    if: ${{ hashFiles('gradlew', 'settings.gradle', 'settings.gradle.kts', 'build.gradle', 'build.gradle.kts') != '' }}
-    runs-on: ubuntu-latest
+      runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -53,8 +52,7 @@ jobs:
           if-no-files-found: ignore
 
   apple:
-    if: ${{ hashFiles('**/*.xcodeproj/project.pbxproj', '**/*.xcworkspace/**', 'Package.swift') != '' }}
-    runs-on: macos-latest
+       runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: Toolchain
@@ -97,8 +95,7 @@ jobs:
           xcodebuild "${T[@]}" -scheme "${{ steps.xcode.outputs.scheme }}" -destination "platform=iOS Simulator,name=$D" CODE_SIGNING_ALLOWED=NO test
 
   windows:
-    if: ${{ hashFiles('**/*.sln', '**/*.csproj', '**/*.vcxproj') != '' }}
-    runs-on: windows-latest
+       runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
