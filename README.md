@@ -17,19 +17,20 @@ meals, games, collections and Sunnie's Home, the Health/Watch/widget/intent
 integrations, and the audio layer. Phase 11 — accessibility, CloudKit, export,
 and release — is not started.
 
-> **Most of this code has never been compiled.** It was authored in a Linux
-> environment with no Xcode, so the iPhone app, Watch app, and widget extension
-> have never been built or run. The shared package is the exception — see below.
+> **Every target now has compiler evidence from CI.** The iPhone app and widget
+> build in the regular macOS job; the manual Watch job downloads the watchOS SDK
+> on demand and has completed successfully.
 
 **Verification status, precisely.**
 
-- **The shared package (`SunnieShared`) compiles and its 441 tests pass**, on
+- **The shared package (`SunnieShared`) compiles and its 460 tests pass**, on
   Linux with Swift 6.1.2. That is roughly a third of the codebase — all the
   domain logic, content schemas, and pure algorithms — and it is genuinely
   verified, not argued for.
-- **The iOS app, the Watch app, and the widget extension have still never been
-  compiled.** They need Xcode on a Mac, which no part of this project has had
-  access to. Nothing about their state has changed.
+- **The iPhone app and widget extension compile on a macOS runner.** The app runs
+  on an iPhone simulator, with 223 app tests and 7 UI tests passing.
+- **The Watch app compiles for the watchOS Simulator.** Its manual CI job installs
+  the watchOS SDK before building; physical-device behavior remains a release check.
 
 Getting the shared package building found three real defects that no amount of
 static checking had caught: a `ColorValue` that encoded as an object while every
@@ -85,9 +86,9 @@ brief, meals with dietary filtering, seven games across six shapes, collections
 and Sunnie's Home, HealthKit, an Apple Watch companion, widgets, App Intents,
 and an audio layer that synthesises its own ambience and bells.
 
-Eight SwiftData schema versions, all additive. 31 architecture decision records.
-1,111 localized strings. 441 shared-package tests passing; the app-target
-tests have never run.
+Eight SwiftData schema versions, all additive. 32 architecture decision records.
+1,111 localized strings. 460 shared-package tests, 223 app tests, and 7 UI tests
+passing in CI.
 
 ## What is deliberately not built
 

@@ -4,24 +4,21 @@ A pass over the places most likely to need attention the first time this
 codebase meets a compiler, ordered so the ones that cascade come first.
 
 > **Update after the first real compile.** The shared package now builds and
-> passes 441 tests on Linux (ADR-032). That run found three genuine defects —
+> passes 460 tests on Linux (ADR-032). That run found three genuine defects —
 > `ColorValue` JSON encoding, travel coverage for already-overdue tasks, and a
 > `some`/`any RandomSource` mismatch — all now fixed with regression tests. It
 > also confirmed the biggest claim below: strict concurrency produced warnings,
-> not errors. **The §1 risk about runtime-key localization is still unverified**,
-> because those 34 call sites live in the app target, which remains uncompiled.
-> Everything below applies to the app targets unless it says otherwise.
+> not errors. The iPhone app, widget, and Watch target have since compiled in
+> macOS CI; §1 records what the compiler actually found.
 >
-> **Second update — the app targets have now been parsed.** All 129 files pass
+> **Second update — the app targets have now been parsed.** All 142 files pass
 > `swiftc -parse` (`./Tools/parse_check.sh`, wired into CI). That is a real
 > result and a narrow one: it proves the files are well-formed Swift, and proves
 > nothing about whether they compile. Parsing resolves no imports, looks up no
 > names, and checks no types.
 >
-> An attempt was made to settle §1 with the toolchain and **failed**:
-> `String.LocalizationValue` does not exist in Linux Foundation at all, so the
-> experiment could not distinguish "this call is wrong" from "this API is
-> absent here." §1 remains exactly as uncertain as it was.
+> The earlier Linux-only attempt could not settle §1 because the localization
+> API is Apple-only. The later Xcode build did settle it; see §1 for the result.
 
 **This is not a list of known bugs.** It is a list of places where the code makes
 an assumption a type checker has never confirmed. Most will be fine. The point is
@@ -243,7 +240,7 @@ is predicted — these are simply the widest blast radii.
 
 1. `cd Packages/SunnieShared && swift build` — a third of the code, seconds per
    cycle, no UI in the way.
-2. `swift test` there — 441 tests, all passing since ADR-032.
+2. `swift test` there — 460 tests, all passing since ADR-032.
 3. Open the project; build **SunnieDays** for the Simulator only.
 4. Fix by *shape*, not by file. Errors will cluster: fix one protocol signature
    and thirty errors go at once. Recompiling after each cluster beats working
@@ -254,12 +251,12 @@ is predicted — these are simply the widest blast radii.
 
 Said plainly, so the list is not mistaken for coverage:
 
-- **Type checking.** All of it. That is the whole point.
-- Whether any Apple API signature used here is real. Every one was written from
-  memory, and §1 is the clearest example of where that goes wrong.
+- **Physical-device behavior.** Simulator builds type-check the Apple API usage,
+  but cannot prove Health, camera, haptics, or paired Watch behavior.
 - SwiftUI layout, and whether any view renders as intended.
-- Whether the **app-target** tests pass — only that they are syntactically
-  plausible. The shared package's 441 do pass.
+- The Watch target compiles in the manual CI job after its watchOS SDK download,
+  but paired-device behavior remains untested. The shared package's 460 tests and
+  the app target's 223 tests plus 7 UI tests pass.
 - Migration against real data. There is no V1 store in existence to migrate from,
   and ADR-017's namespace freeze is still owed. This remains the
   highest-consequence untested area in the project.

@@ -2,16 +2,16 @@
 
 ## Read this first
 
-**Everything but the Watch is compiled, tested, and green on every push.**
+**Every target is compiled in CI; the regularly triggered checks are green.**
 
-- `Packages/SunnieShared` **builds and passes 441 tests** on Linux with Swift
+- `Packages/SunnieShared` **builds and passes 460 tests** on Linux with Swift
   6.1.2 (ADR-032). Run it anywhere: `cd Packages/SunnieShared && swift test`.
 - The iPhone app and the widget extension **compile**, and the app **runs on a
   simulator**. 223 tests across 13 suites pass, and 7 UI tests drive the real
   app: five tabs, the plant card, and Today → plant → log care end to end.
-- The **Watch app has still never been built.** Its job is manual-only, because
-  the runner ships no watchOS SDK and fetching one costs several gigabytes per
-  run. It is the last target with no compiler evidence behind it at all.
+- The **Watch app compiles for the watchOS Simulator.** Its job is manual-only,
+  because the runner ships no watchOS SDK and fetching one costs several
+  gigabytes per run. The first successful build completed on 2026-08-11.
 - No screen has been rendered on a **device**. Haptics, camera, audio
   interruption, and Health are all still unobserved.
 

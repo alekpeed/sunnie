@@ -12,17 +12,19 @@ verified, and where the review time is best spent.
 
 ## 1. Read this before anything else
 
-**Most of this Swift has never been compiled — but no longer all of it.**
+**The iPhone app, widget, and Watch target now compile in CI.**
 
 **Verification status, precisely.**
 
-- **The shared package (`SunnieShared`) compiles and its 441 tests pass**, on
+- **The shared package (`SunnieShared`) compiles and its 460 tests pass**, on
   Linux with Swift 6.1.2. That is roughly a third of the codebase — all the
   domain logic, content schemas, and pure algorithms — and it is genuinely
   verified, not argued for.
-- **The iOS app, the Watch app, and the widget extension have still never been
-  compiled.** They need Xcode on a Mac, which no part of this project has had
-  access to. Nothing about their state has changed.
+- **The iPhone app and widget compile on macOS CI.** The app runs on an iPhone
+  simulator, with 223 app tests and 7 UI tests passing.
+- **The Watch app compiles for the watchOS Simulator.** Its manual CI job
+  downloads the watchOS SDK on demand; paired-device behavior cannot be proven
+  in CI.
 
 Getting the shared package building found three real defects that no amount of
 static checking had caught: a `ColorValue` that encoded as an object while every
@@ -33,17 +35,17 @@ began, and a nickname helper that was uncallable by its only callers.
 That is not a caveat buried in a footnote — it is the single most important fact
 about the codebase, and it should shape how the review is scoped. Concretely:
 
-- Expect compile errors. They have not been ruled out; they have only been argued
-  against.
-- Test counts for the **app** targets are tests *written*, never *passed*. The
-  shared package's 441 are genuinely passing.
+- Expect compiler work in the Watch target; the iPhone and widget targets are
+  already compiler-verified.
+- Test counts are executed results: 460 shared-package tests, 223 app tests, and
+  7 UI tests pass in CI.
 - Anything that depends on runtime behaviour — SwiftData migration actually
   running, SwiftUI actually laying out, WatchConnectivity actually delivering — is
   unproven.
 
-The most valuable first hour is almost certainly: open the project in Xcode, run
-`swift build` in `Packages/SunnieShared`, and report what breaks. That is worth
-more than any amount of reading.
+The most valuable next build is the manual Watch workflow. After that, review
+time is best spent on migration and physical-device behavior that simulator CI
+cannot prove.
 
 `Documentation/BUILD_AND_VERIFY.md` has the recommended bring-up order —
 shared package first, then the iPhone target, then the Watch and widget
@@ -51,9 +53,9 @@ extensions — chosen so a failure early does not block understanding the rest.
 
 ## 2. What *has* been verified, and how
 
-Without a compiler, verification was static and offline. It is real but narrow,
-and it is worth knowing exactly where its edges are so the review does not
-re-tread it or over-trust it.
+Before native CI, verification was static and offline. Those checks remain useful
+and narrow; native CI now adds compiler, simulator, repository, integration, and
+UI-test evidence for the iPhone app and widget.
 
 | Check | Covers | Does **not** cover |
 |---|---|---|
@@ -77,9 +79,10 @@ claims to re-derive, not as measurements to trust.**
 also confirmed to fail on deliberately introduced violations, so it is not
 vacuous.
 
-`.github/workflows/ci.yml` describes the build that *should* happen — shared
-package tests, content validation, Watch build, and an iPhone build-and-test on a
-discovered simulator. It has never had a green run.
+`.github/workflows/ci.yml` is the canonical build: shared-package tests, content
+validation, syntax checks, and an iPhone simulator build and test run on every
+push. Its Watch job is deliberately manual because it must first download the
+watchOS SDK.
 
 ## 3. What the code is
 
@@ -195,7 +198,8 @@ Ranked by consequence-if-wrong, not by size.
 
 Stated plainly so the review does not spend time rediscovering them.
 
-- The whole codebase is uncompiled and untested. (§1)
+- The Watch target compiles for the watchOS Simulator, but physical-device-only
+  behavior remains untested. (§1)
 - Phase 11 — accessibility pass, CloudKit validation, migration suite,
   performance, onboarding, export and delete, release — is not started.
 - The schema namespace freeze owed by ADR-017 has not been done.
