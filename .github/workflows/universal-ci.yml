@@ -1,0 +1,139 @@
+name: Universal Native CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        if: ${{ hashFiles('package.json') != '' }}
+        with:
+          node-version: '22'
+      - name: Node
+        if: ${{ hashFiles('package.json') != '' }}
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npm test --if-present
+          npm run lint --if-present
+          npm run build --if-present
+
+  android:
+    if: ${{ hashFiles('gradlew', 'settings.gradle', 'settings.gradle.kts', 'build.gradle', 'build.gradle.kts') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Build/test/lint
+        if: ${{ hashFiles('gradlew') != '' }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build
+          ./gradlew test
+          ./gradlew lint
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-build
+          path: |
+            **/build/outputs/**/*.apk
+            **/build/outputs/**/*.aab
+            **/build/reports/**
+          if-no-files-found: ignore
+
+  apple:
+    if: ${{ hashFiles('**/*.xcodeproj/project.pbxproj', '**/*.xcworkspace/**', 'Package.swift') != '' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          xcrun simctl list devices available
+      - name: Swift Package
+        if: ${{ hashFiles('Package.swift') != '' }}
+        run: swift test
+      - name: Detect Xcode target
+        id: xcode
+        shell: bash
+        run: |
+          W="$(find . -name '*.xcworkspace' -type d -print -quit)"
+          P="$(find . -name '*.xcodeproj' -type d -print -quit)"
+          if [ -n "$W" ]; then
+            K=workspace; X="$W"; J="$(xcodebuild -workspace "$W" -list -json)"
+          elif [ -n "$P" ]; then
+            K=project; X="$P"; J="$(xcodebuild -project "$P" -list -json)"
+          else
+            echo "kind=none" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          S="$(printf '%s' "$J" | python3 -c 'import json,sys; d=json.load(sys.stdin); r=next(iter(d.values())); s=r.get("schemes",[]); print(s[0] if s else "")')"
+          echo "kind=$K" >> "$GITHUB_OUTPUT"
+          echo "path=$X" >> "$GITHUB_OUTPUT"
+          echo "scheme=$S" >> "$GITHUB_OUTPUT"
+      - name: Build/test iOS simulator
+        if: steps.xcode.outputs.kind != 'none' && steps.xcode.outputs.scheme != ''
+        shell: bash
+        run: |
+          if [ "${{ steps.xcode.outputs.kind }}" = workspace ]; then
+            T=(-workspace "${{ steps.xcode.outputs.path }}")
+          else
+            T=(-project "${{ steps.xcode.outputs.path }}")
+          fi
+          D="$(xcrun simctl list devices available | grep -E 'iPhone' | head -1 | sed -E 's/^[[:space:]]*([^()]*) \(.*/\1/' | xargs)"
+          [ -n "$D" ] || { echo "No iPhone simulator"; exit 1; }
+          xcodebuild "${T[@]}" -scheme "${{ steps.xcode.outputs.scheme }}" -sdk iphonesimulator -configuration Debug CODE_SIGNING_ALLOWED=NO build
+          xcodebuild "${T[@]}" -scheme "${{ steps.xcode.outputs.scheme }}" -destination "platform=iOS Simulator,name=$D" CODE_SIGNING_ALLOWED=NO test
+
+  windows:
+    if: ${{ hashFiles('**/*.sln', '**/*.csproj', '**/*.vcxproj') != '' }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+      - name: Restore/build/test
+        shell: pwsh
+        run: |
+          $s = Get-ChildItem -Recurse -Filter *.sln | Select-Object -First 1
+          if ($s) {
+            dotnet restore $s.FullName
+            dotnet build $s.FullName --configuration Release --no-restore
+          } else {
+            Get-ChildItem -Recurse -Filter *.csproj | ForEach-Object {
+              dotnet restore $_.FullName
+              dotnet build $_.FullName --configuration Release --no-restore
+            }
+          }
+          $tests = Get-ChildItem -Recurse -Filter *.csproj | Where-Object {
+            Select-String -Path $_.FullName -Pattern 'Microsoft.NET.Test.Sdk' -Quiet
+          }
+          foreach ($t in $tests) { dotnet test $t.FullName --configuration Release --no-build }
+
+  binary-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Report binary changes
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ]; then B="${{ github.event.pull_request.base.sha }}"; else B="${{ github.event.before }}"; fi
+          if [ -z "$B" ] || [ "$B" = 0000000000000000000000000000000000000000 ]; then exit 0; fi
+          git diff --numstat "$B" HEAD | awk '$1=="-" || $2=="-" {print "Binary change:",$3}'
