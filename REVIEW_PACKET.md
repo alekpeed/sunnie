@@ -12,7 +12,7 @@ verified, and where the review time is best spent.
 
 ## 1. Read this before anything else
 
-**The iPhone app and widget now compile; the Watch target remains uncompiled.**
+**The iPhone app, widget, and Watch target now compile in CI.**
 
 **Verification status, precisely.**
 
@@ -22,8 +22,9 @@ verified, and where the review time is best spent.
   verified, not argued for.
 - **The iPhone app and widget compile on macOS CI.** The app runs on an iPhone
   simulator, with 223 app tests and 7 UI tests passing.
-- **The Watch app still has no compiler evidence.** Its manual CI job downloads
-  the watchOS SDK on demand; paired-device behavior cannot be proven in CI.
+- **The Watch app compiles for the watchOS Simulator.** Its manual CI job
+  downloads the watchOS SDK on demand; paired-device behavior cannot be proven
+  in CI.
 
 Getting the shared package building found three real defects that no amount of
 static checking had caught: a `ColorValue` that encoded as an object while every

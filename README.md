@@ -17,9 +17,9 @@ meals, games, collections and Sunnie's Home, the Health/Watch/widget/intent
 integrations, and the audio layer. Phase 11 — accessibility, CloudKit, export,
 and release — is not started.
 
-> **The iPhone app and widget now compile and run in CI.** The Watch app is the
-> remaining target without compiler evidence because the standard runner does
-> not include the watchOS SDK; the manual Watch workflow downloads it on demand.
+> **Every target now has compiler evidence from CI.** The iPhone app and widget
+> build in the regular macOS job; the manual Watch job downloads the watchOS SDK
+> on demand and has completed successfully.
 
 **Verification status, precisely.**
 
@@ -29,8 +29,8 @@ and release — is not started.
   verified, not argued for.
 - **The iPhone app and widget extension compile on a macOS runner.** The app runs
   on an iPhone simulator, with 223 app tests and 7 UI tests passing.
-- **The Watch app has not yet been compiled.** Its manual CI job installs the
-  watchOS SDK before building; physical-device behavior remains a release check.
+- **The Watch app compiles for the watchOS Simulator.** Its manual CI job installs
+  the watchOS SDK before building; physical-device behavior remains a release check.
 
 Getting the shared package building found three real defects that no amount of
 static checking had caught: a `ColorValue` that encoded as an object while every

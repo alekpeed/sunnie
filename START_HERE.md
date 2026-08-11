@@ -2,7 +2,8 @@
 
 This package contains a complete iPhone and Apple Watch app. Its shared logic
 builds and passes 460 tests; the iPhone app and widget compile and the app runs
-on a simulator. The Watch target and hardware-only integrations remain unproven.
+on a simulator, and the Watch target compiles for the watchOS Simulator.
+Hardware-only integrations remain unproven.
 
 There are two halves to this document. **Part 1 is for the app's owner** and
 assumes no technical knowledge. **Part 2 is for the developer** and assumes
@@ -32,7 +33,7 @@ that silently broke every colour theme in the app.
 
 The iPhone app and widget have since been compiled on a macOS CI runner. The app
 runs on an iPhone simulator, with **223 app tests and 7 UI tests passing**. The
-Watch target still needs its on-demand watchOS SDK build, and real-device checks
+Watch target also compiles in its on-demand watchOS SDK job. Real-device checks
 remain necessary for haptics, camera, audio interruption, Health, and paired
 WatchConnectivity behavior.
 
