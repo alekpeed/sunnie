@@ -219,14 +219,16 @@ final class ScreenWalkUITests: XCTestCase {
         )
         assertNoLoadFailure("Travel")
 
-        // An empty state is copy, not an absence of copy. A screen with nothing
-        // on it at all is a different thing and is worth failing on.
-        let anyText = app.staticTexts.matching(
-            NSPredicate(format: "label.length > 3")
-        ).firstMatch
+        // Named copy, not "some text". The first version of this asked for any
+        // label over three characters, which the tab bar alone satisfies — it
+        // would have passed on a completely blank Travel screen. An assertion
+        // that cannot fail is worse than none, because it reports success.
+        //
+        // No trips are seeded, so the empty state is the correct outcome here
+        // and its own copy is what proves the screen rendered its body.
         XCTAssertTrue(
-            anyText.waitForExistence(timeout: 5),
-            "Travel rendered with no text of any kind. \(visibleTexts())"
+            waitForAnywhere("Nothing planned") || existsAnywhere("Plan a trip"),
+            "Travel rendered without its own content. \(visibleTexts())"
         )
     }
 
@@ -240,12 +242,11 @@ final class ScreenWalkUITests: XCTestCase {
         )
         assertNoLoadFailure("Wellness")
 
-        let anyControl = app.buttons.matching(
-            NSPredicate(format: "label.length > 2")
-        ).firstMatch
+        // Wellness's own words rather than "any button" — the tab bar would
+        // have satisfied that on an otherwise empty screen.
         XCTAssertTrue(
-            anyControl.waitForExistence(timeout: 5),
-            "Wellness offered nothing to tap. \(visibleTexts())"
+            waitForAnywhere("How are you right now?") || existsAnywhere("Check in"),
+            "Wellness did not offer its check-in. \(visibleTexts())"
         )
     }
 
@@ -258,12 +259,11 @@ final class ScreenWalkUITests: XCTestCase {
         guard openFromMore("Settings") else { return }
         assertNoLoadFailure("Settings")
 
-        let anyRow = app.staticTexts.matching(
-            NSPredicate(format: "label.length > 3")
-        ).firstMatch
+        // Two named sections, so a Settings screen that rendered its chrome and
+        // none of its content still fails.
         XCTAssertTrue(
-            anyRow.waitForExistence(timeout: 5),
-            "Settings rendered with no rows. \(visibleTexts())"
+            waitForAnywhere("Time of day") || existsAnywhere("Sound"),
+            "Settings rendered without its sections. \(visibleTexts())"
         )
     }
 }
