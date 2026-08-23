@@ -454,4 +454,85 @@ final class ScreenWalkUITests: XCTestCase {
             "Choosing a difficulty did not open a puzzle. \(visibleTexts())"
         )
     }
+
+    // MARK: - Compiled-in content that cannot legitimately be empty
+    //
+    // The strongest assertion available without seeded data. Where content ships
+    // as Swift, a fresh install has no honest empty state, so an empty screen
+    // means the content never reached the view — silently, which is exactly how
+    // `ColorValue` once reduced the app to one theme.
+    //
+    // Collections is deliberately *not* tested this way: it filters by whether
+    // an item has been earned, so an empty list there is a legitimate first-run
+    // state and an assertion would be wrong rather than strict.
+
+    /// Sunnie's Home renders its slots whether or not anything is in them.
+    ///
+    /// The slots come from the compiled-in definitions and are rows in the view,
+    /// so they appear on an untouched install. That makes them structural: no
+    /// slots means the definitions did not arrive, not that the room is bare.
+    func testSunnieHomeShowsItsSlots() throws {
+        guard openFromMore("Sunnie's Home") else { return }
+        assertNoLoadFailure("Sunnie's Home")
+
+        let slots = [
+            "The shelf", "The wall", "The floor",
+            "The plant stand", "The hanger", "The potting bench", "The travel shelf"
+        ]
+        let found = slots.filter { existsAnywhere($0) }
+
+        XCTAssertFalse(
+            found.isEmpty,
+            "Sunnie's Home has seven compiled-in slots and shows none. \(visibleTexts())"
+        )
+    }
+
+    /// Wellness offers the calm practices that ship with the app.
+    ///
+    /// The ambiences are synthesised rather than recorded, so unlike the music —
+    /// which is declared against files nobody has recorded — these genuinely
+    /// exist on a fresh install with no assets and no account.
+    func testWellnessOffersItsPractices() throws {
+        app.tabBars.buttons["Wellness"].tap()
+
+        guard app.navigationBars["Wellness"].waitForExistence(timeout: 10) else {
+            XCTFail("Wellness did not open. \(visibleTexts())")
+            return
+        }
+        assertNoLoadFailure("Wellness")
+
+        let expected = ["A quiet moment", "Soft rain", "Ocean waves", "Quiet café", "Jungle"]
+        let found = expected.filter { existsAnywhere($0) }
+
+        XCTAssertFalse(
+            found.isEmpty,
+            "Wellness offers none of its shipped practices or ambiences. \(visibleTexts())"
+        )
+    }
+
+    /// The full plant list behind Jungle, which is a different fetch again.
+    func testJungleAllPlantsListsThem() throws {
+        app.tabBars.buttons["Jungle"].tap()
+
+        let allPlants = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "All plants")
+        ).firstMatch
+        guard allPlants.waitForExistence(timeout: 10) else {
+            XCTFail("No route into the full plant list. \(visibleTexts())")
+            return
+        }
+        allPlants.tap()
+
+        guard app.navigationBars["All plants"].waitForExistence(timeout: 10) else {
+            XCTFail("The full plant list did not open. \(visibleTexts())")
+            return
+        }
+        assertNoLoadFailure("All plants")
+
+        // Five plants are seeded, so this list has a right answer.
+        XCTAssertTrue(
+            waitForAnywhere("Monstera") || existsAnywhere("Pothos"),
+            "The full plant list is empty despite five seeded plants. \(visibleTexts())"
+        )
+    }
 }
