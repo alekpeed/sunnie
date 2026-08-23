@@ -511,14 +511,29 @@ final class ScreenWalkUITests: XCTestCase {
     }
 
     /// The full plant list behind Jungle, which is a different fetch again.
+    ///
+    /// Reached through the toolbar menu, not directly. The first version of this
+    /// looked for "All plants" on the Jungle screen and did not find it, because
+    /// the row lives inside an "Options" menu that has to be opened first — a
+    /// wrong interaction rather than a wrong label, and one the failure message
+    /// diagnosed itself by printing what actually was on screen.
     func testJungleAllPlantsListsThem() throws {
         app.tabBars.buttons["Jungle"].tap()
+
+        let options = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "Options")
+        ).firstMatch
+        guard options.waitForExistence(timeout: 10) else {
+            XCTFail("No options menu on Jungle. \(visibleTexts())")
+            return
+        }
+        options.tap()
 
         let allPlants = app.buttons.matching(
             NSPredicate(format: "label CONTAINS[c] %@", "All plants")
         ).firstMatch
         guard allPlants.waitForExistence(timeout: 10) else {
-            XCTFail("No route into the full plant list. \(visibleTexts())")
+            XCTFail("No 'All plants' in the options menu. \(visibleTexts())")
             return
         }
         allPlants.tap()
