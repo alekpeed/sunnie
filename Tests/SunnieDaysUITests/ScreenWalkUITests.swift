@@ -266,4 +266,192 @@ final class ScreenWalkUITests: XCTestCase {
             "Settings rendered without its sections. \(visibleTexts())"
         )
     }
+
+    // MARK: - The deeper walk
+    //
+    // The first pass proved every screen opens. These go a level in, to the
+    // sub-screens and the write paths — which is where the defects have actually
+    // been. All three real bugs so far were repository reads, and a screen that
+    // renders is no evidence at all about the fetch behind the next one.
+
+    /// The three lists behind Meals, each with its own repository.
+    func testMealsSubScreensOpen() throws {
+        guard openFromMore("Meals") else { return }
+
+        // Labels, not routes: "Shopping list" and "What's in" are what the rows
+        // say, and the nav titles they push to are the same strings.
+        for destination in ["Shopping list", "What's in", "Recipes"] {
+            let row = app.buttons.matching(
+                NSPredicate(format: "label CONTAINS[c] %@", destination)
+            ).firstMatch
+            guard row.waitForExistence(timeout: 10) else {
+                XCTFail("No '\(destination)' row on Meals. \(visibleTexts())")
+                return
+            }
+            row.tap()
+
+            XCTAssertTrue(
+                app.navigationBars[destination].waitForExistence(timeout: 10),
+                "'\(destination)' did not open. \(visibleTexts())"
+            )
+            assertNoLoadFailure(destination)
+
+            let back = app.navigationBars.buttons.matching(
+                NSPredicate(format: "label CONTAINS[c] %@", "Meals")
+            ).firstMatch
+            if back.exists { back.tap() }
+        }
+    }
+
+    /// Travel's saved places, which read through the travel repository.
+    ///
+    /// Worth its own test because that repository is where the null-column
+    /// predicate emptied four surfaces at once. Places is a different fetch on
+    /// the same store, and it has never run.
+    func testTravelPlacesOpens() throws {
+        app.tabBars.buttons["Travel"].tap()
+
+        let places = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "Places")
+        ).firstMatch
+        guard places.waitForExistence(timeout: 10) else {
+            XCTFail("No route into Places from Travel. \(visibleTexts())")
+            return
+        }
+        places.tap()
+
+        XCTAssertTrue(
+            app.navigationBars["Places"].waitForExistence(timeout: 10),
+            "Places did not open. \(visibleTexts())"
+        )
+        assertNoLoadFailure("Places")
+    }
+
+    /// A plant's health and growth screens, two more never-run fetches.
+    func testPlantDetailSubScreensOpen() throws {
+        app.tabBars.buttons["Jungle"].tap()
+
+        let plant = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "Monstera")
+        ).firstMatch
+        guard plant.waitForExistence(timeout: 10) else {
+            XCTFail("No seeded plant to open. \(visibleTexts())")
+            return
+        }
+        plant.tap()
+
+        for section in ["What you've noticed", "How it's grown"] {
+            let link = app.buttons.matching(
+                NSPredicate(format: "label CONTAINS[c] %@", section)
+            ).firstMatch
+            guard link.waitForExistence(timeout: 10) else {
+                XCTFail("No '\(section)' on the plant. \(visibleTexts())")
+                return
+            }
+            link.tap()
+
+            XCTAssertTrue(
+                app.navigationBars[section].waitForExistence(timeout: 10),
+                "'\(section)' did not open. \(visibleTexts())"
+            )
+            assertNoLoadFailure(section)
+
+            app.navigationBars.buttons.element(boundBy: 0).tap()
+        }
+    }
+
+    /// Write an entry, then find it again.
+    ///
+    /// The first write path any of these tests exercises, and deliberately the
+    /// journal's: this is the repository whose search predicate threw on every
+    /// query while being documented as fixed. A create-then-read round trip is
+    /// the shape that catches that class, because it makes the store answer for
+    /// what it was just told.
+    func testJournalRoundTripsAnEntry() throws {
+        guard openFromMore("Journal") else { return }
+        assertNoLoadFailure("Journal")
+
+        let newEntry = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "New entry")
+        ).firstMatch
+        guard newEntry.waitForExistence(timeout: 10) else {
+            XCTFail("No way to start an entry. \(visibleTexts())")
+            return
+        }
+        newEntry.tap()
+
+        guard app.navigationBars["Entry"].waitForExistence(timeout: 10) else {
+            XCTFail("The journal editor did not open. \(visibleTexts())")
+            return
+        }
+
+        // A title rather than the body: a title is a TextField, which XCUITest
+        // types into reliably, while the body is a TextEditor and is not worth
+        // the flakiness when either proves the same round trip.
+        let title = app.textFields.firstMatch
+        guard title.waitForExistence(timeout: 5) else {
+            XCTFail("The editor offered no title field. \(visibleTexts())")
+            return
+        }
+        title.tap()
+
+        // Distinctive enough that finding it later cannot be a coincidence.
+        let text = "Walkthrough entry 4718"
+        title.typeText(text)
+
+        let done = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "Done")
+        ).firstMatch
+        guard done.waitForExistence(timeout: 5) else {
+            XCTFail("No Done button in the editor. \(visibleTexts())")
+            return
+        }
+        done.tap()
+
+        XCTAssertTrue(
+            waitForAnywhere(text),
+            "The entry saved but does not appear in the journal. \(visibleTexts())"
+        )
+        assertNoLoadFailure("Journal")
+    }
+
+    /// Starting a game has to actually open one.
+    ///
+    /// The interesting failure is silent: choosing a difficulty calls into the
+    /// engine and pushes only if it returns a session, so a nil there leaves the
+    /// player looking at the list they just tapped, with nothing said. Asserting
+    /// that the Games screen is behind us is what distinguishes that from a
+    /// puzzle opening.
+    func testStartingAGameOpensIt() throws {
+        guard openFromMore("Games") else { return }
+
+        let game = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "Jungle Logic")
+        ).firstMatch
+        guard game.waitForExistence(timeout: 10) else {
+            XCTFail("Jungle Logic is not on the games list. \(visibleTexts())")
+            return
+        }
+        game.tap()
+
+        guard waitForAnywhere("How it works", timeout: 10) else {
+            XCTFail("Tapping a game offered no difficulty choice. \(visibleTexts())")
+            return
+        }
+
+        let gentle = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", "Gentle")
+        ).firstMatch
+        guard gentle.waitForExistence(timeout: 5) else {
+            XCTFail("No difficulty to choose. \(visibleTexts())")
+            return
+        }
+        gentle.tap()
+
+        let leftTheList = app.navigationBars["Games"].waitForNonExistence(timeout: 15)
+        XCTAssertTrue(
+            leftTheList,
+            "Choosing a difficulty did not open a puzzle. \(visibleTexts())"
+        )
+    }
 }
