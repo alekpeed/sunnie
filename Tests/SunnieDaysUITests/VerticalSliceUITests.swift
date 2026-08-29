@@ -158,24 +158,41 @@ final class VerticalSliceUITests: XCTestCase {
         let markWatered = app.buttons.matching(
             NSPredicate(format: "label CONTAINS[c] %@", "Mark watered")
         ).firstMatch
-        XCTAssertTrue(
-            markWatered.waitForExistence(timeout: 10),
-            "No care action at accessibility text sizes. \(visibleButtons())"
-        )
 
-        // Today is intentionally scrollable. At accessibility text sizes the
-        // new contextual cards can move plant care below the initial viewport;
-        // that is valid as long as the action remains reachable through normal
-        // scrolling and is not clipped or removed from the accessibility tree.
+        // Today is intentionally scrollable, and the existence check has to
+        // happen inside the scroll loop rather than before it.
+        //
+        // The screen is a LazyVStack, so a card far below the fold is not
+        // merely off-screen — SwiftUI has not created it, and it is absent from
+        // the accessibility tree rather than present and unhittable. At
+        // accessibility text sizes the hero, status strip, and six-card grid
+        // push plant care past that threshold, so a `waitForExistence` before
+        // any scrolling was asserting "reachable without scrolling" — which is
+        // neither what this test is named after nor what the paragraph above
+        // once said was acceptable. It passed historically only because the
+        // plant card used to sit near the top of Today.
+        //
+        // What matters, and what is checked below, is that the action is
+        // reachable through ordinary scrolling and is neither clipped nor
+        // dropped from the accessibility tree.
         var attempts = 0
-        while !markWatered.isHittable && attempts < 6 {
+        while !(markWatered.exists && markWatered.isHittable) && attempts < 12 {
             app.swipeUp()
             attempts += 1
         }
 
+        guard markWatered.exists else {
+            XCTFail(
+                """
+                The care action never appeared at accessibility text sizes, \
+                even after scrolling to the bottom of Today. \(visibleButtons())
+                """
+            )
+            return
+        }
         XCTAssertTrue(
             markWatered.isHittable,
-            "The care action must stay reachable at large text sizes after scrolling. \(visibleButtons())"
+            "The care action is present at large text sizes but cannot be tapped. \(visibleButtons())"
         )
     }
 
