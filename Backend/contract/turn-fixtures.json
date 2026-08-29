@@ -1,0 +1,91 @@
+{
+  "purpose": "Turn order, sequence numbering, and the idempotency key, shared by the Swift and Kotlin clients (ADR-035). Replay decides what the board looks like; this file decides who plays next and what number their move takes. A disagreement here does not show up as a wrong board — it shows up as both players waiting for each other, which neither of them can tell apart from a bad connection.",
+
+  "actionKey": {
+    "why": "A literal string, compared by a database uniqueness constraint. Case and separators are part of the contract, not formatting: two clients that build this differently would both be allowed to play the same turn.",
+    "cases": [
+      { "sessionId": "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71", "ordinal": 0, "expected": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.0" },
+      { "sessionId": "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71", "ordinal": 12, "expected": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.12" },
+      {
+        "sessionId": "7F3A1C92-2B48-4D0E-9A61-5C8E0B2D4F71",
+        "ordinal": 0,
+        "expected": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.0",
+        "why": "Swift prints a UUID uppercase and Postgres prints it lowercase, so the same session reaches the two clients spelled differently. Lowercasing is what stops that from being two different keys for one turn."
+      }
+    ]
+  },
+
+  "nextSequence": {
+    "why": "One past the highest taken, not the count. A gap — a move not yet fetched, or one a policy filtered out — must not send the next move at a number already in the table.",
+    "cases": [
+      { "name": "an empty session starts at zero", "sequences": [], "expected": 0 },
+      { "name": "the usual case", "sequences": [0, 1, 2], "expected": 3 },
+      { "name": "a gap does not lower the next number", "sequences": [0, 1, 4], "expected": 5 },
+      { "name": "arrival order does not matter", "sequences": [4, 0, 1], "expected": 5 },
+      { "name": "a single move", "sequences": [0], "expected": 1 }
+    ]
+  },
+
+  "seatToPlay": {
+    "why": "Seats own steps by parity. Derived from the board rather than read from a column, so a wrong answer or a hint leaves the turn where it is and there is no mutable turn state for the two clients to disagree about.",
+    "cases": [
+      { "name": "the first stop belongs to seat 0", "currentStep": 0, "seatCount": 2, "expected": 0 },
+      { "name": "the second stop belongs to seat 1", "currentStep": 1, "seatCount": 2, "expected": 1 },
+      { "name": "and back again", "currentStep": 2, "seatCount": 2, "expected": 0 },
+      { "name": "the third", "currentStep": 3, "seatCount": 2, "expected": 1 },
+      {
+        "name": "a step reached by skipping two hands the same seat two turns",
+        "currentStep": 4,
+        "seatCount": 2,
+        "expected": 0,
+        "why": "A consequence of the parity rule when resuming a route where a later stop was already settled. Both clients compute it identically, which is the property that matters."
+      },
+      {
+        "name": "a solo session is always the same seat",
+        "currentStep": 7,
+        "seatCount": 1,
+        "expected": 0,
+        "why": "Single-seat sessions are how a game is played alone against the same rules, without a second code path."
+      },
+      {
+        "name": "a negative step folds into range rather than naming a seat that does not exist",
+        "currentStep": -1,
+        "seatCount": 2,
+        "expected": 1,
+        "why": "Should never occur; comes from a corrupt save rather than from anything the client controls. Kotlin's % keeps the sign of the dividend and Swift's does too, so both need the same correction — which is exactly the kind of thing that gets fixed on one side only."
+      }
+    ]
+  },
+
+  "unsubmitted": {
+    "why": "Matched by action key, not by ordinal or content. A move the database accepted whose response never got back to the phone is already recorded under its key; resending the whole outbox and letting the server reject most of it costs a round trip per move and only works while the keys stay identical.",
+    "sessionId": "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71",
+    "cases": [
+      { "name": "nothing recorded yet", "pendingOrdinals": [0, 1], "recordedOrdinals": [], "expected": [0, 1] },
+      { "name": "the first got through", "pendingOrdinals": [0, 1], "recordedOrdinals": [0], "expected": [1] },
+      { "name": "both got through", "pendingOrdinals": [0, 1], "recordedOrdinals": [0, 1], "expected": [] },
+      {
+        "name": "a move recorded out of order is still recognised",
+        "pendingOrdinals": [0, 1, 2],
+        "recordedOrdinals": [2],
+        "expected": [0, 1],
+        "why": "The filter is by key, so it does not assume the recorded moves are a prefix of the pending ones."
+      },
+      { "name": "an empty outbox", "pendingOrdinals": [], "recordedOrdinals": [0], "expected": [] }
+    ]
+  },
+
+  "resequenced": {
+    "why": "Both players submitting at once is not an error to prevent; it is two people playing. One insert wins the sequence, the other re-reads and takes the next free number — and its ordinal has to move with it, because the ordinal is what replay sorts by. A move stored at sequence 5 still claiming ordinal 4 would replay ahead of the move that beat it.",
+    "cases": [
+      {
+        "name": "renumbering moves the ordinal and therefore the key",
+        "sessionId": "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71",
+        "fromOrdinal": 4,
+        "toOrdinal": 5,
+        "expectedKey": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.5",
+        "why": "The retry is genuinely a different move in the sequence, so a new key is correct rather than a leak."
+      }
+    ]
+  }
+}

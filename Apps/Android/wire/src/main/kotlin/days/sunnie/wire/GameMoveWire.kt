@@ -79,9 +79,15 @@ data class GameMoveWire(
          * Must match `GameMoveWire.actionKey` in Swift exactly, including the
          * lowercased UUID — the database's uniqueness constraint is what
          * enforces the idempotency, and it compares strings.
+         *
+         * The lowercasing is pinned to [java.util.Locale.ROOT] rather than left
+         * to the device's. A hex UUID contains no character the Turkish locale
+         * treats specially, so this changes no output today — it is here so that
+         * a later session identifier which is not a UUID cannot make the key
+         * depend on where the phone is.
          */
         fun actionKey(sessionId: String, ordinal: Int): String =
-            "game.move.${sessionId.lowercase()}.$ordinal"
+            "game.move.${sessionId.lowercase(java.util.Locale.ROOT)}.$ordinal"
     }
 }
 
