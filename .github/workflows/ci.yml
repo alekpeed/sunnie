@@ -197,14 +197,23 @@ jobs:
           # runs under `bash -e`, where a grep that matches nothing is a failure
           # that kills the step — so the diagnostics would vanish in exactly the
           # case they are written for: the run with no compile errors in it.
+          # `error: -[` excluded: that is XCTest reporting a *runtime* failure in
+          # a test case, which it formats with the same "error:" prefix a
+          # compiler uses. Counted as a compile error it produced "3 compile
+          # error(s)" for a build that compiled perfectly — and a compile error
+          # and a failing test call for completely different responses.
           compile=$(grep -E "error: " xcodebuild-iphone.log 2>/dev/null \
             | grep -vE "$noise" \
+            | grep -vE "error: -\[" \
             | sed 's|/Users/runner/work/sunnie/sunnie/||' | sort -u || true)
           compile_count=$(printf '%s' "$compile" | grep -c . || true)
 
           # XCTest says "error:"; Swift Testing says "recorded an issue". Both
           # are test failures and both belong here.
-          failures=$(grep -E "recorded an issue|✘ Test|Testing failed|Test Case .* failed" \
+          # `error: -[` belongs here rather than with the compile errors: it is
+          # XCTest reporting a runtime failure, and it is the line carrying the
+          # *reason* — "Test Case ... failed" alone says only that something did.
+          failures=$(grep -E "recorded an issue|✘ Test|Testing failed|Test Case .* failed|error: -\[" \
             xcodebuild-iphone.log 2>/dev/null \
             | sed 's|/Users/runner/work/sunnie/sunnie/||' | sort -u || true)
           failure_count=$(printf '%s' "$failures" | grep -c . || true)

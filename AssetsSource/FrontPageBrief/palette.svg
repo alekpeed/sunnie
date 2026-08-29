@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300">
+<rect width="1200" height="300" fill="#FFFDF7"/>
+<text x="24" y="34" font-family="Georgia,serif" font-size="20" fill="#4A3626">Sunnie Days — shipped palette (themes.v1.json, dayCycle)</text>
+<rect x="0.0" y="60" width="92.3" height="140" fill="#FFF6E6" stroke="#E4D8C4"/>
+<text x="46.2" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Canvas</text>
+<text x="46.2" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#FFF6E6</text>
+<rect x="92.3" y="60" width="92.3" height="140" fill="#FFEFD8" stroke="#E4D8C4"/>
+<text x="138.5" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Surface</text>
+<text x="138.5" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#FFEFD8</text>
+<rect x="184.6" y="60" width="92.3" height="140" fill="#FFFDF7" stroke="#E4D8C4"/>
+<text x="230.8" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Surface raised</text>
+<text x="230.8" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#FFFDF7</text>
+<rect x="276.9" y="60" width="92.3" height="140" fill="#F6D47D" stroke="#E4D8C4"/>
+<text x="323.1" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Sunnie (butter)</text>
+<text x="323.1" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#F6D47D</text>
+<rect x="369.2" y="60" width="92.3" height="140" fill="#F3A58D" stroke="#E4D8C4"/>
+<text x="415.4" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Warm (coral)</text>
+<text x="415.4" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#F3A58D</text>
+<rect x="461.5" y="60" width="92.3" height="140" fill="#B9A6E1" stroke="#E4D8C4"/>
+<text x="507.7" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Calm (lavender)</text>
+<text x="507.7" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#B9A6E1</text>
+<rect x="553.8" y="60" width="92.3" height="140" fill="#A9C5A0" stroke="#E4D8C4"/>
+<text x="600.0" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Plant (sage)</text>
+<text x="600.0" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#A9C5A0</text>
+<rect x="646.2" y="60" width="92.3" height="140" fill="#A8CBE4" stroke="#E4D8C4"/>
+<text x="692.3" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Travel (sky)</text>
+<text x="692.3" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#A8CBE4</text>
+<rect x="738.5" y="60" width="92.3" height="140" fill="#91B982" stroke="#E4D8C4"/>
+<text x="784.6" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Success</text>
+<text x="784.6" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#91B982</text>
+<rect x="830.8" y="60" width="92.3" height="140" fill="#D7A65A" stroke="#E4D8C4"/>
+<text x="876.9" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Attention</text>
+<text x="876.9" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#D7A65A</text>
+<rect x="923.1" y="60" width="92.3" height="140" fill="#C97972" stroke="#E4D8C4"/>
+<text x="969.2" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Error</text>
+<text x="969.2" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#C97972</text>
+<rect x="1015.4" y="60" width="92.3" height="140" fill="#79624D" stroke="#E4D8C4"/>
+<text x="1061.5" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Text secondary</text>
+<text x="1061.5" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#79624D</text>
+<rect x="1107.7" y="60" width="92.3" height="140" fill="#4A3626" stroke="#E4D8C4"/>
+<text x="1153.8" y="228" font-family="Helvetica,Arial" font-size="12" fill="#4A3626" text-anchor="middle">Text primary</text>
+<text x="1153.8" y="248" font-family="monospace" font-size="12" fill="#79624D" text-anchor="middle">#4A3626</text>
+<text x="24" y="284" font-family="Helvetica,Arial" font-size="13" fill="#79624D">Generated from the app's own content pack — these are the colours the built app actually uses.</text>
+</svg>
