@@ -78,6 +78,36 @@ jobs:
       - name: Validate Info.plists
         run: python3 Tools/validate_info_plists.py
 
+  # The Kotlin half of the cross-language move contract (ADR-035).
+  #
+  # On Linux, and cheap, because the module it tests is deliberately plain
+  # Kotlin with no Android dependency. That split is what lets this run on an
+  # ordinary runner in seconds instead of needing the Android SDK — the same
+  # reasoning as ADR-032, which pulled the shared Swift package off Apple so it
+  # could be compiled without a Mac.
+  #
+  # It reads `Backend/contract/move-fixtures.json`, the same bytes the Swift
+  # suite reads. Editing the fixtures without updating both clients fails here
+  # and in `Shared package`, which is the point: a divergence between the iPhone
+  # and the Android phone becomes a red test rather than a turn that silently
+  # does nothing in a real game.
+  android-wire:
+    name: Move contract (Kotlin)
+    runs-on: ubuntu-24.04
+    steps:
+      # Pinned by digest like every other checkout in this file. Introducing a
+      # tag-referenced action here would quietly weaken a supply-chain posture
+      # the rest of the workflow keeps.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # No `setup-java` step: ubuntu-24.04 ships Temurin 21 as its default JDK,
+      # which is what `jvmToolchain(21)` asks for. Adding the action would mean
+      # either an unpinned dependency or a second digest to keep current, for a
+      # JDK the runner already has. If the image ever drops it, this job fails
+      # loudly on a missing toolchain rather than doing something subtle.
+      - name: Test the move contract
+        working-directory: Apps/Android
+        run: ./gradlew --no-daemon --console=plain :wire:test
+
   # Syntax-only, on Linux. The app targets cannot be type-checked without an
   # Apple SDK, but they can be parsed — which catches malformed Swift that
   # brace-counting cannot see, on every push, with no Mac involved.
