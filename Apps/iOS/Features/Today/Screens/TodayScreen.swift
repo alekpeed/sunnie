@@ -173,7 +173,15 @@ struct TodayScreen: View {
         HStack(spacing: Space.xs) {
             statusItem(
                 icon: "sun.max.fill",
-                title: String(localized: LocalizationKeys.dayCycle(appState.timeContext.presentation)),
+                // `dayCycle` returns a LocalizedStringKey, which Text takes and
+                // String(localized:) does not. `LocalizationKeys.text` is the
+                // String-returning form for a key assembled at run time, and it
+                // takes a fallback — so a missing translation shows the branded
+                // name rather than the raw key.
+                title: LocalizationKeys.text(
+                    appState.timeContext.presentation.localizationKey,
+                    fallback: appState.timeContext.presentation.canonicalDisplayName
+                ),
                 tint: sunnieButter
             )
 
