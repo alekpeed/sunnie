@@ -161,7 +161,7 @@ struct ReplayContractTests {
         for testCase in fixtures.cases where testCase.moves.count > 1 {
             let moves = try testCase.moves.map { try Self.move(from: $0) }
             let forward = AnswerChainEngine.replay(puzzle: puzzle, moves: moves)
-            let backward = AnswerChainEngine.replay(puzzle: puzzle, moves: moves.reversed())
+            let backward = AnswerChainEngine.replay(puzzle: puzzle, moves: Array(moves.reversed()))
 
             #expect(forward == backward, "\(testCase.name): reversed arrival order changed the board")
         }
@@ -180,7 +180,7 @@ struct ReplayContractTests {
             #expect(
                 AnswerChainEngine.replay(puzzle: puzzle, moves: moves)
                     == AnswerChainEngine.replay(puzzle: puzzle, moves: moves),
-                testCase.name
+                "\(testCase.name): replaying the same moves twice gave two boards"
             )
         }
     }
