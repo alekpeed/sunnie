@@ -1,0 +1,44 @@
+{
+  "purpose": "Answer-matching rules, shared by the Swift and Kotlin clients. Both test suites read this file, so a rule that drifts on one side fails a test rather than quietly making one player wrong more often than the other (ADR-035).",
+  "why_this_matters_more_than_the_wire_format": "A move that fails to decode is visibly broken. A rule that accepts 'cafe' for 'café' on one phone and rejects it on the other is a game where one player is simply wrong more often, with nothing on screen to explain why.",
+
+  "normalize": [
+    { "input": "Lisbon", "expected": "lisbon", "why": "Case folds." },
+    { "input": "café", "expected": "cafe", "why": "Accents fold; the player may not have the key." },
+    { "input": "CAFÉ", "expected": "cafe", "why": "Case and accent together." },
+    { "input": "el sol", "expected": "elsol", "why": "Spaces are not part of knowing the answer." },
+    { "input": "el-sol", "expected": "elsol", "why": "Hyphen, U+002D, is punctuation." },
+    { "input": "el—sol", "expected": "elsol", "why": "Em dash, U+2014." },
+    { "input": "don't", "expected": "dont", "why": "Straight apostrophe, U+0027." },
+    { "input": "don’t", "expected": "dont", "why": "Curly apostrophe, U+2019 — a different character the keyboard may substitute." },
+    { "input": "`quoted`", "expected": "quoted", "why": "Backtick is a modifier symbol, not punctuation, so it has to be listed explicitly on both sides." },
+    { "input": "  spaced  out  ", "expected": "spacedout", "why": "Leading, trailing, and interior whitespace." },
+    { "input": "São Paulo", "expected": "saopaulo", "why": "Tilde folds." },
+    { "input": "Ǎ", "expected": "a", "why": "A mark that only exists decomposed in NFKD." },
+    { "input": "", "expected": "", "why": "Empty stays empty rather than throwing." },
+    { "input": "!?.,;:", "expected": "", "why": "Punctuation only, normalising to nothing." }
+  ],
+
+  "matches": [
+    { "input": "cafe", "accepted": ["café"], "expected": true },
+    { "input": "CAFÉ", "accepted": ["cafe"], "expected": true },
+    { "input": "el sol", "accepted": ["El Sol"], "expected": true },
+    { "input": "lisbon", "accepted": ["Lisboa", "Lisbon"], "expected": true, "why": "Any accepted spelling, not only the first." },
+    { "input": "sal", "accepted": ["sol"], "expected": false, "why": "A different word. Folding must not reach this far." },
+    { "input": "", "accepted": ["sol"], "expected": false, "why": "Empty never matches, even against a non-empty answer." },
+    { "input": "   ", "accepted": ["sol"], "expected": false, "why": "Whitespace normalises to empty, and empty never matches." },
+    { "input": "!!!", "accepted": [""], "expected": false, "why": "Both sides normalise to empty; still no match, because the guard is on the input being empty." },
+    { "input": "sol", "accepted": [], "expected": false, "why": "No accepted answers means no match rather than an error." }
+  ],
+
+  "nearMiss": [
+    { "input": "lisbo", "accepted": ["lisbon"], "expected": true, "why": "One deletion, and long enough to be a typo rather than a different word." },
+    { "input": "lisbonn", "accepted": ["lisbon"], "expected": true, "why": "One insertion." },
+    { "input": "lisbin", "accepted": ["lisbon"], "expected": true, "why": "One substitution." },
+    { "input": "sal", "accepted": ["sol"], "expected": false, "why": "One edit, but under the four-character floor: below it, one edit is the difference between most short words." },
+    { "input": "lisbon", "accepted": ["lisbon"], "expected": false, "why": "An exact match is not a near miss; distance is zero, and the rule asks for exactly one." },
+    { "input": "porto", "accepted": ["lisbon"], "expected": false, "why": "Far apart." },
+    { "input": "lis", "accepted": ["lisbon"], "expected": false, "why": "Length difference over one, rejected before the distance is computed." },
+    { "input": "cafe", "accepted": ["café"], "expected": false, "why": "Normalises to an exact match, so distance is zero rather than one." }
+  ]
+}
