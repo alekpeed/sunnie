@@ -1608,3 +1608,32 @@ painful rather than merely inelegant.
   unreachable.
 - `NoMultiplayer` stays. It is what the app composes when the feature is off,
   which must remain a supported configuration rather than a legacy path.
+
+### Amendment: the turn is derived, and `turn_player_id` is never read
+
+The schema carries `sunnie_session.turn_player_id`. Nothing in either client
+reads it, and nothing should start without first deciding what happens when it
+contradicts the moves.
+
+A turn column is mutable state both clients write. It can go stale, it can be
+written twice, and when it disagrees with the move list nothing can say which is
+right. The failure that produces is not a wrong board — it is both players
+looking at "waiting for the other player" indefinitely, which is
+indistinguishable from a bad connection and which neither of them can clear.
+
+Instead, seats own steps by parity, so the turn is a function of the replayed
+board. Moves are append-only and uniquely sequenced by the database, so two
+clients replaying the same moves cannot reach different answers about who plays
+next: the deadlock is unrepresentable rather than merely unlikely.
+
+The consequence to accept is that a step advancing by two — which happens when
+resuming a route where a later stop was already settled — gives one seat two
+turns in a row. Taking turns strictly would require turn state kept apart from
+the board, which is the drift this removes.
+
+The column stays as a hook for a future server-side notification, which is a
+thing a column is good for. If it ever becomes authoritative, that is a change
+to this decision and needs recording here.
+
+Pinned by `Backend/contract/turn-fixtures.json`, which both test suites read,
+on the same reasoning as the replay and answer contracts.
