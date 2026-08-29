@@ -77,6 +77,11 @@ jobs:
       # taking the whole app with it. No build catches this; this does.
       - name: Validate Info.plists
         run: python3 Tools/validate_info_plists.py
+      # A fixture read by one client looks exactly like a working contract —
+      # green tests, a file full of intended behaviour — while constraining
+      # nothing on the side that never opens it.
+      - name: Validate contract coverage
+        run: python3 Tools/validate_contract_coverage.py
 
   # The Kotlin half of the cross-language contracts (ADR-035).
   #
