@@ -78,7 +78,7 @@ jobs:
       - name: Validate Info.plists
         run: python3 Tools/validate_info_plists.py
 
-  # The Kotlin half of the cross-language move contract (ADR-035).
+  # The Kotlin half of the cross-language contracts (ADR-035).
   #
   # On Linux, and cheap, because the module it tests is deliberately plain
   # Kotlin with no Android dependency. That split is what lets this run on an
@@ -86,13 +86,15 @@ jobs:
   # reasoning as ADR-032, which pulled the shared Swift package off Apple so it
   # could be compiled without a Mac.
   #
-  # It reads `Backend/contract/move-fixtures.json`, the same bytes the Swift
-  # suite reads. Editing the fixtures without updating both clients fails here
-  # and in `Shared package`, which is the point: a divergence between the iPhone
-  # and the Android phone becomes a red test rather than a turn that silently
-  # does nothing in a real game.
+  # It reads the fixture files under `Backend/contract` — the wire format for a
+  # move, answer matching, replay, and turn order — which are the same bytes the
+  # Swift suites read. Editing a fixture without updating both clients fails
+  # here and in `Shared package`, which is the point: a divergence between the
+  # iPhone and the Android phone becomes a red test rather than something that
+  # only shows up mid-game, as a turn that silently does nothing or as two
+  # players each waiting for the other.
   android-wire:
-    name: Move contract (Kotlin)
+    name: Shared contracts (Kotlin)
     runs-on: ubuntu-24.04
     steps:
       # Pinned by digest like every other checkout in this file. Introducing a
@@ -104,7 +106,10 @@ jobs:
       # either an unpinned dependency or a second digest to keep current, for a
       # JDK the runner already has. If the image ever drops it, this job fails
       # loudly on a missing toolchain rather than doing something subtle.
-      - name: Test the move contract
+      # Runs every contract suite in the module, not just the move wire
+      # format: answer matching, replay, and turn order are all pinned by
+      # fixtures under Backend/contract that the Swift jobs read too.
+      - name: Test the shared contracts
         working-directory: Apps/Android
         run: ./gradlew --no-daemon --console=plain :wire:test
 
