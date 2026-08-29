@@ -113,6 +113,48 @@ jobs:
         working-directory: Apps/Android
         run: ./gradlew --no-daemon --console=plain :wire:test
 
+  # The Android APK.
+  #
+  # Separate from the contract job on purpose. That one runs on a plain JDK in
+  # seconds and is the check worth having on every push; this one needs the
+  # Android SDK and is slower, and a red X on it should mean "the app does not
+  # build", not "the rules changed".
+  #
+  # The artifact is the point as much as the build is: the owner has no Mac and
+  # no Android Studio, so a debug APK attached to the run is how the Android
+  # client actually reaches a phone. Sideloading it needs no store listing and no
+  # signing identity beyond the debug key AGP generates.
+  android-app:
+    name: Build the Android app
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # ANDROID_HOME is set on this image, which is what makes settings.gradle.kts
+      # include `:app` at all. If a future image drops the SDK the module is
+      # silently excluded rather than failing, so the presence of the APK is
+      # checked below instead of being assumed.
+      - name: Build the debug APK
+        working-directory: Apps/Android
+        run: ./gradlew --no-daemon --console=plain :app:assembleDebug
+
+      - name: Check an APK was actually produced
+        working-directory: Apps/Android
+        run: |
+          set -euo pipefail
+          apk=$(find app/build/outputs/apk/debug -name '*.apk' -print -quit)
+          if [ -z "$apk" ]; then
+            echo "No APK was produced. If :app was excluded for want of an SDK," \
+                 "the build above would have succeeded while building nothing."
+            exit 1
+          fi
+          echo "Built $apk ($(du -h "$apk" | cut -f1))"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sunnie-days-android-debug
+          path: Apps/Android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
   # Syntax-only, on Linux. The app targets cannot be type-checked without an
   # Apple SDK, but they can be parsed — which catches malformed Swift that
   # brace-counting cannot see, on every push, with no Mac involved.

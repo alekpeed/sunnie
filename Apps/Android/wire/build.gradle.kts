@@ -10,8 +10,24 @@ plugins {
     kotlin("plugin.serialization")
 }
 
+// Compiled by whatever JDK runs Gradle, but emitting Java 17 bytecode.
+//
+// Not a toolchain pin, deliberately. `app` consumes this module, and Android's
+// D8 is the constraint: 17 is the highest bytecode level the Android toolchain
+// supports without qualification, so a module targeting 21 would build fine on
+// its own and fail only once the APK tried to dex it. Pinning the *target*
+// rather than the toolchain also means this still builds on a machine that has
+// only one JDK installed, which is the case on the container that runs these
+// tests.
 kotlin {
-    jvmToolchain(21)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 dependencies {
