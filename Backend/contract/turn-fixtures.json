@@ -1,38 +1,107 @@
 {
-  "purpose": "Turn order, sequence numbering, and the idempotency key, shared by the Swift and Kotlin clients (ADR-035). Replay decides what the board looks like; this file decides who plays next and what number their move takes. A disagreement here does not show up as a wrong board — it shows up as both players waiting for each other, which neither of them can tell apart from a bad connection.",
-
+  "purpose": "Turn order, sequence numbering, and the idempotency key, shared by the Swift and Kotlin clients (ADR-035). Replay decides what the board looks like; this file decides who plays next and what number their move takes. A disagreement here does not show up as a wrong board \u2014 it shows up as both players waiting for each other, which neither of them can tell apart from a bad connection.",
   "actionKey": {
-    "why": "A literal string, compared by a database uniqueness constraint. Case and separators are part of the contract, not formatting: two clients that build this differently would both be allowed to play the same turn.",
+    "why": "A literal string, compared by a database uniqueness constraint. Case and separators are part of the contract, not formatting. The player is in the key and that is load-bearing: without it the key is a pure function of the sequence number, which collapses `unique (session_id, action_key)` and `unique (session_id, sequence)` into one constraint written twice \u2014 and makes both players compute the same key for the same ordinal, so each would see the other's move under what it believes is its own key and drop its turn.",
     "cases": [
-      { "sessionId": "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71", "ordinal": 0, "expected": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.0" },
-      { "sessionId": "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71", "ordinal": 12, "expected": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.12" },
+      {
+        "sessionId": "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71",
+        "playerId": "1c0ffee0-0000-4000-8000-00000000beef",
+        "ordinal": 0,
+        "expected": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.1c0ffee0-0000-4000-8000-00000000beef.0"
+      },
+      {
+        "sessionId": "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71",
+        "playerId": "1c0ffee0-0000-4000-8000-00000000beef",
+        "ordinal": 12,
+        "expected": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.1c0ffee0-0000-4000-8000-00000000beef.12"
+      },
       {
         "sessionId": "7F3A1C92-2B48-4D0E-9A61-5C8E0B2D4F71",
+        "playerId": "1C0FFEE0-0000-4000-8000-00000000BEEF",
         "ordinal": 0,
-        "expected": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.0",
-        "why": "Swift prints a UUID uppercase and Postgres prints it lowercase, so the same session reaches the two clients spelled differently. Lowercasing is what stops that from being two different keys for one turn."
+        "expected": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.1c0ffee0-0000-4000-8000-00000000beef.0",
+        "why": "Swift prints a UUID uppercase and Postgres prints it lowercase, so the same identifiers reach the two clients spelled differently. Lowercasing both is what stops that from being two keys for one turn."
+      },
+      {
+        "sessionId": "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71",
+        "playerId": "2d0ffee0-0000-4000-8000-00000000cafe",
+        "ordinal": 0,
+        "expected": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.2d0ffee0-0000-4000-8000-00000000cafe.0",
+        "why": "The same session and the same ordinal as the first case, a different player, and therefore a different key. This is the case that keeps the two uniqueness constraints independent: both players may hold ordinal 0 as far as the action key is concerned, and the sequence constraint is what decides which of them actually gets it."
       }
     ]
   },
-
   "nextSequence": {
-    "why": "One past the highest taken, not the count. A gap — a move not yet fetched, or one a policy filtered out — must not send the next move at a number already in the table.",
+    "why": "One past the highest taken, not the count. A gap \u2014 a move not yet fetched, or one a policy filtered out \u2014 must not send the next move at a number already in the table.",
     "cases": [
-      { "name": "an empty session starts at zero", "sequences": [], "expected": 0 },
-      { "name": "the usual case", "sequences": [0, 1, 2], "expected": 3 },
-      { "name": "a gap does not lower the next number", "sequences": [0, 1, 4], "expected": 5 },
-      { "name": "arrival order does not matter", "sequences": [4, 0, 1], "expected": 5 },
-      { "name": "a single move", "sequences": [0], "expected": 1 }
+      {
+        "name": "an empty session starts at zero",
+        "sequences": [],
+        "expected": 0
+      },
+      {
+        "name": "the usual case",
+        "sequences": [
+          0,
+          1,
+          2
+        ],
+        "expected": 3
+      },
+      {
+        "name": "a gap does not lower the next number",
+        "sequences": [
+          0,
+          1,
+          4
+        ],
+        "expected": 5
+      },
+      {
+        "name": "arrival order does not matter",
+        "sequences": [
+          4,
+          0,
+          1
+        ],
+        "expected": 5
+      },
+      {
+        "name": "a single move",
+        "sequences": [
+          0
+        ],
+        "expected": 1
+      }
     ]
   },
-
   "seatToPlay": {
     "why": "Seats own steps by parity. Derived from the board rather than read from a column, so a wrong answer or a hint leaves the turn where it is and there is no mutable turn state for the two clients to disagree about.",
     "cases": [
-      { "name": "the first stop belongs to seat 0", "currentStep": 0, "seatCount": 2, "expected": 0 },
-      { "name": "the second stop belongs to seat 1", "currentStep": 1, "seatCount": 2, "expected": 1 },
-      { "name": "and back again", "currentStep": 2, "seatCount": 2, "expected": 0 },
-      { "name": "the third", "currentStep": 3, "seatCount": 2, "expected": 1 },
+      {
+        "name": "the first stop belongs to seat 0",
+        "currentStep": 0,
+        "seatCount": 2,
+        "expected": 0
+      },
+      {
+        "name": "the second stop belongs to seat 1",
+        "currentStep": 1,
+        "seatCount": 2,
+        "expected": 1
+      },
+      {
+        "name": "and back again",
+        "currentStep": 2,
+        "seatCount": 2,
+        "expected": 0
+      },
+      {
+        "name": "the third",
+        "currentStep": 3,
+        "seatCount": 2,
+        "expected": 1
+      },
       {
         "name": "a step reached by skipping two hands the same seat two turns",
         "currentStep": 4,
@@ -52,39 +121,109 @@
         "currentStep": -1,
         "seatCount": 2,
         "expected": 1,
-        "why": "Should never occur; comes from a corrupt save rather than from anything the client controls. Kotlin's % keeps the sign of the dividend and Swift's does too, so both need the same correction — which is exactly the kind of thing that gets fixed on one side only."
+        "why": "Should never occur; comes from a corrupt save rather than from anything the client controls. Kotlin's % keeps the sign of the dividend and Swift's does too, so both need the same correction \u2014 which is exactly the kind of thing that gets fixed on one side only."
       }
     ]
   },
-
   "unsubmitted": {
-    "why": "Matched by action key, not by ordinal or content. A move the database accepted whose response never got back to the phone is already recorded under its key; resending the whole outbox and letting the server reject most of it costs a round trip per move and only works while the keys stay identical.",
+    "why": "Matched by action key, not by ordinal or content. A move the database accepted whose response never got back to the phone is already recorded under its key; resending the whole outbox and letting the server reject most of it costs a round trip per move and only works while the keys stay identical. Filtering is by this player's own keys, so a move is never discarded because the opponent happens to hold its ordinal.",
     "sessionId": "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71",
     "cases": [
-      { "name": "nothing recorded yet", "pendingOrdinals": [0, 1], "recordedOrdinals": [], "expected": [0, 1] },
-      { "name": "the first got through", "pendingOrdinals": [0, 1], "recordedOrdinals": [0], "expected": [1] },
-      { "name": "both got through", "pendingOrdinals": [0, 1], "recordedOrdinals": [0, 1], "expected": [] },
+      {
+        "name": "nothing recorded yet",
+        "pendingOrdinals": [
+          0,
+          1
+        ],
+        "recordedOrdinals": [],
+        "expected": [
+          0,
+          1
+        ],
+        "opponentOrdinals": []
+      },
+      {
+        "name": "the first got through",
+        "pendingOrdinals": [
+          0,
+          1
+        ],
+        "recordedOrdinals": [
+          0
+        ],
+        "expected": [
+          1
+        ],
+        "opponentOrdinals": []
+      },
+      {
+        "name": "both got through",
+        "pendingOrdinals": [
+          0,
+          1
+        ],
+        "recordedOrdinals": [
+          0,
+          1
+        ],
+        "expected": [],
+        "opponentOrdinals": []
+      },
       {
         "name": "a move recorded out of order is still recognised",
-        "pendingOrdinals": [0, 1, 2],
-        "recordedOrdinals": [2],
-        "expected": [0, 1],
-        "why": "The filter is by key, so it does not assume the recorded moves are a prefix of the pending ones."
+        "pendingOrdinals": [
+          0,
+          1,
+          2
+        ],
+        "recordedOrdinals": [
+          2
+        ],
+        "expected": [
+          0,
+          1
+        ],
+        "why": "The filter is by key, so it does not assume the recorded moves are a prefix of the pending ones.",
+        "opponentOrdinals": []
       },
-      { "name": "an empty outbox", "pendingOrdinals": [], "recordedOrdinals": [0], "expected": [] }
-    ]
+      {
+        "name": "an empty outbox",
+        "pendingOrdinals": [],
+        "recordedOrdinals": [
+          0
+        ],
+        "expected": [],
+        "opponentOrdinals": []
+      },
+      {
+        "name": "the opponent holding an ordinal does not discard our move",
+        "pendingOrdinals": [
+          0
+        ],
+        "recordedOrdinals": [],
+        "opponentOrdinals": [
+          0
+        ],
+        "expected": [
+          0
+        ],
+        "why": "The move is still unsent. Matching on a key without the player in it would see the opponent's row at ordinal 0 and drop this turn silently."
+      }
+    ],
+    "playerId": "1c0ffee0-0000-4000-8000-00000000beef",
+    "opponentPlayerId": "2d0ffee0-0000-4000-8000-00000000cafe"
   },
-
   "resequenced": {
-    "why": "Both players submitting at once is not an error to prevent; it is two people playing. One insert wins the sequence, the other re-reads and takes the next free number — and its ordinal has to move with it, because the ordinal is what replay sorts by. A move stored at sequence 5 still claiming ordinal 4 would replay ahead of the move that beat it.",
+    "why": "Both players submitting at once is not an error to prevent; it is two people playing. One insert wins the sequence, the other re-reads and takes the next free number \u2014 and its ordinal has to move with it, because the ordinal is what replay sorts by. A move stored at sequence 5 still claiming ordinal 4 would replay ahead of the move that beat it.",
     "cases": [
       {
         "name": "renumbering moves the ordinal and therefore the key",
         "sessionId": "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71",
         "fromOrdinal": 4,
         "toOrdinal": 5,
-        "expectedKey": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.5",
-        "why": "The retry is genuinely a different move in the sequence, so a new key is correct rather than a leak."
+        "expectedKey": "game.move.7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71.1c0ffee0-0000-4000-8000-00000000beef.5",
+        "why": "The retry is genuinely a different move in the sequence, so a new key is correct rather than a leak.",
+        "playerId": "1c0ffee0-0000-4000-8000-00000000beef"
       }
     ]
   }

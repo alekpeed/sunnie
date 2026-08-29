@@ -25,6 +25,7 @@ struct TurnContractTests {
 
         struct ActionKeyCase: Decodable {
             let sessionId: String
+            let playerId: String
             let ordinal: Int
             let expected: String
             let why: String?
@@ -46,6 +47,8 @@ struct TurnContractTests {
 
         struct UnsubmittedSection: Decodable {
             let sessionId: String
+            let playerId: String
+            let opponentPlayerId: String
             let cases: [UnsubmittedCase]
         }
 
@@ -53,6 +56,7 @@ struct TurnContractTests {
             let name: String
             let pendingOrdinals: [Int]
             let recordedOrdinals: [Int]
+            let opponentOrdinals: [Int]
             let expected: [Int]
             let why: String?
         }
@@ -60,6 +64,7 @@ struct TurnContractTests {
         struct ResequenceCase: Decodable {
             let name: String
             let sessionId: String
+            let playerId: String
             let fromOrdinal: Int
             let toOrdinal: Int
             let expectedKey: String
@@ -87,11 +92,13 @@ struct TurnContractTests {
         )
     }
 
-    private static func remote(ordinal: Int, sessionID: UUID) -> RemoteMove {
+    private static func remote(ordinal: Int, sessionID: UUID, playerID: UUID) -> RemoteMove {
         RemoteMove(
             sequence: ordinal,
-            playerID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
-            actionKey: GameMoveWire.actionKey(sessionID: sessionID, ordinal: ordinal),
+            playerID: playerID,
+            actionKey: GameMoveWire.actionKey(
+                sessionID: sessionID, playerID: playerID, ordinal: ordinal
+            ),
             move: move(ordinal: ordinal)
         )
     }
@@ -103,10 +110,15 @@ struct TurnContractTests {
                 UUID(uuidString: testCase.sessionId),
                 "Fixture session id is not a UUID"
             )
+            let playerID = try #require(
+                UUID(uuidString: testCase.playerId),
+                "Fixture player id is not a UUID"
+            )
             #expect(
-                GameMoveWire.actionKey(sessionID: sessionID, ordinal: testCase.ordinal)
-                    == testCase.expected,
-                "actionKey(\(testCase.sessionId), \(testCase.ordinal)). \(testCase.why ?? "")"
+                GameMoveWire.actionKey(
+                    sessionID: sessionID, playerID: playerID, ordinal: testCase.ordinal
+                ) == testCase.expected,
+                "actionKey(\(testCase.sessionId), \(testCase.playerId), \(testCase.ordinal)). \(testCase.why ?? "")"
             )
         }
     }
@@ -120,17 +132,21 @@ struct TurnContractTests {
         // the same turn.
         let lower = try #require(UUID(uuidString: "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71"))
         let upper = try #require(UUID(uuidString: "7F3A1C92-2B48-4D0E-9A61-5C8E0B2D4F71"))
+        let player = try #require(UUID(uuidString: "1c0ffee0-0000-4000-8000-00000000beef"))
         #expect(
-            GameMoveWire.actionKey(sessionID: lower, ordinal: 3)
-                == GameMoveWire.actionKey(sessionID: upper, ordinal: 3)
+            GameMoveWire.actionKey(sessionID: lower, playerID: player, ordinal: 3)
+                == GameMoveWire.actionKey(sessionID: upper, playerID: player, ordinal: 3)
         )
     }
 
     @Test("Next sequence follows the contract")
     func nextSequenceFollowsContract() throws {
         let sessionID = UUID()
+        let playerID = UUID()
         for testCase in try Self.loadFixtures().nextSequence.cases {
-            let moves = testCase.sequences.map { Self.remote(ordinal: $0, sessionID: sessionID) }
+            let moves = testCase.sequences.map {
+                Self.remote(ordinal: $0, sessionID: sessionID, playerID: playerID)
+            }
             #expect(
                 MultiplayerTurn.nextSequence(after: moves) == testCase.expected,
                 "\(testCase.name): got \(MultiplayerTurn.nextSequence(after: moves)), contract says \(testCase.expected)"
@@ -176,14 +192,20 @@ struct TurnContractTests {
     func unsubmittedFollowsContract() throws {
         let section = try Self.loadFixtures().unsubmitted
         let sessionID = try #require(UUID(uuidString: section.sessionId))
+        let playerID = try #require(UUID(uuidString: section.playerId))
+        let opponentID = try #require(UUID(uuidString: section.opponentPlayerId))
 
         for testCase in section.cases {
             let pending = testCase.pendingOrdinals.map { Self.move(ordinal: $0) }
-            let recorded = testCase.recordedOrdinals.map {
-                Self.remote(ordinal: $0, sessionID: sessionID)
+            let mine = testCase.recordedOrdinals.map {
+                Self.remote(ordinal: $0, sessionID: sessionID, playerID: playerID)
+            }
+            let theirs = testCase.opponentOrdinals.map {
+                Self.remote(ordinal: $0, sessionID: sessionID, playerID: opponentID)
             }
             let result = MultiplayerTurn.unsubmitted(
-                pending: pending, recorded: recorded, sessionID: sessionID
+                pending: pending, recorded: mine + theirs,
+                sessionID: sessionID, playerID: playerID
             )
             #expect(
                 result.map(\.ordinal) == testCase.expected,
@@ -196,13 +218,15 @@ struct TurnContractTests {
     func resequencingFollowsContract() throws {
         for testCase in try Self.loadFixtures().resequenced.cases {
             let sessionID = try #require(UUID(uuidString: testCase.sessionId))
+            let playerID = try #require(UUID(uuidString: testCase.playerId))
             let renumbered = MultiplayerTurn.resequenced(
                 Self.move(ordinal: testCase.fromOrdinal), to: testCase.toOrdinal
             )
             #expect(renumbered.ordinal == testCase.toOrdinal, "\(testCase.name): ordinal")
             #expect(
-                GameMoveWire.actionKey(sessionID: sessionID, ordinal: renumbered.ordinal)
-                    == testCase.expectedKey,
+                GameMoveWire.actionKey(
+                    sessionID: sessionID, playerID: playerID, ordinal: renumbered.ordinal
+                ) == testCase.expectedKey,
                 "\(testCase.name): key. \(testCase.why ?? "")"
             )
         }

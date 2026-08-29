@@ -139,21 +139,30 @@ struct GameMoveWireTests {
     func actionKeyIsStableAndDistinct() {
         let session = UUID()
         let other = UUID()
+        let me = UUID()
+        let them = UUID()
 
         // The case this exists for: the same turn sent twice after a dropped
         // connection must produce the same key, or it plays twice.
         #expect(
-            GameMoveWire.actionKey(sessionID: session, ordinal: 3)
-                == GameMoveWire.actionKey(sessionID: session, ordinal: 3)
+            GameMoveWire.actionKey(sessionID: session, playerID: me, ordinal: 3)
+                == GameMoveWire.actionKey(sessionID: session, playerID: me, ordinal: 3)
         )
         #expect(
-            GameMoveWire.actionKey(sessionID: session, ordinal: 3)
-                != GameMoveWire.actionKey(sessionID: session, ordinal: 4)
+            GameMoveWire.actionKey(sessionID: session, playerID: me, ordinal: 3)
+                != GameMoveWire.actionKey(sessionID: session, playerID: me, ordinal: 4)
         )
         // Two sessions may legitimately both have an ordinal 3.
         #expect(
-            GameMoveWire.actionKey(sessionID: session, ordinal: 3)
-                != GameMoveWire.actionKey(sessionID: other, ordinal: 3)
+            GameMoveWire.actionKey(sessionID: session, playerID: me, ordinal: 3)
+                != GameMoveWire.actionKey(sessionID: other, playerID: me, ordinal: 3)
+        )
+        // And so may two players in one session, before the database has
+        // settled which of them actually gets it. This is what keeps the two
+        // uniqueness constraints independent rather than one written twice.
+        #expect(
+            GameMoveWire.actionKey(sessionID: session, playerID: me, ordinal: 3)
+                != GameMoveWire.actionKey(sessionID: session, playerID: them, ordinal: 3)
         )
     }
 

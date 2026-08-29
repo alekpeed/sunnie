@@ -100,12 +100,20 @@ public enum MultiplayerTurn {
     /// trip, and only while the key stays the same. Filtering here means a
     /// reconnect sends what is genuinely missing instead of replaying an outbox
     /// and relying on the server to reject most of it (ADR-011).
+    ///
+    /// The key includes `playerID`, so this matches only this player's own rows.
+    /// Without that it would also match the opponent's move at the same ordinal
+    /// and silently discard a turn that had never been sent.
     public static func unsubmitted(
-        pending: [GameMove], recorded: [RemoteMove], sessionID: UUID
+        pending: [GameMove], recorded: [RemoteMove], sessionID: UUID, playerID: UUID
     ) -> [GameMove] {
         let keys = Set(recorded.map(\.actionKey))
         return pending.filter {
-            !keys.contains(GameMoveWire.actionKey(sessionID: sessionID, ordinal: $0.ordinal))
+            !keys.contains(
+                GameMoveWire.actionKey(
+                    sessionID: sessionID, playerID: playerID, ordinal: $0.ordinal
+                )
+            )
         }
     }
 
@@ -119,9 +127,9 @@ public enum MultiplayerTurn {
     /// The ordinal moves with the sequence, and this is the part easy to get
     /// wrong: the ordinal is what replay sorts by, so a move stored at sequence
     /// 5 while still claiming ordinal 4 would replay ahead of the move that beat
-    /// it. The two are the same number, and since the action key is derived from
-    /// the ordinal, renumbering also gives the retry a new key — correctly,
-    /// because it is now a different move in the sequence.
+    /// it. The two are the same number, and since the action key is derived in
+    /// part from the ordinal, renumbering also gives the retry a new key —
+    /// correctly, because it is now a different move in the sequence.
     public static func resequenced(_ move: GameMove, to ordinal: Int) -> GameMove {
         GameMove(
             ordinal: ordinal,

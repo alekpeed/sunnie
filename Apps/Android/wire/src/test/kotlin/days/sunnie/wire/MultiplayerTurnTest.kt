@@ -43,11 +43,12 @@ class MultiplayerTurnTest {
     fun `the action key follows the contract`() {
         for (case in cases("actionKey")) {
             val sessionId = case["sessionId"]!!.jsonPrimitive.content
+            val playerId = case["playerId"]!!.jsonPrimitive.content
             val ordinal = case["ordinal"]!!.jsonPrimitive.int
             assertEquals(
                 case["expected"]!!.jsonPrimitive.content,
-                GameMoveWire.actionKey(sessionId, ordinal),
-                "actionKey($sessionId, $ordinal)",
+                GameMoveWire.actionKey(sessionId, playerId, ordinal),
+                "actionKey($sessionId, $playerId, $ordinal)",
             )
         }
     }
@@ -58,10 +59,11 @@ class MultiplayerTurnTest {
         // uppercase, Postgres prints it lowercase, and the database's uniqueness
         // constraint compares the strings rather than the identifiers. Without
         // this, both players could play the same turn.
-        val lower = "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71"
+        val session = "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71"
+        val player = "1c0ffee0-0000-4000-8000-00000000beef"
         assertEquals(
-            GameMoveWire.actionKey(lower, 3),
-            GameMoveWire.actionKey(lower.uppercase(), 3),
+            GameMoveWire.actionKey(session, player, 3),
+            GameMoveWire.actionKey(session.uppercase(), player.uppercase(), 3),
         )
     }
 
@@ -74,7 +76,7 @@ class MultiplayerTurnTest {
                 RemoteMove(
                     sequence = sequence,
                     playerId = "p",
-                    actionKey = GameMoveWire.actionKey("s", sequence),
+                    actionKey = GameMoveWire.actionKey("s", "p", sequence),
                     move = move(sequence),
                 )
             }
@@ -113,23 +115,29 @@ class MultiplayerTurnTest {
     fun `unsubmitted follows the contract`() {
         val section = fixtures["unsubmitted"]!!.jsonObject
         val sessionId = section["sessionId"]!!.jsonPrimitive.content
+        val playerId = section["playerId"]!!.jsonPrimitive.content
+        val opponentId = section["opponentPlayerId"]!!.jsonPrimitive.content
 
         for (case in section["cases"]!!.jsonArray.map { it.jsonObject }) {
             val name = case["name"]!!.jsonPrimitive.content
             val pending = case["pendingOrdinals"]!!.jsonArray.map { move(it.jsonPrimitive.int) }
-            val remote = case["recordedOrdinals"]!!.jsonArray.map { element ->
-                val ordinal = element.jsonPrimitive.int
-                RemoteMove(
-                    sequence = ordinal,
-                    playerId = "p",
-                    actionKey = GameMoveWire.actionKey(sessionId, ordinal),
-                    move = move(ordinal),
-                )
-            }
+
+            fun rows(key: String, owner: String) =
+                case[key]!!.jsonArray.map { element ->
+                    val ordinal = element.jsonPrimitive.int
+                    RemoteMove(
+                        sequence = ordinal,
+                        playerId = owner,
+                        actionKey = GameMoveWire.actionKey(sessionId, owner, ordinal),
+                        move = move(ordinal),
+                    )
+                }
+
+            val remote = rows("recordedOrdinals", playerId) + rows("opponentOrdinals", opponentId)
 
             assertEquals(
                 case["expected"]!!.jsonArray.map { it.jsonPrimitive.int },
-                MultiplayerTurn.unsubmitted(pending, remote, sessionId).map { it.ordinal },
+                MultiplayerTurn.unsubmitted(pending, remote, sessionId, playerId).map { it.ordinal },
                 name,
             )
         }
@@ -140,6 +148,7 @@ class MultiplayerTurnTest {
         for (case in cases("resequenced")) {
             val name = case["name"]!!.jsonPrimitive.content
             val sessionId = case["sessionId"]!!.jsonPrimitive.content
+            val playerId = case["playerId"]!!.jsonPrimitive.content
             val from = case["fromOrdinal"]!!.jsonPrimitive.int
             val to = case["toOrdinal"]!!.jsonPrimitive.int
 
@@ -147,7 +156,7 @@ class MultiplayerTurnTest {
             assertEquals(to, renumbered.ordinal, "$name: ordinal")
             assertEquals(
                 case["expectedKey"]!!.jsonPrimitive.content,
-                GameMoveWire.actionKey(sessionId, renumbered.ordinal),
+                GameMoveWire.actionKey(sessionId, playerId, renumbered.ordinal),
                 "$name: key",
             )
         }
@@ -210,5 +219,18 @@ class MultiplayerTurnTest {
         // than reading off the end of anything.
         val seat = MultiplayerTurn.seatToPlay(currentStep = 3, seatCount = 2)
         assertTrue(seat in 0 until 2)
+    }
+
+    @Test
+    fun `two players at the same ordinal get different keys`() {
+        // The bug this rule exists to prevent, stated directly. With the player
+        // out of the key, both clients compute the same string for ordinal 0.
+        // The idempotency constraint then duplicates the sequence constraint,
+        // and each client sees the other's row under what it believes is its own
+        // key — so it treats its turn as recorded and drops it.
+        val session = "7f3a1c92-2b48-4d0e-9a61-5c8e0b2d4f71"
+        val mine = GameMoveWire.actionKey(session, "1c0ffee0-0000-4000-8000-00000000beef", 0)
+        val theirs = GameMoveWire.actionKey(session, "2d0ffee0-0000-4000-8000-00000000cafe", 0)
+        assertTrue(mine != theirs, "the same ordinal in one session gave two players one key")
     }
 }

@@ -115,22 +115,32 @@ class GameMoveWireTest {
     fun `the action key survives a retry and separates real turns`() {
         val session = "3F2504E0-4F89-11D3-9A0C-0305E82C3301"
         val other = "8A1B2C3D-4E5F-6071-8293-A4B5C6D7E8F9"
+        val me = "1C0FFEE0-0000-4000-8000-00000000BEEF"
+        val them = "2D0FFEE0-0000-4000-8000-00000000CAFE"
 
         // The case this exists for: the same turn sent twice after a dropped
         // connection must produce the same key, or it plays twice.
         assertEquals(
-            GameMoveWire.actionKey(session, 3),
-            GameMoveWire.actionKey(session, 3),
+            GameMoveWire.actionKey(session, me, 3),
+            GameMoveWire.actionKey(session, me, 3),
         )
-        assertTrue(GameMoveWire.actionKey(session, 3) != GameMoveWire.actionKey(session, 4))
-        assertTrue(GameMoveWire.actionKey(session, 3) != GameMoveWire.actionKey(other, 3))
+        assertTrue(GameMoveWire.actionKey(session, me, 3) != GameMoveWire.actionKey(session, me, 4))
+        assertTrue(GameMoveWire.actionKey(session, me, 3) != GameMoveWire.actionKey(other, me, 3))
+
+        // The player separates two turns at the same ordinal, and this is the
+        // part that keeps the database's two uniqueness constraints independent.
+        // Without it the key is a pure function of the sequence number, both
+        // players compute the same string, and each sees the other's move under
+        // what it believes is its own key.
+        assertTrue(GameMoveWire.actionKey(session, me, 3) != GameMoveWire.actionKey(session, them, 3))
 
         // Lowercased, because Swift lowercases and the database compares strings.
         // An uppercase UUID from one client and a lowercase one from the other
         // would defeat the uniqueness constraint that makes retries safe.
         assertEquals(
-            "game.move.3f2504e0-4f89-11d3-9a0c-0305e82c3301.3",
-            GameMoveWire.actionKey(session, 3),
+            "game.move.3f2504e0-4f89-11d3-9a0c-0305e82c3301." +
+                "1c0ffee0-0000-4000-8000-00000000beef.3",
+            GameMoveWire.actionKey(session, me, 3),
         )
     }
 

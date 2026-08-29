@@ -73,21 +73,33 @@ data class GameMoveWire(
         /**
          * The key that makes a redelivered move one move (ADR-011, ADR-035).
          *
-         * Derived from the session and ordinal rather than from content or a
-         * timestamp, so a retry after a dropped connection produces a
-         * byte-identical key while two genuinely different turns cannot collide.
-         * Must match `GameMoveWire.actionKey` in Swift exactly, including the
-         * lowercased UUID — the database's uniqueness constraint is what
-         * enforces the idempotency, and it compares strings.
+         * Derived from the session, the player, and the ordinal rather than from
+         * content or a timestamp, so a retry after a dropped connection produces
+         * a byte-identical key. Must match `GameMoveWire.actionKey` in Swift
+         * exactly, including the lowercasing — the database's uniqueness
+         * constraint is what enforces the idempotency, and it compares strings.
+         *
+         * **The player is in the key, and leaving it out is not a cosmetic
+         * omission.** Without it the key is a pure function of the sequence
+         * number, which makes `unique (session_id, action_key)` and
+         * `unique (session_id, sequence)` the same constraint written twice: the
+         * idempotency half stops doing anything, and — worse — both players
+         * compute the same key for the same ordinal. A client would then see the
+         * opponent's move sitting under what it believes is its own key, treat
+         * its turn as already recorded, and drop it. The player watches their
+         * answer disappear with nothing on screen to explain it.
          *
          * The lowercasing is pinned to [java.util.Locale.ROOT] rather than left
          * to the device's. A hex UUID contains no character the Turkish locale
          * treats specially, so this changes no output today — it is here so that
-         * a later session identifier which is not a UUID cannot make the key
-         * depend on where the phone is.
+         * a later identifier which is not a UUID cannot make the key depend on
+         * where the phone is.
          */
-        fun actionKey(sessionId: String, ordinal: Int): String =
-            "game.move.${sessionId.lowercase(java.util.Locale.ROOT)}.$ordinal"
+        fun actionKey(sessionId: String, playerId: String, ordinal: Int): String {
+            val session = sessionId.lowercase(java.util.Locale.ROOT)
+            val player = playerId.lowercase(java.util.Locale.ROOT)
+            return "game.move.$session.$player.$ordinal"
+        }
     }
 }
 

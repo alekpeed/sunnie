@@ -82,15 +82,20 @@ object MultiplayerTurn {
      * only if the key were still the same. Filtering here means a reconnect
      * sends what is genuinely missing instead of replaying an outbox and
      * relying on the server to reject most of it (ADR-011).
+     *
+     * The key includes [playerId], so this matches only this player's own rows.
+     * Without that it would also match the opponent's move at the same ordinal
+     * and silently discard a turn that had never been sent.
      */
     fun unsubmitted(
         pending: List<GameMove>,
         remote: List<RemoteMove>,
         sessionId: String,
+        playerId: String,
     ): List<GameMove> {
         val recorded = remote.map { it.actionKey }.toSet()
         return pending.filter {
-            GameMoveWire.actionKey(sessionId, it.ordinal) !in recorded
+            GameMoveWire.actionKey(sessionId, playerId, it.ordinal) !in recorded
         }
     }
 
@@ -106,8 +111,8 @@ object MultiplayerTurn {
      * get wrong: the ordinal is what replay sorts by, so a move stored under
      * sequence 5 while still claiming ordinal 4 would replay before the move
      * that beat it. The two numbers are the same number, and the action key is
-     * derived from the ordinal, so renumbering also gives the retry a new key —
-     * correctly, because it is now a different move in the sequence.
+     * derived in part from the ordinal, so renumbering also gives the retry a
+     * new key — correctly, because it is now a different move in the sequence.
      */
     fun resequenced(move: GameMove, to: Int): GameMove = move.copy(ordinal = to)
 }
