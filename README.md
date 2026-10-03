@@ -17,20 +17,20 @@ meals, games, collections and Sunnie's Home, the Health/Watch/widget/intent
 integrations, and the audio layer. Phase 11 — accessibility, CloudKit, export,
 and release — is not started.
 
-> **Every target now has compiler evidence from CI.** The iPhone app and widget
-> build in the regular macOS job; the manual Watch job downloads the watchOS SDK
-> on demand and has completed successfully.
+> **Every target builds and every test suite passes in CI** — the iPhone app,
+> the widget, the Watch app (which the iPhone app embeds, so it compiles on every
+> push), and the Android game app. Test counts live in one table, in [`START_HERE.md`](START_HERE.md#the-honest-status).
 
 **Verification status, precisely.**
 
-- **The shared package (`SunnieShared`) compiles and its 460 tests pass**, on
-  Linux with Swift 6.1.2. That is roughly a third of the codebase — all the
-  domain logic, content schemas, and pure algorithms — and it is genuinely
-  verified, not argued for.
-- **The iPhone app and widget extension compile on a macOS runner.** The app runs
-  on an iPhone simulator, with 223 app tests and 7 UI tests passing.
-- **The Watch app compiles for the watchOS Simulator.** Its manual CI job installs
-  the watchOS SDK before building; physical-device behavior remains a release check.
+- **The shared package (`SunnieShared`) compiles and its tests pass** on Linux
+  with Swift 6.1.2. That is roughly a third of the codebase — the domain logic,
+  content schemas, and pure algorithms — genuinely verified, not argued for.
+- **The iPhone app and widget compile and run in the iPhone simulator**, with
+  app tests and UI tests passing.
+- **The Watch app compiles** as part of every iPhone build. Physical-device
+  behavior remains a release check.
+- Counts for all of the above are in [`START_HERE.md`](START_HERE.md#the-honest-status), and only there.
 
 Getting the shared package building found three real defects that no amount of
 static checking had caught: a `ColorValue` that encoded as an object while every
@@ -86,9 +86,8 @@ brief, meals with dietary filtering, seven games across six shapes, collections
 and Sunnie's Home, HealthKit, an Apple Watch companion, widgets, App Intents,
 and an audio layer that synthesises its own ambience and bells.
 
-Eight SwiftData schema versions, all additive. 32 architecture decision records.
-1,111 localized strings. 460 shared-package tests, 223 app tests, and 7 UI tests
-passing in CI.
+Eight SwiftData schema versions, all additive. 35 architecture decision records.
+1,114 localized strings. Test results: [`START_HERE.md`](START_HERE.md#the-honest-status).
 
 ## What is deliberately not built
 

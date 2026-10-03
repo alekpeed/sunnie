@@ -357,4 +357,72 @@ struct WellnessRepositoryTests {
             .appendingPathComponent("escaped.jpg")
         #expect(!FileManager.default.fileExists(atPath: outside.path))
     }
+
+    @Test("Trip and recipe photos are kept while their owner exists, and only then")
+    func tripAndMealOrphansAreRemoved() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SunnieMediaTest-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let trip = SDTrip(title: "Lisbon")
+        let recipe = SDRecipe(title: "Packed lunch")
+        // Present on purpose, and never an owner: an earlier version of the
+        // sweep checked meal photos against plan entries, so a test that only
+        // ever inserted plan entries would have passed against that bug.
+        let planEntry = SDMealPlanEntry(customTitle: "Packed lunch on Tuesday")
+        context.insert(trip)
+        context.insert(recipe)
+        context.insert(planEntry)
+        try context.save()
+
+        // Owners are taken from the same domain properties the app uses to
+        // attach photos, not spelled out here. Hand-built owners are how the
+        // earlier test came to agree with the bug: it attached a meal photo to
+        // a plan entry, which no screen in the app ever does.
+        let memory = TravelMemory(
+            tripID: trip.id, occurredAt: Date(), createdAt: Date(), modifiedAt: Date()
+        )
+        let tripOwner = try #require(memory.mediaOwner)
+        let recipeOwner = Recipe(
+            id: recipe.id, title: recipe.title, createdAt: Date(), modifiedAt: Date()
+        ).mediaOwner
+
+        let repository = SwiftDataMediaRepository(modelContainer: container)
+        let store = MediaFileStore(directory: directory)
+        await repository.useFileStore(store)
+
+        let tripAttachment = MediaAttachment(
+            owner: tripOwner,
+            kind: .photo,
+            localToken: store.makeToken(for: .photo),
+            createdAt: Date()
+        )
+        let recipeAttachment = MediaAttachment(
+            owner: recipeOwner,
+            kind: .photo,
+            localToken: store.makeToken(for: .photo),
+            createdAt: Date()
+        )
+        _ = try await repository.save(tripAttachment, data: Data([0x01]))
+        _ = try await repository.save(recipeAttachment, data: Data([0x02]))
+
+        #expect(
+            try await repository.deleteOrphans() == 0,
+            "A photo whose trip or recipe still exists was treated as an orphan"
+        )
+        #expect(store.exists(token: tripAttachment.localToken))
+        #expect(store.exists(token: recipeAttachment.localToken))
+
+        context.delete(trip)
+        context.delete(recipe)
+        try context.save()
+
+        #expect(try await repository.deleteOrphans() == 2)
+        #expect(!store.exists(token: tripAttachment.localToken))
+        #expect(!store.exists(token: recipeAttachment.localToken))
+        #expect(try await repository.attachment(id: tripAttachment.id) == nil)
+        #expect(try await repository.attachment(id: recipeAttachment.id) == nil)
+    }
 }

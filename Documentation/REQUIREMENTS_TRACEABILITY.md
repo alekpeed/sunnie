@@ -77,7 +77,7 @@ Priority legend: **P0** required foundation or release blocker; **P1** required 
 | ARCH-003 | P0 | Feature modules shall communicate through use cases, repositories, summaries, or typed events. | `05_Technical/TECHNICAL_ARCHITECTURE.md` |
 | ARCH-004 | P0 | Third-party packages require an Architecture Decision Record and approval. | `05_Technical/TECHNICAL_ARCHITECTURE.md` |
 | EXP-001 | P1 | Themes, games, destinations, messages, audio, and rewards shall use versioned content definitions. | `05_Technical/CONTENT_PACK_AND_EXPANSION_ARCHITECTURE.md` |
-| FUTURE-001 | P0 | Voice, advanced animation, 3D, Android, caretaker, LifeOS, backend, and generative AI shall not be implemented in the initial phase. | `02_Character_and_Design/FUTURE_ANIMATION_VOICE_AND_3D.md` |
+| FUTURE-001 | P0 | Voice, advanced animation, 3D, Android, caretaker, LifeOS, backend, and generative AI shall not be implemented in the initial phase. **Amended by ADR-035:** the owner approved an Android game companion and a backend that carries game moves only; every other item here still stands. | `02_Character_and_Design/FUTURE_ANIMATION_VOICE_AND_3D.md` |
 | TEST-001 | P0 | Business rules shall have automated unit tests. | `06_Delivery/TESTING_AND_QUALITY_STRATEGY.md` |
 | TEST-002 | P0 | Critical flows shall have UI tests. | `06_Delivery/TESTING_AND_QUALITY_STRATEGY.md` |
 | TEST-003 | P1 | Watch background transfers shall be validated on paired physical devices before release. | `06_Delivery/TESTING_AND_QUALITY_STRATEGY.md` |

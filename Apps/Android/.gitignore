@@ -1,0 +1,9 @@
+# Gradle and build output. The wrapper itself is committed, deliberately: it is
+# what makes the build reproducible on a machine that has never seen this
+# project, including a CI runner.
+.gradle/
+build/
+*/build/
+local.properties
+.idea/
+.kotlin/

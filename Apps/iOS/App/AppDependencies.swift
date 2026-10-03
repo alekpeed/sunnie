@@ -71,6 +71,7 @@ final class AppDependencies {
     let managePlantHealth: ManagePlantHealth
     let planTravelCoverage: PlanTravelCoverage
     let exportJungle: ExportJungle
+    let exportJournal: ExportJournal
     let manageTrip: ManageTrip
     let managePacking: ManagePacking
     let manageChecklists: ManageChecklists
@@ -247,6 +248,7 @@ final class AppDependencies {
             healthRepository: plantHealth,
             clock: clock
         )
+        self.exportJournal = ExportJournal(repository: journal, clock: clock)
 
         // Built before `manageTrip`, which takes it as the keepsake awarder:
         // saving a travel memory grants that place's stamp synchronously rather

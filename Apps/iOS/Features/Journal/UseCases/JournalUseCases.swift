@@ -126,3 +126,58 @@ struct ManageJournalEntry: Sendable {
         return try await repository.purge(deletedBefore: cutoff)
     }
 }
+
+/// A complete, local journal export. Deleted entries remain included while they
+/// are restorable; an export is a copy of the user's data, not only the rows the
+/// current list happens to display.
+struct JournalExport: Codable, Sendable {
+    static let currentFormatVersion = 1
+
+    let formatVersion: Int
+    let exportedAt: Date
+    let entries: [JournalEntry]
+}
+
+struct ExportJournal: Sendable {
+    private let repository: any JournalRepository
+    private let clock: any SunnieClock
+
+    init(repository: any JournalRepository, clock: any SunnieClock) {
+        self.repository = repository
+        self.clock = clock
+    }
+
+    func build() async throws -> JournalExport {
+        var published: [JournalEntry] = []
+        var offset = 0
+        let pageSize = 100
+        while true {
+            let page = try await repository.entries(limit: pageSize, offset: offset)
+            published.append(contentsOf: page)
+            guard page.count == pageSize else { break }
+            offset += page.count
+        }
+
+        let drafts = try await repository.drafts()
+        let deleted = try await repository.deletedEntries()
+        let entries = (published + drafts + deleted).sorted { $0.createdAt < $1.createdAt }
+        return JournalExport(
+            formatVersion: JournalExport.currentFormatVersion,
+            exportedAt: clock.now,
+            entries: entries
+        )
+    }
+
+    func write(_ export: JournalExport, to directory: URL) throws -> URL {
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        let url = directory.appendingPathComponent("journal.json")
+        try encoder.encode(export).write(to: url, options: .atomic)
+        return url
+    }
+}

@@ -46,7 +46,7 @@ swift build
 Then:
 
 ```bash
-swift test        # 460 tests, all passing
+swift test        # all passing; current count in START_HERE.md
 ```
 
 Only then open the project:

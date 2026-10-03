@@ -586,7 +586,7 @@
 
 /* Export */
 "settings.section.export" = "Your data";
-"settings.export.footer" = "A copy of everything in your jungle, to keep or take elsewhere. Nothing leaves your phone unless you send it somewhere.";
+"settings.export.footer" = "A copy of your jungle and journal, to keep or take elsewhere. Nothing leaves your phone unless you send it somewhere.";
 "settings.export.failed.title" = "That export didn't finish";
 "settings.export.failed.message" = "Nothing was saved and nothing has changed. You can try again whenever you like.";
 "common.ok" = "OK";

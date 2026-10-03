@@ -222,8 +222,9 @@ actor SwiftDataMediaRepository: MediaRepository {
 
     /// Removes files with no record, and records whose owner is gone.
     ///
-    /// Owner kinds whose feature does not exist yet are left alone — a trip
-    /// attachment must not be swept up merely because trips are not built.
+    /// Unknown owner kinds are left alone so a newer app's attachment is not
+    /// destroyed if an older build opens the store. Every owner kind this build
+    /// understands is checked against its persisted record.
     @discardableResult
     func deleteOrphans() async throws -> Int {
         var removed = 0
@@ -242,8 +243,17 @@ actor SwiftDataMediaRepository: MediaRepository {
                 ownerExists = try recordExists(SDWellnessCheckIn.self, id: attachment.ownerID)
             case .plant:
                 ownerExists = try recordExists(SDPlant.self, id: attachment.ownerID)
-            case .trip, .meal, .none:
-                // Not implemented yet; leaving these alone is the safe default.
+            case .trip:
+                ownerExists = try recordExists(SDTrip.self, id: attachment.ownerID)
+            case .meal:
+                // Meal photos belong to the *recipe* — `Recipe.mediaOwner` is
+                // `.meal(recipe.id)` — not to a meal-plan entry. Checking plan
+                // entries instead finds no owner for any recipe photo, and this
+                // runs at every launch, so it would delete them all.
+                ownerExists = try recordExists(SDRecipe.self, id: attachment.ownerID)
+            case .none:
+                // Forward-compatible: an owner kind added by a newer build is
+                // not evidence that its record has been deleted.
                 ownerExists = true
             }
 
@@ -313,6 +323,14 @@ extension SDWellnessCheckIn: HasIdentifier {
 }
 
 extension SDPlant: HasIdentifier {
+    var identifier: UUID { id }
+}
+
+extension SDTrip: HasIdentifier {
+    var identifier: UUID { id }
+}
+
+extension SDRecipe: HasIdentifier {
     var identifier: UUID { id }
 }
 

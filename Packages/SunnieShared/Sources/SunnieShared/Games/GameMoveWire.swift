@@ -209,12 +209,29 @@ public extension GameMoveWire {
 
     /// The key that makes a redelivered move one move (ADR-011, ADR-035).
     ///
-    /// Derived from the session and the ordinal rather than from content or a
-    /// timestamp: a retry after a dropped connection produces a byte-identical
-    /// key, while a genuinely different turn cannot collide because two moves
-    /// never share an ordinal in one session. A UUID generated at send time
-    /// would have failed exactly the case this exists for — the retry.
-    static func actionKey(sessionID: UUID, ordinal: Int) -> String {
-        "game.move.\(sessionID.uuidString.lowercased()).\(ordinal)"
+    /// Derived from the session, the player, and the ordinal rather than from
+    /// content or a timestamp: a retry after a dropped connection produces a
+    /// byte-identical key. A UUID generated at send time would have failed
+    /// exactly the case this exists for — the retry.
+    ///
+    /// **The player is in the key, and leaving it out is not a cosmetic
+    /// omission.** Two clients both plan the next ordinal before either has
+    /// written a row, so an ordinal is not unique in a session until the
+    /// database has settled it. Without the player, the key is a pure function
+    /// of the sequence number: `unique (session_id, action_key)` and
+    /// `unique (session_id, sequence)` become the same constraint written twice,
+    /// the idempotency half stops doing anything, and both players compute the
+    /// same string for the same ordinal. A client then finds the opponent's move
+    /// under what it believes is its own key, concludes its turn is already
+    /// recorded, and drops it — the player watches their answer vanish with
+    /// nothing on screen to explain it.
+    ///
+    /// Must match `GameMoveWire.actionKey` in Kotlin exactly, lowercasing
+    /// included: the constraint compares strings, not identifiers, and Swift
+    /// prints a UUID uppercase where Postgres prints it lowercase.
+    static func actionKey(sessionID: UUID, playerID: UUID, ordinal: Int) -> String {
+        let session = sessionID.uuidString.lowercased()
+        let player = playerID.uuidString.lowercased()
+        return "game.move.\(session).\(player).\(ordinal)"
     }
 }

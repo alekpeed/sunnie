@@ -1516,7 +1516,12 @@ rejected on product grounds rather than deferred.
 
 **Status:** Accepted
 **Date:** Post-first-green-build
-**Amends:** ADR-007 (no custom backend initially)
+**Amends:** ADR-007 (no custom backend initially); requirement FUTURE-001, the
+Android and backend non-goals in `RELEASE_SCOPE_AND_NON_GOALS.md` and
+`GAMES_AND_FUTURE_MULTIPLAYER.md` §9, and the matching line in
+`START_HERE_PROMPT.md`. Each of those now points back here. Until they did, the
+project's own requirements said the Android app should not exist, which is the
+sort of contradiction a later session resolves by deleting the wrong thing.
 
 ### Context
 
@@ -1608,3 +1613,57 @@ painful rather than merely inelegant.
   unreachable.
 - `NoMultiplayer` stays. It is what the app composes when the feature is off,
   which must remain a supported configuration rather than a legacy path.
+
+### Amendment: the turn is derived, and `turn_player_id` is never read
+
+The schema carries `sunnie_session.turn_player_id`. Nothing in either client
+reads it, and nothing should start without first deciding what happens when it
+contradicts the moves.
+
+A turn column is mutable state both clients write. It can go stale, it can be
+written twice, and when it disagrees with the move list nothing can say which is
+right. The failure that produces is not a wrong board — it is both players
+looking at "waiting for the other player" indefinitely, which is
+indistinguishable from a bad connection and which neither of them can clear.
+
+Instead, seats own steps by parity, so the turn is a function of the replayed
+board. Moves are append-only and uniquely sequenced by the database, so two
+clients replaying the same moves cannot reach different answers about who plays
+next: the deadlock is unrepresentable rather than merely unlikely.
+
+The consequence to accept is that a step advancing by two — which happens when
+resuming a route where a later stop was already settled — gives one seat two
+turns in a row. Taking turns strictly would require turn state kept apart from
+the board, which is the drift this removes.
+
+The column stays as a hook for a future server-side notification, which is a
+thing a column is good for. If it ever becomes authoritative, that is a change
+to this decision and needs recording here.
+
+Pinned by `Backend/contract/turn-fixtures.json`, which both test suites read,
+on the same reasoning as the replay and answer contracts.
+
+### Amendment: the Android client's dependencies
+
+The project's rule is that no third-party package is added without an ADR and
+approval. The Android client added six without one, which this records after the
+fact rather than leaving the rule quietly broken.
+
+| Dependency | Why | Whose |
+|---|---|---|
+| `androidx.compose` (BOM, `ui`, `material3`, `ui-tooling-preview`) | The UI toolkit | Google, first-party |
+| `androidx.activity:activity-compose` | Hosts Compose in an activity | Google, first-party |
+| `androidx.lifecycle:lifecycle-runtime-ktx` | Lifecycle-aware coroutine scopes | Google, first-party |
+| `org.jetbrains.kotlinx:kotlinx-serialization-json` | The move wire format | JetBrains, first-party to Kotlin |
+
+These are the Android counterparts of SwiftUI and `Codable`: the platform's own
+toolkit and the language's own serialization library, not packages in the sense
+the rule was written against. Writing an Android UI without Compose or AndroidX
+would mean the deprecated View system; parsing JSON without kotlinx would mean
+hand-written parsing of exactly the format the contract tests exist to pin.
+
+What stays prohibited is the same as on Apple: networking, analytics,
+crash-reporting, or advertising SDKs, and anything that could carry data outside
+ADR-035's boundary. The `wire` module depends on kotlinx-serialization alone, by
+design — it is the part both clients must agree on, and a smaller surface is
+easier to keep honest. Any addition beyond this table needs its own entry here.

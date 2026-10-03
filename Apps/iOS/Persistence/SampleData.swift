@@ -8,8 +8,9 @@ import SunnieShared
 /// overwrites real data, and every plant it creates is an ordinary record the
 /// user can rename, reschedule, or archive.
 ///
-/// The seed is intentionally small. Performance work against a realistic 50–100
-/// plant collection is a Phase 4 task with its own fixtures.
+/// The seed is intentionally small. Release-scale coverage uses the deterministic
+/// 100-plant/500-event fixture in `LargeCollectionTests`, so ordinary first
+/// launch does not fill the user's Jungle with synthetic performance data.
 enum SampleData {
 
     @MainActor

@@ -77,6 +77,93 @@ jobs:
       # taking the whole app with it. No build catches this; this does.
       - name: Validate Info.plists
         run: python3 Tools/validate_info_plists.py
+      # A fixture read by one client looks exactly like a working contract —
+      # green tests, a file full of intended behaviour — while constraining
+      # nothing on the side that never opens it.
+      - name: Validate contract coverage
+        run: python3 Tools/validate_contract_coverage.py
+      # A product name alone is not enough for a hand-authored Xcode package
+      # dependency: it must point to the local package and be linked by each
+      # independently compiled consumer, including extensions.
+      - name: Validate Xcode target dependencies
+        run: python3 Tools/validate_xcode_dependencies.py
+
+  # The Kotlin half of the cross-language contracts (ADR-035).
+  #
+  # On Linux, and cheap, because the module it tests is deliberately plain
+  # Kotlin with no Android dependency. That split is what lets this run on an
+  # ordinary runner in seconds instead of needing the Android SDK — the same
+  # reasoning as ADR-032, which pulled the shared Swift package off Apple so it
+  # could be compiled without a Mac.
+  #
+  # It reads the fixture files under `Backend/contract` — the wire format for a
+  # move, answer matching, replay, and turn order — which are the same bytes the
+  # Swift suites read. Editing a fixture without updating both clients fails
+  # here and in `Shared package`, which is the point: a divergence between the
+  # iPhone and the Android phone becomes a red test rather than something that
+  # only shows up mid-game, as a turn that silently does nothing or as two
+  # players each waiting for the other.
+  android-wire:
+    name: Shared contracts (Kotlin)
+    runs-on: ubuntu-24.04
+    steps:
+      # Pinned by digest like every other checkout in this file. Introducing a
+      # tag-referenced action here would quietly weaken a supply-chain posture
+      # the rest of the workflow keeps.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # No `setup-java` step: ubuntu-24.04 ships Temurin 21 as its default JDK,
+      # which is what `jvmToolchain(21)` asks for. Adding the action would mean
+      # either an unpinned dependency or a second digest to keep current, for a
+      # JDK the runner already has. If the image ever drops it, this job fails
+      # loudly on a missing toolchain rather than doing something subtle.
+      # Runs every contract suite in the module, not just the move wire
+      # format: answer matching, replay, and turn order are all pinned by
+      # fixtures under Backend/contract that the Swift jobs read too.
+      - name: Test the shared contracts
+        working-directory: Apps/Android
+        run: ./gradlew --no-daemon --console=plain :wire:test
+
+  # The Android APK.
+  #
+  # Separate from the contract job on purpose. That one runs on a plain JDK in
+  # seconds and is the check worth having on every push; this one needs the
+  # Android SDK and is slower, and a red X on it should mean "the app does not
+  # build", not "the rules changed".
+  #
+  # The artifact is the point as much as the build is: the owner has no Mac and
+  # no Android Studio, so a debug APK attached to the run is how the Android
+  # client actually reaches a phone. Sideloading it needs no store listing and no
+  # signing identity beyond the debug key AGP generates.
+  android-app:
+    name: Build the Android app
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # ANDROID_HOME is set on this image, which is what makes settings.gradle.kts
+      # include `:app` at all. If a future image drops the SDK the module is
+      # silently excluded rather than failing, so the presence of the APK is
+      # checked below instead of being assumed.
+      - name: Build the debug APK
+        working-directory: Apps/Android
+        run: ./gradlew --no-daemon --console=plain :app:assembleDebug
+
+      - name: Check an APK was actually produced
+        working-directory: Apps/Android
+        run: |
+          set -euo pipefail
+          apk=$(find app/build/outputs/apk/debug -name '*.apk' -print -quit)
+          if [ -z "$apk" ]; then
+            echo "No APK was produced. If :app was excluded for want of an SDK," \
+                 "the build above would have succeeded while building nothing."
+            exit 1
+          fi
+          echo "Built $apk ($(du -h "$apk" | cut -f1))"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sunnie-days-android-debug
+          path: Apps/Android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
 
   # Syntax-only, on Linux. The app targets cannot be type-checked without an
   # Apple SDK, but they can be parsed — which catches malformed Swift that
@@ -125,6 +212,15 @@ jobs:
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
           echo "Using simulator $UDID"
 
+      # Resolve the local graph before the parallel app/extension build starts.
+      # This gives package-wiring failures their own short diagnostic instead of
+      # burying them in Swift's dependency scan for the widget sources.
+      - name: Resolve local Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project SunnieDays.xcodeproj \
+            -scheme SunnieDays
+
       # The raw log is teed to a file before xcbeautify sees it. xcbeautify is
       # for reading in the browser; the raw log is the one that contains every
       # diagnostic in full, and on a target that has never compiled that
@@ -167,14 +263,23 @@ jobs:
           # runs under `bash -e`, where a grep that matches nothing is a failure
           # that kills the step — so the diagnostics would vanish in exactly the
           # case they are written for: the run with no compile errors in it.
+          # `error: -[` excluded: that is XCTest reporting a *runtime* failure in
+          # a test case, which it formats with the same "error:" prefix a
+          # compiler uses. Counted as a compile error it produced "3 compile
+          # error(s)" for a build that compiled perfectly — and a compile error
+          # and a failing test call for completely different responses.
           compile=$(grep -E "error: " xcodebuild-iphone.log 2>/dev/null \
             | grep -vE "$noise" \
+            | grep -vE "error: -\[" \
             | sed 's|/Users/runner/work/sunnie/sunnie/||' | sort -u || true)
           compile_count=$(printf '%s' "$compile" | grep -c . || true)
 
           # XCTest says "error:"; Swift Testing says "recorded an issue". Both
           # are test failures and both belong here.
-          failures=$(grep -E "recorded an issue|✘ Test|Testing failed|Test Case .* failed" \
+          # `error: -[` belongs here rather than with the compile errors: it is
+          # XCTest reporting a runtime failure, and it is the line carrying the
+          # *reason* — "Test Case ... failed" alone says only that something did.
+          failures=$(grep -E "recorded an issue|✘ Test|Testing failed|Test Case .* failed|error: -\[" \
             xcodebuild-iphone.log 2>/dev/null \
             | sed 's|/Users/runner/work/sunnie/sunnie/||' | sort -u || true)
           failure_count=$(printf '%s' "$failures" | grep -c . || true)
@@ -221,11 +326,21 @@ jobs:
             TestResults.xcresult
           if-no-files-found: ignore
 
-  # Separate, and manual. The macos-15 image ships no watchOS SDK, so this has
-  # to download several gigabytes before it can build anything — expensive on a
-  # private repository, where macOS minutes bill at ten times the rate. The
-  # iPhone app does not depend on it, so it runs when asked for rather than on
-  # every push.
+  # Separate, and manual — and largely a second opinion, since the iPhone job
+  # already compiles the Watch app on every push.
+  #
+  # This comment used to say the opposite on both counts: that the macos-15
+  # image ships no watchOS SDK, and that the iPhone app does not depend on the
+  # Watch app. Neither is true. The image has had watchOS 26.2 and its simulator
+  # SDK installed (verified in run 37158041394), and `SunnieDays` declares
+  # `SunnieDaysWatch` as a target dependency and embeds it, so every green iPhone
+  # build includes a Watch compile — its log shows `Validate Embedded Binary
+  # SunnieDaysWatch.app`. Believing this comment is how the project came to think
+  # the Watch app had never been built when it had been building since August.
+  #
+  # What this job adds is the Watch scheme on its own, which is the shape a
+  # Watch-only change needs. It stays manual because macOS minutes bill at ten
+  # times the Linux rate and the iPhone job already covers the common case.
   build-watch:
     name: Build the Watch app
     if: github.event_name == 'workflow_dispatch'
@@ -236,11 +351,42 @@ jobs:
       - name: Select Xcode
         run: ./Tools/select_xcode.sh
 
+      # The first attempt at this died in under a minute with "Unable to
+      # connect to simulator" — CoreSimulatorService had not started yet, so
+      # `-downloadPlatform` failed before downloading anything, and the `sudo`
+      # fallback retried instantly into the same race. That says nothing about
+      # the Watch code; the build step never ran.
+      #
+      # So: wake the service first, skip the download if this Xcode already has
+      # the platform, and retry with a restart and a pause between attempts.
+      # The check is `-showsdks`, not `simctl list runtimes`, because a runtime
+      # left by another Xcode does not give *this* Xcode a watchOS SDK to build
+      # against.
       - name: Install the watchOS platform
         run: |
-          set -o pipefail
-          xcodebuild -downloadPlatform watchOS \
-            || sudo xcodebuild -downloadPlatform watchOS
+          set -euo pipefail
+          has_sdk() { xcodebuild -showsdks 2>/dev/null | grep -q watchsimulator; }
+
+          xcrun simctl list runtimes >/dev/null 2>&1 || true
+          if has_sdk; then
+            echo "watchOS platform already installed for this Xcode."
+            xcodebuild -showsdks | grep -i watch
+            exit 0
+          fi
+
+          for attempt in 1 2 3; do
+            if xcodebuild -downloadPlatform watchOS && has_sdk; then
+              xcodebuild -showsdks | grep -i watch
+              exit 0
+            fi
+            echo "Attempt $attempt failed; restarting CoreSimulator before retrying."
+            sudo killall -9 com.apple.CoreSimulator.CoreSimulatorService 2>/dev/null || true
+            sleep $((attempt * 20))
+            xcrun simctl list runtimes >/dev/null 2>&1 || true
+          done
+
+          echo "Could not install the watchOS platform after three attempts."
+          exit 1
 
       - name: Build the Watch app
         run: |

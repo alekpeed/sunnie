@@ -132,6 +132,12 @@ Future modes may include:
 
 Do not implement network multiplayer or Android now.
 
+> **Amended by ADR-035.** The owner chose to build turn-based play with a
+> native Android companion ahead of the original plan. The game rules are
+> shared through fixtures in `Backend/contract`, and the backend carries game
+> moves only — never journal, wellness, health, plant, meal, trip, photo,
+> audio, or preference data. Read ADR-035 before extending either.
+
 ## 10. Accessibility
 
 - VoiceOver-readable board state

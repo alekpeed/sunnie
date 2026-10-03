@@ -4,14 +4,17 @@
 
 **Every target is compiled in CI; the regularly triggered checks are green.**
 
-- `Packages/SunnieShared` **builds and passes 460 tests** on Linux with Swift
+- `Packages/SunnieShared` **builds and passes its tests** on Linux with Swift
   6.1.2 (ADR-032). Run it anywhere: `cd Packages/SunnieShared && swift test`.
 - The iPhone app and the widget extension **compile**, and the app **runs on a
-  simulator**. 223 tests across 13 suites pass, and 7 UI tests drive the real
-  app: five tabs, the plant card, and Today → plant → log care end to end.
-- The **Watch app compiles for the watchOS Simulator.** Its job is manual-only,
-  because the runner ships no watchOS SDK and fetching one costs several
-  gigabytes per run. The first successful build completed on 2026-08-11.
+  simulator**, where the app tests pass and the UI tests drive the real app
+  through every main screen.
+- Counts for both are in [`START_HERE.md`](../START_HERE.md#the-honest-status),
+  the one place they are recorded.
+- The **Watch app compiles** — inside every iPhone build, because the iPhone app
+  depends on and embeds it, and the runner image already has the watchOS SDK.
+  That has been true since at least 2026-08-11. A standalone Watch job also
+  exists, manual-only, and first passed on 2026-10-03.
 - No screen has been rendered on a **device**. Haptics, camera, audio
   interruption, and Health are all still unobserved.
 
@@ -43,6 +46,21 @@ None of the four was findable without executing the code. Two of them would have
 looked like features quietly doing nothing, with no error to explain why. That is
 the standing argument for running things over reasoning about them, and for
 `CLAUDE.md`'s rule against calling anything complete on an untested happy path.
+
+The hand-authored Xcode project now records the owning local package on every
+`SunnieShared` product dependency. This is significant for `SunnieWidgets`:
+the extension is an independent compiler/linker target and cannot inherit the
+app target's package linkage. `Tools/validate_xcode_dependencies.py` checks the
+package reference, per-target product dependency, Frameworks linkage, widget
+source membership, and app-to-extension target dependency before CI spends a
+macOS build.
+
+Apple CI resolves the package graph explicitly and then builds `SunnieWidgets`
+as a standalone target before the hosted app test. This separates three failure
+classes that an app-only build used to blend together: package resolution,
+extension compilation/linkage, and extension embedding. The universal workflow
+also ignores the `project.xcworkspace` stored inside the `.xcodeproj`; that file
+is an Xcode implementation detail, not this repository's build container.
 
 What *has* been verified, because it needs no Swift toolchain:
 

@@ -2,7 +2,8 @@
 
 Sunnie Days is a private, single-user iPhone and Apple Watch app: plant care,
 wellness, travel, meals, games, and a collection, all fronted by a cartoon sloth.
-Swift and SwiftUI, no third-party dependencies, offline-first.
+Swift and SwiftUI, no third-party Swift packages, offline-first. A small Android
+game app (ADR-035) has its own, recorded in that ADR.
 
 This document is for a reviewer who has not seen the repository before. It says
 what the code is, what state it is genuinely in, what has and has not been
@@ -16,15 +17,15 @@ verified, and where the review time is best spent.
 
 **Verification status, precisely.**
 
-- **The shared package (`SunnieShared`) compiles and its 460 tests pass**, on
-  Linux with Swift 6.1.2. That is roughly a third of the codebase — all the
-  domain logic, content schemas, and pure algorithms — and it is genuinely
-  verified, not argued for.
-- **The iPhone app and widget compile on macOS CI.** The app runs on an iPhone
-  simulator, with 223 app tests and 7 UI tests passing.
-- **The Watch app compiles for the watchOS Simulator.** Its manual CI job
-  downloads the watchOS SDK on demand; paired-device behavior cannot be proven
-  in CI.
+- **The shared package (`SunnieShared`) compiles and its tests pass** on Linux
+  with Swift 6.1.2. That is roughly a third of the codebase — the domain logic,
+  content schemas, and pure algorithms — genuinely verified, not argued for.
+- **The iPhone app and widget compile and run in the iPhone simulator**, with app
+  and UI tests passing.
+- **The Watch app compiles** inside every iPhone build, which embeds it; a
+  standalone Watch build also passes. Paired-device behavior cannot be proven in
+  CI.
+- Counts are in [`START_HERE.md`](START_HERE.md#the-honest-status) and nowhere else.
 
 Getting the shared package building found three real defects that no amount of
 static checking had caught: a `ColorValue` that encoded as an object while every
@@ -35,10 +36,9 @@ began, and a nickname helper that was uncallable by its only callers.
 That is not a caveat buried in a footnote — it is the single most important fact
 about the codebase, and it should shape how the review is scoped. Concretely:
 
-- Expect compiler work in the Watch target; the iPhone and widget targets are
-  already compiler-verified.
-- Test counts are executed results: 460 shared-package tests, 223 app tests, and
-  7 UI tests pass in CI.
+- Every target is compiler-verified, the Watch app included; expect review
+  findings about behaviour, not about whether things build.
+- Test counts in [`START_HERE.md`](START_HERE.md#the-honest-status) are executed results from a named CI run.
 - Anything that depends on runtime behaviour — SwiftData migration actually
   running, SwiftUI actually laying out, WatchConnectivity actually delivering — is
   unproven.

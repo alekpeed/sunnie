@@ -86,6 +86,15 @@ create table if not exists public.sunnie_session_player (
 --   * (session_id, action_key) is idempotency, in the same discipline as care
 --     events and Watch actions (ADR-011). A phone that loses signal mid-submit
 --     and retries must play one turn, not two.
+--
+--     The key is `game.move.<session>.<player>.<ordinal>`, and the player in it
+--     is what keeps this constraint independent of the one below. Two clients
+--     both plan the next ordinal before either has written a row, so an ordinal
+--     is not unique in a session until this table has settled it. Without the
+--     player the key would be a pure function of `sequence`, these two
+--     constraints would be one constraint written twice, and both players would
+--     compute the same key for the same ordinal — each then finding the other's
+--     move under what it believes is its own key and dropping its turn.
 --   * (session_id, sequence) is ordering, and it is what makes a simultaneous
 --     submission by both players resolve to a definite result rather than a
 --     racy one: the second writer's insert fails and it re-reads.

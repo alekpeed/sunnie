@@ -1,0 +1,164 @@
+{
+  "purpose": "Answer-chain replay, shared by the Swift and Kotlin clients (ADR-035). Replay is what lets two clients agree without either being authoritative: the server stores moves, both sides replay them, and the same moves in the same order must produce the same board. A difference here is not cosmetic — it is two players looking at different games.",
+
+  "moveFormat": "Compact rather than full wire JSON, because this file is read by people deciding whether a rule is right. The wire encoding has its own fixtures in move-fixtures.json; here a move is {ordinal, step, kind, and whatever that kind carries}.",
+
+  "puzzle": {
+    "stops": [
+      { "answer": "Lisbon", "alternates": ["Lisboa"] },
+      { "answer": "Porto", "alternates": [] },
+      { "answer": "Faro", "alternates": [] }
+    ]
+  },
+
+  "cases": [
+    {
+      "name": "solving the first stop advances to the second",
+      "moves": [{ "ordinal": 0, "step": 0, "kind": "answer", "text": "lisbon" }],
+      "expected": {
+        "currentStop": 1,
+        "stops": [
+          { "lastAnswer": "lisbon", "isSolved": true, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false }
+        ]
+      }
+    },
+    {
+      "name": "an accepted alternate counts",
+      "moves": [{ "ordinal": 0, "step": 0, "kind": "answer", "text": "Lisboa" }],
+      "expected": {
+        "currentStop": 1,
+        "stops": [
+          { "lastAnswer": "Lisboa", "isSolved": true, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false }
+        ]
+      }
+    },
+    {
+      "name": "a wrong answer records an attempt and does not advance",
+      "moves": [{ "ordinal": 0, "step": 0, "kind": "answer", "text": "madrid" }],
+      "expected": {
+        "currentStop": 0,
+        "stops": [
+          { "lastAnswer": "madrid", "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 1, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false }
+        ]
+      }
+    },
+    {
+      "name": "a near miss is flagged but still counts as wrong",
+      "why": "The nudge is the whole point of the flag: one edit away deserves 'very close', never a mark.",
+      "moves": [{ "ordinal": 0, "step": 0, "kind": "answer", "text": "lisbo" }],
+      "expected": {
+        "currentStop": 0,
+        "stops": [
+          { "lastAnswer": "lisbo", "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 1, "lastAnswerWasNearMiss": true },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false }
+        ]
+      }
+    },
+    {
+      "name": "a hint is counted and costs no progress",
+      "moves": [{ "ordinal": 0, "step": 0, "kind": "hint" }],
+      "expected": {
+        "currentStop": 0,
+        "stops": [
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 1, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false }
+        ]
+      }
+    },
+    {
+      "name": "skipping advances past the stop without solving it",
+      "moves": [{ "ordinal": 0, "step": 0, "kind": "skip" }],
+      "expected": {
+        "currentStop": 1,
+        "stops": [
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": true, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false }
+        ]
+      }
+    },
+    {
+      "name": "moves replay in ordinal order, not the order they arrive",
+      "why": "Turns arrive out of order over a network. The ordinal is the sequence; taking them as given would make the board depend on latency.",
+      "moves": [
+        { "ordinal": 1, "step": 0, "kind": "answer", "text": "lisbon" },
+        { "ordinal": 0, "step": 0, "kind": "answer", "text": "madrid" }
+      ],
+      "expected": {
+        "currentStop": 1,
+        "stops": [
+          { "lastAnswer": "lisbon", "isSolved": true, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 1, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false }
+        ]
+      }
+    },
+    {
+      "name": "solving a later stop first still lands on the first open one",
+      "why": "Resuming a route must not send the player back through stops already settled, nor past ones still open.",
+      "moves": [
+        { "ordinal": 0, "step": 1, "kind": "answer", "text": "porto" },
+        { "ordinal": 1, "step": 0, "kind": "answer", "text": "lisbon" }
+      ],
+      "expected": {
+        "currentStop": 2,
+        "stops": [
+          { "lastAnswer": "lisbon", "isSolved": true, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": "porto", "isSolved": true, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false }
+        ]
+      }
+    },
+    {
+      "name": "a move for a stop that does not exist is ignored",
+      "why": "It comes from a save that does not match this puzzle. The rest of the route still replays rather than the whole board failing.",
+      "moves": [{ "ordinal": 0, "step": 9, "kind": "answer", "text": "lisbon" }],
+      "expected": {
+        "currentStop": 0,
+        "stops": [
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false }
+        ]
+      }
+    },
+    {
+      "name": "an action belonging to another game shape is ignored",
+      "why": "Same reasoning: a mismatched save is not corruption, and the route still replays.",
+      "moves": [{ "ordinal": 0, "step": 0, "kind": "choose", "index": 2 }],
+      "expected": {
+        "currentStop": 0,
+        "stops": [
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": false, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false }
+        ]
+      }
+    },
+    {
+      "name": "skipping every stop finishes the route",
+      "why": "currentStop equals the number of stops, which is what isComplete reads.",
+      "moves": [
+        { "ordinal": 0, "step": 0, "kind": "skip" },
+        { "ordinal": 1, "step": 1, "kind": "skip" },
+        { "ordinal": 2, "step": 2, "kind": "skip" }
+      ],
+      "expected": {
+        "currentStop": 3,
+        "stops": [
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": true, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": true, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false },
+          { "lastAnswer": null, "isSolved": false, "wasSkipped": true, "hintsRevealed": 0, "wrongAttempts": 0, "lastAnswerWasNearMiss": false }
+        ]
+      }
+    }
+  ]
+}
