@@ -53,6 +53,10 @@ These are not implementation targets for the first repository build:
 
 A lightweight future app for shared turn-based games and possibly shared postcards. Do not build or scaffold an Android project now.
 
+> **Amended by ADR-035.** The owner approved this ahead of schedule, and it now
+> exists in `Apps/Android`. Its scope is still what is written above — shared
+> turn-based games — and shared postcards remain out of scope until decided.
+
 ### Plant caretaker app
 
 A future minimal app for Vanessa’s mother to scan QR tags, view assigned instructions, and log care. Define stable QR and shared-record concepts now; do not implement the app or shared backend.

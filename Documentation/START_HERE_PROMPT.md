@@ -24,7 +24,7 @@ Then inspect the current repository and report:
 - the exact Phase 0 work required,
 - any truly blocking decisions.
 
-Do not build the full app at once. Do not create a web app or cross-platform wrapper. Do not add third-party packages. Do not begin future voice, 3D, Android, caretaker, LifeOS, backend, or generative-AI work.
+Do not build the full app at once. Do not create a web app or cross-platform wrapper. Do not add third-party packages. Do not begin future voice, 3D, caretaker, LifeOS, or generative-AI work. The Android game companion and its moves-only backend already exist by the owner's decision (ADR-035): maintain them, do not remove them, and do not widen what the backend stores.
 
 After the audit, implement Phase 0 only unless I explicitly authorize the next phase. Keep the project compiling, add tests with each functional change, and update ARCHITECTURE_DECISIONS.md if a locked technical decision changes.
 ```

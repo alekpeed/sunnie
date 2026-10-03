@@ -1516,7 +1516,12 @@ rejected on product grounds rather than deferred.
 
 **Status:** Accepted
 **Date:** Post-first-green-build
-**Amends:** ADR-007 (no custom backend initially)
+**Amends:** ADR-007 (no custom backend initially); requirement FUTURE-001, the
+Android and backend non-goals in `RELEASE_SCOPE_AND_NON_GOALS.md` and
+`GAMES_AND_FUTURE_MULTIPLAYER.md` §9, and the matching line in
+`START_HERE_PROMPT.md`. Each of those now points back here. Until they did, the
+project's own requirements said the Android app should not exist, which is the
+sort of contradiction a later session resolves by deleting the wrong thing.
 
 ### Context
 
