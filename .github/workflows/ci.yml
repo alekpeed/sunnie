@@ -326,11 +326,21 @@ jobs:
             TestResults.xcresult
           if-no-files-found: ignore
 
-  # Separate, and manual. The macos-15 image ships no watchOS SDK, so this has
-  # to download several gigabytes before it can build anything — expensive on a
-  # private repository, where macOS minutes bill at ten times the rate. The
-  # iPhone app does not depend on it, so it runs when asked for rather than on
-  # every push.
+  # Separate, and manual — and largely a second opinion, since the iPhone job
+  # already compiles the Watch app on every push.
+  #
+  # This comment used to say the opposite on both counts: that the macos-15
+  # image ships no watchOS SDK, and that the iPhone app does not depend on the
+  # Watch app. Neither is true. The image has had watchOS 26.2 and its simulator
+  # SDK installed (verified in run 37158041394), and `SunnieDays` declares
+  # `SunnieDaysWatch` as a target dependency and embeds it, so every green iPhone
+  # build includes a Watch compile — its log shows `Validate Embedded Binary
+  # SunnieDaysWatch.app`. Believing this comment is how the project came to think
+  # the Watch app had never been built when it had been building since August.
+  #
+  # What this job adds is the Watch scheme on its own, which is the shape a
+  # Watch-only change needs. It stays manual because macOS minutes bill at ten
+  # times the Linux rate and the iPhone job already covers the common case.
   build-watch:
     name: Build the Watch app
     if: github.event_name == 'workflow_dispatch'
