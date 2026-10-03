@@ -1642,3 +1642,28 @@ to this decision and needs recording here.
 
 Pinned by `Backend/contract/turn-fixtures.json`, which both test suites read,
 on the same reasoning as the replay and answer contracts.
+
+### Amendment: the Android client's dependencies
+
+The project's rule is that no third-party package is added without an ADR and
+approval. The Android client added six without one, which this records after the
+fact rather than leaving the rule quietly broken.
+
+| Dependency | Why | Whose |
+|---|---|---|
+| `androidx.compose` (BOM, `ui`, `material3`, `ui-tooling-preview`) | The UI toolkit | Google, first-party |
+| `androidx.activity:activity-compose` | Hosts Compose in an activity | Google, first-party |
+| `androidx.lifecycle:lifecycle-runtime-ktx` | Lifecycle-aware coroutine scopes | Google, first-party |
+| `org.jetbrains.kotlinx:kotlinx-serialization-json` | The move wire format | JetBrains, first-party to Kotlin |
+
+These are the Android counterparts of SwiftUI and `Codable`: the platform's own
+toolkit and the language's own serialization library, not packages in the sense
+the rule was written against. Writing an Android UI without Compose or AndroidX
+would mean the deprecated View system; parsing JSON without kotlinx would mean
+hand-written parsing of exactly the format the contract tests exist to pin.
+
+What stays prohibited is the same as on Apple: networking, analytics,
+crash-reporting, or advertising SDKs, and anything that could carry data outside
+ADR-035's boundary. The `wire` module depends on kotlinx-serialization alone, by
+design — it is the part both clients must agree on, and a smaller surface is
+easier to keep honest. Any addition beyond this table needs its own entry here.
