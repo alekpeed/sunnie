@@ -341,11 +341,42 @@ jobs:
       - name: Select Xcode
         run: ./Tools/select_xcode.sh
 
+      # The first attempt at this died in under a minute with "Unable to
+      # connect to simulator" — CoreSimulatorService had not started yet, so
+      # `-downloadPlatform` failed before downloading anything, and the `sudo`
+      # fallback retried instantly into the same race. That says nothing about
+      # the Watch code; the build step never ran.
+      #
+      # So: wake the service first, skip the download if this Xcode already has
+      # the platform, and retry with a restart and a pause between attempts.
+      # The check is `-showsdks`, not `simctl list runtimes`, because a runtime
+      # left by another Xcode does not give *this* Xcode a watchOS SDK to build
+      # against.
       - name: Install the watchOS platform
         run: |
-          set -o pipefail
-          xcodebuild -downloadPlatform watchOS \
-            || sudo xcodebuild -downloadPlatform watchOS
+          set -euo pipefail
+          has_sdk() { xcodebuild -showsdks 2>/dev/null | grep -q watchsimulator; }
+
+          xcrun simctl list runtimes >/dev/null 2>&1 || true
+          if has_sdk; then
+            echo "watchOS platform already installed for this Xcode."
+            xcodebuild -showsdks | grep -i watch
+            exit 0
+          fi
+
+          for attempt in 1 2 3; do
+            if xcodebuild -downloadPlatform watchOS && has_sdk; then
+              xcodebuild -showsdks | grep -i watch
+              exit 0
+            fi
+            echo "Attempt $attempt failed; restarting CoreSimulator before retrying."
+            sudo killall -9 com.apple.CoreSimulator.CoreSimulatorService 2>/dev/null || true
+            sleep $((attempt * 20))
+            xcrun simctl list runtimes >/dev/null 2>&1 || true
+          done
+
+          echo "Could not install the watchOS platform after three attempts."
+          exit 1
 
       - name: Build the Watch app
         run: |
