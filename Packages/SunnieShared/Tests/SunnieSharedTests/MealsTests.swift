@@ -71,12 +71,38 @@ struct MealsTests {
 
     @Test("Eggplant is not eggs")
     func eggplantIsAllowed() {
-        // The classic false positive. Whole-word matching alone is not enough
-        // for "egg noodles", so allowances handle those explicitly.
-        for ingredient in ["eggplant", "2 eggplants", "aubergine", "egg noodles"] {
+        // The classic false positive, which whole-word matching handles.
+        for ingredient in ["eggplant", "2 eggplants", "aubergine", "eggplant parmesan"] {
             let subject = recipe("Thing", ingredients: [ingredient])
             #expect(DietaryFilter.check(subject, against: noEggs).isClear, "\(ingredient)")
         }
+    }
+
+    @Test("Egg noodles are eggs")
+    func eggNoodlesAreFlagged() {
+        // This test used to assert the opposite: egg noodles sat on the
+        // allowance list as "not what the rule means". Egg is the defining
+        // ingredient, and a no-eggs rule that lets them through is not one.
+        for ingredient in ["egg noodles", "200g egg noodle", "Fresh Egg Noodles"] {
+            let subject = recipe("Thing", ingredients: [ingredient])
+            #expect(!DietaryFilter.check(subject, against: noEggs).isClear, "\(ingredient)")
+        }
+    }
+
+    @Test("Mentioning eggplant does not hide an egg on the same line")
+    func allowanceDoesNotClearTheWholeLine() {
+        // Allowances once cleared any line they appeared in, so a single
+        // typed line naming both was waved through.
+        for ingredient in ["eggplant and 2 eggs", "1 aubergine, 1 egg"] {
+            let subject = recipe("Thing", ingredients: [ingredient])
+            #expect(!DietaryFilter.check(subject, against: noEggs).isClear, "\(ingredient)")
+        }
+        // The typing-time check runs through the same matcher, and is the path
+        // a single free-text line actually takes.
+        #expect(
+            DietaryFilter.matches(ingredientName: "eggplant and 2 eggs", against: noEggs)
+                == [DietaryRule.noEggs]
+        )
     }
 
     @Test("A word merely containing the term does not match")

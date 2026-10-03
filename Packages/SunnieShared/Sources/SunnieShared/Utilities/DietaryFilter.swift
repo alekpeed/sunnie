@@ -40,9 +40,11 @@ public enum DietaryExclusionCatalog {
     /// nothing in the app claims it is: `DietaryFilter` reports a match as
     /// "contains something the rule looks for", never as an allergen judgement.
     ///
-    /// "Eggplant" and "egg noodle" are handled by whole-word matching plus the
-    /// explicit allowances below, because both contain the term and neither is
-    /// what the rule means.
+    /// "Eggplant" is handled by whole-word matching: it is one word, and that
+    /// word is not "egg". Egg noodles are *not* an exception — egg is what
+    /// makes them egg noodles. An earlier version allowed them through on the
+    /// theory that the name was incidental, which turned a no-eggs rule into a
+    /// rule with a hole shaped like a common pantry item.
     public static let noEggs = DietaryExclusion(
         id: DietaryRule.noEggs,
         displayNameKey: "diet.noEggs",
@@ -67,7 +69,7 @@ public enum DietaryExclusionCatalog {
     /// of a no-eggs plan. This is the kind of rule that has to be explicit —
     /// there is no general way to derive it.
     public static let allowances: [ContentID: [String]] = [
-        DietaryRule.noEggs: ["eggplant", "eggplants", "aubergine", "egg noodle", "egg noodles"]
+        DietaryRule.noEggs: ["eggplant", "eggplants", "aubergine"]
     ]
 
     public static func exclusion(for id: ContentID) -> DietaryExclusion? {
@@ -181,25 +183,52 @@ public enum DietaryFilter {
     /// applied first.
     ///
     /// Whole-word is what keeps "egg" from firing on "eggplant" and "beggar";
-    /// the allowance list handles the cases where the whole word genuinely is
-    /// the term but the meaning is not, like "egg noodles".
+    /// the allowance list is for a phrase whose words genuinely include a term
+    /// while the phrase means something else.
     static func contains(
         anyOf terms: [String],
         in text: String,
         allowing allowances: [String]
     ) -> Bool {
-        let normalized = normalize(text)
+        var words = normalize(text).split(separator: " ").map(String.init)
 
-        // An allowance wins outright. "Eggplant parmesan" is not eggs, even
-        // though the string starts with one.
-        for allowance in allowances where containsPhrase(normalize(allowance), in: normalized) {
-            return false
+        // An allowance masks the words it covers rather than clearing the whole
+        // line. Clearing the line was the earlier behaviour, and it meant one
+        // typed line reading "eggplant and 2 eggs" was waved through because it
+        // mentioned eggplant somewhere.
+        for allowance in allowances {
+            let phrase = normalize(allowance).split(separator: " ").map(String.init)
+            words = masking(phrase, in: words)
         }
 
-        for term in terms where containsPhrase(normalize(term), in: normalized) {
+        let remaining = words.joined(separator: " ")
+        for term in terms where containsPhrase(normalize(term), in: remaining) {
             return true
         }
         return false
+    }
+
+    /// Stands in for a masked word. `normalize` turns every non-letter into a
+    /// space, so no normalized term can ever equal it.
+    private static let maskedWord = "\u{1}"
+
+    /// Replaces each whole-word occurrence of `phrase` with masked words, so a
+    /// term elsewhere in the same text can still match.
+    private static func masking(_ phrase: [String], in words: [String]) -> [String] {
+        guard !phrase.isEmpty, words.count >= phrase.count else { return words }
+        var result = words
+        var start = 0
+        while start + phrase.count <= result.count {
+            if Array(result[start..<(start + phrase.count)]) == phrase {
+                for index in start..<(start + phrase.count) {
+                    result[index] = maskedWord
+                }
+                start += phrase.count
+            } else {
+                start += 1
+            }
+        }
+        return result
     }
 
     private static func normalize(_ text: String) -> String {
