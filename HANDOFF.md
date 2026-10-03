@@ -23,6 +23,26 @@ X, Y, Z" is the format that works.
 
 Has an Apple Developer account and **no Mac**.
 
+## Where the work happens
+
+The owner works from a local SSD and builds on a **RunPod Linux machine**.
+GitHub holds the repository, and it is also **the only place the Apple targets
+compile**: Apple builds require macOS and Xcode, which RunPod cannot provide. So
+GitHub is not just a backup. Push to it whenever the iPhone, Watch, or widget
+code needs checking, and to ship anything through TestFlight.
+
+Setting up RunPod for the parts that do run on Linux:
+
+- **Swift** — the toolchain from swift.org, or the `swift:6.1.2` Docker image
+  that CI uses. Gives you `swift test` for `Packages/SunnieShared`.
+- **JDK 17 or newer** — enough for `./gradlew :wire:test`.
+- **Android SDK command-line tools**, with `ANDROID_HOME` set — needed for
+  `:app:assembleDebug`. Without it, `settings.gradle.kts` skips `:app` on
+  purpose and `:wire` still builds.
+- **Python 3** — for the validators in `Tools/`.
+
+A CPU pod is enough; nothing here uses a GPU.
+
 ## How to verify anything
 
 There is no local Apple toolchain. That shapes everything.
@@ -124,8 +144,10 @@ I'm continuing the Sunnie Days project, which until now was worked on in a
 Claude Code cloud session. Read HANDOFF.md, then START_HERE.md, then
 Documentation/AUDIT_2026-10.md, and CLAUDE.md is binding throughout.
 
-I don't have a Mac, so the Apple code only compiles in GitHub Actions — don't
-tell me anything about the iPhone or Watch apps works unless CI shows it.
+I work from my SSD and build on a RunPod Linux machine. I don't have a Mac, so
+the iPhone and Watch code only compiles in GitHub Actions — don't tell me
+anything about those works unless CI shows it, and don't try to build them on
+RunPod.
 
 When you've read those, tell me in plain language where things stand and what
 you'd suggest doing next, then wait for me before changing anything.

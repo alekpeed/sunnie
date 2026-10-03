@@ -7,7 +7,8 @@ is not a fresh implementation. Before changing anything, read `HANDOFF.md`, then
 `START_HERE.md` (status, and the only record of test results), then
 `Documentation/AUDIT_2026-10.md` (open work, ranked).
 
-- **There is no Mac.** Apple targets compile only in GitHub Actions. Locally you
+- **There is no Mac.** Work happens on a local SSD and a RunPod Linux machine;
+  Apple targets compile only in GitHub Actions, so push to check them. Locally you
   can run the shared Swift package's tests, the Android `wire` tests, and the
   Python validators in `Tools/`. Claim nothing about Apple code until CI says so.
 - **An Android game app and a moves-only backend exist by the owner's decision**
