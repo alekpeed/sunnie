@@ -3,8 +3,8 @@
 A pass over the places most likely to need attention the first time this
 codebase meets a compiler, ordered so the ones that cascade come first.
 
-> **Update after the first real compile.** The shared package now builds and
-> passes 460 tests on Linux (ADR-032). That run found three genuine defects —
+> **Update after the first real compile.** The shared package then built and
+> passed 460 tests on Linux (ADR-032); current results are in [`START_HERE.md`](../START_HERE.md#the-honest-status). That run found three genuine defects —
 > `ColorValue` JSON encoding, travel coverage for already-overdue tasks, and a
 > `some`/`any RandomSource` mismatch — all now fixed with regression tests. It
 > also confirmed the biggest claim below: strict concurrency produced warnings,
@@ -240,7 +240,8 @@ is predicted — these are simply the widest blast radii.
 
 1. `cd Packages/SunnieShared && swift build` — a third of the code, seconds per
    cycle, no UI in the way.
-2. `swift test` there — 460 tests, all passing since ADR-032.
+2. `swift test` there — all passing since ADR-032; the current count is in
+   [`START_HERE.md`](../START_HERE.md#the-honest-status).
 3. Open the project; build **SunnieDays** for the Simulator only.
 4. Fix by *shape*, not by file. Errors will cluster: fix one protocol signature
    and thirty errors go at once. Recompiling after each cluster beats working
@@ -254,9 +255,8 @@ Said plainly, so the list is not mistaken for coverage:
 - **Physical-device behavior.** Simulator builds type-check the Apple API usage,
   but cannot prove Health, camera, haptics, or paired Watch behavior.
 - SwiftUI layout, and whether any view renders as intended.
-- The Watch target compiles in the manual CI job after its watchOS SDK download,
-  but paired-device behavior remains untested. The shared package's 460 tests and
-  the app target's 223 tests plus 7 UI tests pass.
+- The Watch target compiles inside every iPhone build, but paired-device
+  behavior remains untested. Test results are in [`START_HERE.md`](../START_HERE.md#the-honest-status).
 - Migration against real data. There is no V1 store in existence to migrate from,
   and ADR-017's namespace freeze is still owed. This remains the
   highest-consequence untested area in the project.
