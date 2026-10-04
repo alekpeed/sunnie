@@ -109,7 +109,10 @@ claim, and tie numbers to a run ID.
    asset; `AssetsSource/FrontPageBrief/` is the brief for image generation.
 2. **TestFlight setup** — `Documentation/TESTFLIGHT_SETUP.md`. The pipeline
    (`.github/workflows/testflight.yml`) is built but has never run. First build
-   ships with Health, widget data, weather, and iCloud off (ADR-012).
+   ships with Health, widget data, weather, and iCloud off (ADR-012). It includes
+   the Watch app — the iPhone app embeds it — and will be the first time that is
+   ever signed, so signing errors naming `.watchkitapp` are the likeliest snag;
+   the guide's failure table covers them.
 3. **Where the game server lives** — `Backend/README.md`. Nothing is applied to
    any database.
 4. **Tell Sunnie's speech fallback** — keep sending speech to Apple when

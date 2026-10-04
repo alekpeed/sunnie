@@ -142,7 +142,7 @@ covering it.
 
 ### Decisions are written down
 
-`ARCHITECTURE_DECISIONS.md` holds 31 ADRs. Each has context, decision, reason,
+`ARCHITECTURE_DECISIONS.md` holds 35 ADRs. Each has context, decision, reason,
 consequences, alternatives rejected, and the documents and tests it affects. When
 a piece of code looks wrong, the ADR is usually where the argument for it is —
 and disagreeing with the argument is a legitimate and useful review finding.

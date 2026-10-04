@@ -92,9 +92,9 @@ xcodebuild test -project SunnieDays.xcodeproj -scheme SunnieDays \
   -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
-`.github/workflows/ci.yml` runs the same jobs on every push and is green: 223
-tests across 13 suites, 7 UI tests on a simulator, and the shared package on both
-Linux and macOS. A local run should agree with it, and a disagreement is worth
+`.github/workflows/ci.yml` runs the same jobs on every push and is green: app
+tests, UI tests on a simulator, and the shared package on both Linux and macOS
+(counts in [`START_HERE.md`](../START_HERE.md#the-honest-status)). A local run should agree with it, and a disagreement is worth
 understanding before you go near hardware.
 
 Note what the UI tests do *not* prove. They run against a fresh in-memory store,

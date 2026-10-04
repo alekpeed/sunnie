@@ -200,16 +200,16 @@ From `IMPLEMENTATION_ROADMAP.md` and `FIRST_VERTICAL_SLICE.md`. Met means a
 machine checked it and CI keeps checking it on every push.
 
 - [x] The iPhone scheme compiles
-- [x] Tests run and pass — 223 across 13 suites, plus 7 UI tests on a simulator
+- [x] Tests run and pass, including UI tests on a simulator (counts in [`START_HERE.md`](../START_HERE.md#the-honest-status))
 - [x] The flow works on Simulator — Today → plant → log care, end to end
-- [ ] The Watch scheme compiles. The job exists but is `workflow_dispatch` only,
-      because the runner ships no watchOS SDK and downloading it costs several
-      gigabytes per run. Never yet executed.
+- [x] The Watch scheme compiles — inside every iPhone build, which embeds it,
+      and on its own in the manual `build-watch` job (first run 2026-10-03).
 - [ ] Flow works on a physical iPhone
 - [ ] Queued Watch transfer verified on physically paired devices
-- [ ] Local data survives relaunch. **Not** covered by the UI tests despite
-      appearances: they launch with a fresh in-memory store precisely so a run
-      cannot depend on the last one, which is the opposite of what this asks.
+- [~] Local data survives relaunch. `CurrentStorePersistenceTests` writes to a
+      real on-disk store, destroys every container and repository, and reopens
+      it. The UI tests still launch with a fresh in-memory store, so no test yet
+      relaunches the running app itself.
       By hand, or with a test that does not use `-SunnieUITesting`.
 - [~] All three branded presentations render coherently. A UI test walks every
       phase and asserts the Sunnie Nights presentation appears, so the plumbing
