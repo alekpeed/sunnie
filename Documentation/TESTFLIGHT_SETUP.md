@@ -44,6 +44,13 @@ inactive on purpose (ADR-012), so turning them on here without doing the rest of
 > the prefix you will put in the secrets below is `com.yourname.sunniedays` —
 > without `.app`. The build config appends that itself, and it derives the
 > widget and Watch identifiers from the same prefix.
+>
+> The upload contains **three** apps: the iPhone app (`<prefix>.app`), the
+> widget (`<prefix>.app.widgets`), and the Watch app (`<prefix>.app.watchkitapp`)
+> — the iPhone app embeds the other two. The workflow signs automatically and
+> can register the second and third identifiers itself if the API key may manage
+> identifiers (see the failure table). Registering all three here by hand, as
+> Explicit IDs, also works and removes the question.
 
 ## 2. Create the app record
 
@@ -135,7 +142,10 @@ and are neither:
 - **No Health, no widgets, no iCloud sync.** Entitlements ship inactive. The app
   is local-only and complete that way; turning them on is §5 of
   `DEVICE_BRING_UP.md`.
-- **No Watch app.** This uploads the iPhone build alone.
+- **The Watch app is included, untested on a real Watch.** The iPhone app
+  embeds it, so it travels with every upload. It compiles in CI, but this is the
+  first time it will be signed, and paired-Watch behaviour has never been
+  observed.
 
 Everything else is real: the plant care loop, all three branded day cycles,
 wellness and journal, travel, meals, the seven games, collections, Sunnie's Home.
@@ -153,13 +163,11 @@ failure, and uploads the full `xcodebuild` logs as an artifact. Beyond those:
 | `Authentication credentials are missing or invalid` | The API key lacks App Manager, or `ASC_KEY_ID` and `ASC_ISSUER_ID` are swapped. |
 | `App Store Connect API key not found` | `ASC_KEY_P8` did not decode. The workflow says so explicitly before it gets this far. |
 | Build uploads, never appears in TestFlight | Step 6 was skipped, or processing is still running. |
+| `No profiles for '….app.watchkitapp'` or `'….app.widgets'` | Automatic signing could not register the Watch or widget identifier. Register it by hand in step 1 (Explicit, same prefix), or give the API key access to Certificates, Identifiers & Profiles. |
 | `Missing Compliance` in App Store Connect | Should not happen — `ITSAppUsesNonExemptEncryption` is declared in `Info.plist`. If it does, answer once in the web form and report it. |
 
 ## What this does not cover
 
-- **The Watch app.** It needs the watchOS SDK downloaded onto the runner, which
-  is several gigabytes per run. `ci.yml` has a manual `build-watch` job for
-  compiling it; putting it in a TestFlight build is a separate piece of work.
 - **Public TestFlight links.** External testers require Beta App Review. Internal
   testing is enough for one person and avoids the wait.
 - **App Store release.** Screenshots, privacy nutrition labels, and review are a

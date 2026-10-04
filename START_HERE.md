@@ -83,6 +83,7 @@ it.
 | Folder or file | What it is |
 |---|---|
 | `START_HERE.md` | This document, and the only record of test results |
+| `HANDOFF.md` | How to continue in a new Claude Code session, with a prompt to paste |
 | `Documentation/AUDIT_2026-10.md` | What the October 2026 audit found and what remains |
 | `REVIEW_PACKET.md` | A deeper orientation for a developer |
 | `Documentation/` | The full written specification — what the app should do and why |

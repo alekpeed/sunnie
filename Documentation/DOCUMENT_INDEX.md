@@ -10,6 +10,23 @@
 - `REQUIREMENTS_TRACEABILITY.md` — Stable requirement IDs
 - `CHANGELOG.md` — Package revision history
 
+## Project status and working documents
+
+Read these first in a new session. The specification below says what the app
+should be; these say where it actually is.
+
+- `/START_HERE.md` — Current status, and the **only** record of test results
+- `/HANDOFF.md` — Prompt and context for continuing in a new Claude Code session
+- `AUDIT_2026-10.md` — October 2026 code audit: fixed, open (ranked), checked clean, and not-findings
+- `TESTFLIGHT_SETUP.md` — Getting the app onto an iPhone without a Mac
+- `BUILD_AND_VERIFY.md` — What CI builds and checks, job by job
+- `DEVICE_BRING_UP.md` — Clone to device: entitlements, App Groups, symptoms that are configuration
+- `/ARCHITECTURE_DECISIONS.md` — 35 ADRs; several apparent gaps are decisions (ADR-033 above all)
+- `/Backend/README.md` — Multiplayer backend: what is decided, what is not, and the privacy boundary
+- `/Apps/Android/` — Android game companion (ADR-035)
+- `/AssetsSource/ASSET_MANIFEST.md` — Every artwork asset and its state
+- `/AssetsSource/FrontPageBrief/` — Brief for generating the front-page Sunnie artwork
+
 ## 01_Product
 
 - `PRODUCT_VISION_AND_GOALS.md`

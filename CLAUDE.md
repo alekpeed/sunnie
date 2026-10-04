@@ -1,5 +1,23 @@
 # Claude Code Operating Instructions — Sunnie Days
 
+## Current state — read before anything else
+
+The app is built. Every target compiles and every test suite passes in CI; this
+is not a fresh implementation. Before changing anything, read `HANDOFF.md`, then
+`START_HERE.md` (status, and the only record of test results), then
+`Documentation/AUDIT_2026-10.md` (open work, ranked).
+
+- **There is no Mac.** Work happens on a local SSD and a RunPod Linux machine;
+  Apple targets compile only in GitHub Actions, so push to check them. Locally you
+  can run the shared Swift package's tests, the Android `wire` tests, and the
+  Python validators in `Tools/`. Claim nothing about Apple code until CI says so.
+- **An Android game app and a moves-only backend exist by the owner's decision**
+  (ADR-035). Maintain them. The backend must never store journal, wellness,
+  health, plant, meal, trip, photo, audio, or preference data.
+- **Several apparent gaps are decisions.** No erase-everything control (ADR-033)
+  is the main one. Check `ARCHITECTURE_DECISIONS.md` before calling something
+  missing.
+
 ## Mission
 
 Implement Sunnie Days faithfully from the documents in this repository. Optimize for correctness, consistency, maintainability, privacy, and visual coherence. Do not optimize for speed by skipping architecture, tests, migrations, accessibility, or documented behavior.
